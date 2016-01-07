@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 the original author or authors
+ * Copyright 2014-2016 the original author or authors
  *
  * Licensed under the Apache License, Version 2.0 (the “License”);
  * you may not use this file except in compliance with the License.
@@ -67,7 +67,7 @@ public abstract class BaseTestCase {
     public BaseTestCase(String configLocation) {
         try {
             JdbcDataSource dataSource = new JdbcDataSource();
-            dataSource.setUrl("jdbc:ddal:classpath:/config/ddal-config.xml");
+            dataSource.setUrl("jdbc:openddal:classpath:/config/ddal-config.xml");
             dataSource.setDbType("MySQL");
             this.dataSource = dataSource;
         } catch (RuntimeException e) {
