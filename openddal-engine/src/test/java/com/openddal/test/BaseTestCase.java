@@ -20,6 +20,7 @@ import com.openddal.message.DbException;
 import com.openddal.test.utils.ProxyCodeGenerator;
 import com.openddal.test.utils.ResultVerifier;
 import com.openddal.util.FilePath;
+import com.openddal.util.MurmurHash;
 import com.openddal.util.Utils;
 import org.junit.After;
 
@@ -291,7 +292,7 @@ public abstract class BaseTestCase {
 
     public long getUUID() {
         UUID uuid = UUID.randomUUID();
-        long murmurhash2_64 = Utils.murmurhash2_64(uuid.toString());
+        long murmurhash2_64 = MurmurHash.hash64(uuid.toString());
         murmurhash2_64 = Math.abs(murmurhash2_64);
         return murmurhash2_64;
     }

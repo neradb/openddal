@@ -25,6 +25,7 @@ import com.openddal.message.Trace;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
+import com.openddal.util.Threads;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -98,7 +99,7 @@ public class DataSourceRepository {
                     : shardDs.get(0).getDataSource();
             shardMaping.put(value.getName(), dataSource);
         }
-        scheduledExecutor = Executors.newScheduledThreadPool(1, New.customThreadFactory("datasource-ha-thread"));
+        scheduledExecutor = Executors.newScheduledThreadPool(1, Threads.newThreadFactory("datasource-ha-thread"));
         scheduledExecutor.scheduleAtFixedRate(new Worker(), 10, 10, TimeUnit.SECONDS);
     }
 
@@ -181,24 +182,18 @@ public class DataSourceRepository {
             }
             BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>(capacity);
             jdbcExecutor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.MILLISECONDS,
-                    workQueue, New.customThreadFactory("jdbc-worker"), new AbortPolicy());
+                    workQueue, Threads.newThreadFactory("jdbc-worker"), new AbortPolicy());
             jdbcExecutor.allowCoreThreadTimeOut(true);
         }
         return jdbcExecutor;
     }
 
     public void close() {
-        try {
-            this.scheduledExecutor.awaitTermination(500, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            trace.error(e, "scheduledExecutor awaitTermination");
+        if (scheduledExecutor != null) {
+            Threads.shutdownGracefully(scheduledExecutor, 1000, 1000, TimeUnit.MILLISECONDS);
         }
-        try {
-            if (jdbcExecutor != null) {
-                jdbcExecutor.awaitTermination(1, TimeUnit.SECONDS);
-            }
-        } catch (InterruptedException e) {
-            trace.error(e, "jdbcExecutor awaitTermination");
+        if (jdbcExecutor != null) {
+            Threads.shutdownGracefully(jdbcExecutor, 1000, 1000, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -276,7 +271,6 @@ public class DataSourceRepository {
                 monitor.remove(source);
             }
         }
-
 
         private boolean validateAvailable(DataSource dataSource) throws SQLException {
             Connection conn = null;

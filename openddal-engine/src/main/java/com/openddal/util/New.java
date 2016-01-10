@@ -15,14 +15,18 @@
  */
 package com.openddal.util;
 
-import com.openddal.value.CaseInsensitiveMap;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import com.openddal.value.CaseInsensitiveMap;
 
 /**
  * This class contains static methods to construct commonly used generic objects
@@ -250,48 +254,6 @@ public class New {
      */
     public static <T> CopyOnWriteArraySet<T> copyOnWriteArraySet() {
         return new CopyOnWriteArraySet<T>();
-    }
-
-
-    /**
-     * Create a new CopyOnWriteArraySet.
-     *
-     * @param <T> the type
-     * @return the object
-     */
-    public static ThreadFactory customThreadFactory(String namePrefix) {
-        return new CustomThreadFactory(namePrefix);
-    }
-
-
-    private static final class CustomThreadFactory implements ThreadFactory {
-        private static final AtomicInteger index = new AtomicInteger(1);
-        private final String prefix;
-        private final boolean daemon;
-        private final ThreadGroup group;
-
-        public CustomThreadFactory(String prefix) {
-            this(prefix, false);
-        }
-
-        private CustomThreadFactory(String prefix, boolean daemon) {
-            SecurityManager sm = System.getSecurityManager();
-            group = (sm != null) ? sm.getThreadGroup()
-                    : Thread.currentThread().getThreadGroup();
-            this.prefix = prefix;
-            this.daemon = daemon;
-        }
-
-        @Override
-        public Thread newThread(Runnable r) {
-            String name = prefix + "_" + index.getAndIncrement();
-            Thread t = new Thread(group, r, name);
-            t.setDaemon(daemon);
-            if (t.getPriority() != Thread.NORM_PRIORITY) {
-                t.setPriority(Thread.NORM_PRIORITY);
-            }
-            return t;
-        }
     }
 
 }
