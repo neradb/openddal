@@ -44,7 +44,7 @@ public class ServerLauncher {
                     if (i + 1 >= args.length) {
                         fail("-socketTimeoutMills miss value.");
                     }
-                    if (args[i + 1].matches("(-1)|([0-9]*)")) {
+                    if (args[i + 1].matches("([0-9]*)")) {
                         serverArgs.socketTimeoutMills(Integer.parseInt(args[i + 1]));
                     } else {
                         fail("-socketTimeoutMills should be positive integer");
@@ -53,7 +53,7 @@ public class ServerLauncher {
                     if (i + 1 >= args.length) {
                         fail("-shutdownTimeoutMills miss value.");
                     }
-                    if (args[i + 1].matches("(-1)|([0-9]*)")) {
+                    if (args[i + 1].matches("([0-9]*)")) {
                         serverArgs.shutdownTimeoutMills(Integer.parseInt(args[i + 1]));
                     } else {
                         fail("-shutdownTimeoutMills should be positive integer");
@@ -62,7 +62,7 @@ public class ServerLauncher {
                     if (i + 1 >= args.length) {
                         fail("-sendBuff miss value.");
                     }
-                    if (args[i + 1].matches("(-1)|([0-9]*)")) {
+                    if (args[i + 1].matches("([0-9]*)")) {
                         serverArgs.sendBuff(Integer.parseInt(args[i + 1]));
                     } else {
                         fail("-sendBuff should be positive integer");
@@ -71,7 +71,7 @@ public class ServerLauncher {
                     if (i + 1 >= args.length) {
                         fail("-recvBuff miss value.");
                     }
-                    if (args[i + 1].matches("(-1)|([0-9]*)")) {
+                    if (args[i + 1].matches("([0-9]*)")) {
                         serverArgs.shutdownTimeoutMills(Integer.parseInt(args[i + 1]));
                     } else {
                         fail("-recvBuff should be positive integer");
@@ -80,7 +80,7 @@ public class ServerLauncher {
                     if (i + 1 >= args.length) {
                         fail("-bossThreads miss value.");
                     }
-                    if (args[i + 1].matches("(-1)|([0-9]*)")) {
+                    if (args[i + 1].matches("([0-9]*)")) {
                         serverArgs.bossThreads(Integer.parseInt(args[i + 1]));
                     } else {
                         fail("-bossThreads should be positive integer");
@@ -89,7 +89,7 @@ public class ServerLauncher {
                     if (i + 1 >= args.length) {
                         fail("-workerThreads miss value.");
                     }
-                    if (args[i + 1].matches("(-1)|([0-9]*)")) {
+                    if (args[i + 1].matches("([0-9]*)")) {
                         serverArgs.workerThreads(Integer.parseInt(args[i + 1]));
                     } else {
                         fail("-workerThreads should be positive integer");
