@@ -15,7 +15,15 @@
  */
 package com.openddal.server.processor;
 
+/**
+ * 
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ *
+ */
 public class ProcessException extends Exception {
+
+    private static final long serialVersionUID = 1L;
+
     protected int errorCode;
     protected String errorMessage;
 

@@ -19,11 +19,17 @@ import com.openddal.engine.SessionInterface;
 
 import java.net.SocketAddress;
 
+/**
+ * 
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ *
+ */
 public interface Request {
+    
+    
 
     SocketAddress getRemoteSocketAddress();
 
     SessionInterface getSession();
-
 
 }

@@ -15,15 +15,6 @@
  */
 package com.openddal.engine;
 
-import com.openddal.config.Configuration;
-import com.openddal.config.parser.XmlConfigParser;
-import com.openddal.dbobject.User;
-import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
-import com.openddal.util.New;
-import com.openddal.util.StringUtils;
-import com.openddal.util.Utils;
-
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,13 +24,21 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Properties;
 
+import com.openddal.config.Configuration;
+import com.openddal.config.parser.XmlConfigParser;
+import com.openddal.dbobject.User;
+import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
+import com.openddal.util.StringUtils;
+import com.openddal.util.Utils;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class Engine implements SessionFactory {
 
     private static final Engine INSTANCE = new Engine();
-    private static final HashMap<String, Database> DATABASES = New.hashMap();
+    private static Database DATABASE;
 
     private Engine() {
         Runtime.getRuntime().addShutdownHook(new Closer());
@@ -67,8 +66,7 @@ public class Engine implements SessionFactory {
         if (userName == null) {
             userName = Database.SYSTEM_USER_NAME;
         }
-        Database database = DATABASES.get(url);
-        if (database == null) {
+        if (DATABASE == null) {
             Properties urlProps = parseURL(url, info);
             String configLocation = removeProperty(urlProps, "configLocation");
             if (StringUtils.isNullOrEmpty(configLocation)) {
@@ -104,20 +102,19 @@ public class Engine implements SessionFactory {
                     settings.put(key, value);
                 }
             }
-            database = new Database(configuration);
-            User user = database.findUser(userName);
+            DATABASE = new Database(configuration);
+            User user = DATABASE.findUser(userName);
             if (user == null) {
                 // users is the last thing we add, so if no user is around,
                 // the database is new (or not initialized correctly)
-                user = new User(database, database.allocateObjectId(), userName);
+                user = new User(DATABASE, DATABASE.allocateObjectId(), userName);
                 user.setAdmin(true);
                 user.setPassword(password);
-                database.addDatabaseObject(user);
+                DATABASE.addDatabaseObject(user);
             }
-            DATABASES.put(url, database);
         }
-        User userObject = database.getUser(userName);
-        Session session = database.createSession(userObject);
+        User userObject = DATABASE.getUser(userName);
+        Session session = DATABASE.createSession(userObject);
         return session;
 
     }
@@ -186,14 +183,11 @@ public class Engine implements SessionFactory {
         @Override
         public void run() {
             synchronized (INSTANCE) {
-                for (Database database : DATABASES.values()) {
-                    try {
-                        database.close();
-                    } catch (Exception e) {
+                try {
+                    DATABASE.close();
+                } catch (Exception e) {
 
-                    }
                 }
-                DATABASES.clear();
             }
 
         }

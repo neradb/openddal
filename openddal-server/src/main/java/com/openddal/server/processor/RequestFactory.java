@@ -15,12 +15,18 @@
  */
 package com.openddal.server.processor;
 
-import com.openddal.engine.SessionInterface;
-import com.openddal.server.ProtocolTransport;
-import io.netty.channel.ChannelHandlerContext;
-
 import java.net.SocketAddress;
 
+import com.openddal.engine.SessionInterface;
+import com.openddal.server.ProtocolTransport;
+
+import io.netty.util.AttributeKey;
+
+/**
+ * 
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ *
+ */
 public class RequestFactory {
     private static RequestFactory instance = new RequestFactory();
 
@@ -35,7 +41,11 @@ public class RequestFactory {
         return new RequestImp(trans);
     }
 
-    private class RequestImp implements Request {
+    private static class RequestImp implements Request {
+        
+        private static final AttributeKey<SessionInterface> SESSION_ATTR_KEY =
+                AttributeKey.valueOf("SESSION_ATTR_KEY");
+        
         private ProtocolTransport trans;
 
         private RequestImp(ProtocolTransport trans) {
@@ -44,13 +54,12 @@ public class RequestFactory {
 
         @Override
         public SocketAddress getRemoteSocketAddress() {
-            ChannelHandlerContext ctx = trans.getChannelHandlerContext();
-            return ctx.channel().remoteAddress();
+            return trans.getChannel().remoteAddress();
         }
 
         @Override
         public SessionInterface getSession() {
-            return null;
+            return trans.getChannel().attr(SESSION_ATTR_KEY).get();
         }
     }
 }

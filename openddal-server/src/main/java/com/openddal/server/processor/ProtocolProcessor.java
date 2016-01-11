@@ -21,6 +21,6 @@ package com.openddal.server.processor;
  */
 public interface ProtocolProcessor {
 
-    boolean process(Request request, Response response) throws ProcessException;
+    void process(Request request, Response response) throws ProcessException;
 
 }

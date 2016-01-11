@@ -15,9 +15,12 @@
  */
 package com.openddal.server;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 import org.apache.thrift.transport.TTransportException;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.AttributeKey;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -27,12 +30,12 @@ public class ProtocolTransport {
     public static final int DEFAULT_BUFFER_SIZE = 1024;
     public ByteBuf in;
     public ByteBuf out;
-    private ChannelHandlerContext ctx;
+    private Channel channel;
 
-    public ProtocolTransport(ChannelHandlerContext ctx, ByteBuf in) {
-        this.ctx = ctx;
+    public ProtocolTransport(Channel channel, ByteBuf in) {
+        this.channel = channel;
         this.in = in;
-        out = ctx.alloc().buffer(DEFAULT_BUFFER_SIZE);
+        out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
     }
 
     public int read(byte[] bytes, int offset, int length) throws TTransportException {
@@ -55,16 +58,18 @@ public class ProtocolTransport {
         write(buf, 0, buf.length);
     }
 
-    public ChannelHandlerContext getChannelHandlerContext() {
-        return ctx;
-    }
 
     public boolean isOpen() {
-        return ctx.channel().isOpen();
+        return channel.isOpen();
     }
 
     public void close() {
-        ctx.channel().close();
+        channel.close();
+    }
+
+    
+    public Channel getChannel() {
+        return channel;
     }
 
 

@@ -42,7 +42,7 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        ProtocolTransport transport = new ProtocolTransport(ctx, (ByteBuf) msg);
+        ProtocolTransport transport = new ProtocolTransport(ctx.channel(), (ByteBuf) msg);
         userExecutor.execute(new ProcessorTask(ctx, transport));
     }
 
