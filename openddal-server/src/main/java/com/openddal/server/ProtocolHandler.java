@@ -15,16 +15,14 @@
  */
 package com.openddal.server;
 
-import java.util.concurrent.Executor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.openddal.server.processor.ProcessorFactory;
-
+import com.openddal.server.processor.*;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executor;
 
 /**
  * 
@@ -44,7 +42,7 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        ProtocolTransport transport = new ProtocolTransport(ctx.channel(), (ByteBuf) msg);
+        ProtocolTransport transport = new ProtocolTransport(ctx, (ByteBuf) msg);
         userExecutor.execute(new ProcessorTask(ctx, transport));
     }
 
@@ -62,9 +60,14 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
 
         @Override
         public void run() {
+            Request request = RequestFactory.getInstance().createRequest(transport);
+            Response response = ResponseFactory.getInstance().createResponse(transport);
             try {
-                processorFactory.getProcessor(transport).process(transport);
+                processorFactory.getProcessor(transport).process(request, response);
                 ctx.writeAndFlush(transport.out);
+            } catch (ProcessException e) {
+                logger.error("process exception happen when call processor", e);
+                // TODO: response thrift wrong exception,
             } catch (Exception e) {
                 logger.error("User exception happen when call processor", e);
                 // TODO: response user wrong exception,

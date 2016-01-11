@@ -15,12 +15,19 @@
  */
 package com.openddal.server.processor;
 
-/**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
- */
-public interface ProtocolProcessor {
+import com.openddal.server.ProtocolTransport;
 
-    boolean process(Request request, Response response) throws ProcessException;
+public class ResponseFactory {
+    private static ResponseFactory instance = new ResponseFactory();
 
+    private ResponseFactory() {
+    }
+
+    public static ResponseFactory getInstance() {
+        return instance;
+    }
+
+    public Response createResponse(ProtocolTransport trans) {
+        return null;
+    }
 }

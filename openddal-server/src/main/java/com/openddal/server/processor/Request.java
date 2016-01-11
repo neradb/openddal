@@ -15,12 +15,15 @@
  */
 package com.openddal.server.processor;
 
-/**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
- */
-public interface ProtocolProcessor {
+import com.openddal.engine.SessionInterface;
 
-    boolean process(Request request, Response response) throws ProcessException;
+import java.net.SocketAddress;
+
+public interface Request {
+
+    SocketAddress getRemoteSocketAddress();
+
+    SessionInterface getSession();
+
 
 }

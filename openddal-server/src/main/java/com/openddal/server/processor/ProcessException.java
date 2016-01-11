@@ -15,12 +15,32 @@
  */
 package com.openddal.server.processor;
 
-/**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
- */
-public interface ProtocolProcessor {
+public class ProcessException extends Exception {
+    protected int errorCode;
+    protected String errorMessage;
 
-    boolean process(Request request, Response response) throws ProcessException;
+    public ProcessException(int errorCode, String message) {
+        super(message);
+    }
 
+    public ProcessException(int errorCode, String message, Throwable cause) {
+        super(cause);
+    }
+
+    @Override
+    public String getMessage() {
+        return errorCode + ":" + errorMessage;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public void setErrorMessage(String retMessage) {
+        this.errorMessage = retMessage;
+    }
+
+    public int getErrorCode() {
+        return errorCode;
+    }
 }
