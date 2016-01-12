@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>com.openddal</groupId>
 			<artifactId>openddal-engine</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
+			<version>${project.version}</version>
 		</dependency>
 
 		<dependency>
@@ -48,11 +48,8 @@
 		<plugins>
 
 			<plugin>
-				<!-- Working with multi-module projects -->
-				<inherited>false</inherited>
 				<groupId>com.mycila.maven-license-plugin</groupId>
 				<artifactId>maven-license-plugin</artifactId>
-				<version>1.10.b1</version>
 				<configuration>
 					<header>${basedir}/../license.txt</header>
 					<failIfMissing>true</failIfMissing>

@@ -15,14 +15,18 @@
  */
 package com.openddal.server.processor;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * 
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
 public interface Response {
-    
-    public void sendError(int sc);
-    
-    public void sendError(int sc, String msg); 
+
+    void sendError(int sc);
+
+    void sendError(int sc, String msg);
+
+    ByteBuf getOutputByteBuf();
 }
