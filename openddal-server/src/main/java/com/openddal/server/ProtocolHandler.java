@@ -20,8 +20,8 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openddal.server.processor.ProcessException;
 import com.openddal.server.processor.ProcessorFactory;
+import com.openddal.server.processor.ProtocolProcessException;
 import com.openddal.server.processor.Request;
 import com.openddal.server.processor.RequestFactory;
 import com.openddal.server.processor.Response;
