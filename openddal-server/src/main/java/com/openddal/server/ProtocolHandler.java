@@ -74,7 +74,7 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
             try {
                 processorFactory.getProcessor(transport).process(request, response);
                 ctx.writeAndFlush(transport.out);
-            } catch (ProcessException e) {
+            } catch (ProtocolProcessException e) {
                 logger.error("process exception happen when call processor", e);
                 // TODO: response thrift wrong exception,
             } catch (Exception e) {

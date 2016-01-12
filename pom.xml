@@ -160,56 +160,15 @@
 
                 <!-- http://code.google.com/p/maven-license-plugin/wiki/HowTo -->
                 <plugin>
-                    <!-- Working with multi-module projects -->
-                    <inherited>false</inherited>
                     <groupId>com.mycila.maven-license-plugin</groupId>
                     <artifactId>maven-license-plugin</artifactId>
                     <version>1.10.b1</version>
-                    <configuration>
-                        <header>${basedir}/license.txt</header>
-                        <failIfMissing>true</failIfMissing>
-                        <aggregate>true</aggregate>
-                        <strictCheck>true</strictCheck>
-                        <properties>
-                            <!-- <year>2015</year> -->
-                        </properties>
-                        <mapping>
-                            <java>SLASHSTAR_STYLE</java>
-                        </mapping>
-                        <includes>
-                            <include>src/main/java/**/*.java</include>
-                            <include>src/test/java/**/*.java</include>
-                        </includes>
-                        <encoding>UTF-8</encoding>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>check-headers</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <configuration>
-                        <descriptors>
-                            <descriptor>src/main/assembly/assembly.xml</descriptor>
-                        </descriptors>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>assembly</id>
-                            <phase>package</phase>
-                            <goals>
-                                <goal>single</goal>
-                            </goals>
-                        </execution>
-                    </executions>
+                    <version>2.5.5</version>
                 </plugin>
             </plugins>
         </pluginManagement>

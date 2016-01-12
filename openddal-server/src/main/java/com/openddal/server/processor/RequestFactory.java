@@ -15,12 +15,12 @@
  */
 package com.openddal.server.processor;
 
-import java.net.SocketAddress;
-
-import com.openddal.engine.SessionInterface;
 import com.openddal.server.ProtocolTransport;
-
+import io.netty.buffer.ByteBuf;
 import io.netty.util.AttributeKey;
+
+import java.net.SocketAddress;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 
@@ -29,6 +29,8 @@ import io.netty.util.AttributeKey;
  */
 public class RequestFactory {
     private static RequestFactory instance = new RequestFactory();
+
+    private static AtomicLong sessionIdGenerator = new AtomicLong(0);
 
     private RequestFactory() {
     }
@@ -42,9 +44,9 @@ public class RequestFactory {
     }
 
     private static class RequestImp implements Request {
-        
-        private static final AttributeKey<SessionInterface> SESSION_ATTR_KEY =
-                AttributeKey.valueOf("SESSION_ATTR_KEY");
+
+        private static final AttributeKey<Session> SESSION_KEY =
+                AttributeKey.valueOf("_PROTOCOL_SESSION_KEY");
         
         private ProtocolTransport trans;
 
@@ -53,13 +55,78 @@ public class RequestFactory {
         }
 
         @Override
-        public SocketAddress getRemoteSocketAddress() {
-            return trans.getChannel().remoteAddress();
+        public SocketAddress getRemoteAddress() {
+            SocketAddress socketAddress = trans.getChannel().remoteAddress();
+            return socketAddress;
         }
 
         @Override
-        public SessionInterface getSession() {
-            return trans.getChannel().attr(SESSION_ATTR_KEY).get();
+        public SocketAddress getLocalAddress() {
+            SocketAddress socketAddress = trans.getChannel().localAddress();
+            return socketAddress;
+        }
+
+        @Override
+        public Session getSession() {
+            Session session = trans.getChannel().attr(SESSION_KEY).get();
+            if (session == null) {
+                session = new SessionImp(trans);
+                session.setState(Session.State.CONNECTIONING);
+            }
+            trans.getChannel().attr(SESSION_KEY).set(session);
+            return session;
+        }
+
+        @Override
+        public ByteBuf getInputByteBuf() {
+            return trans.in;
+        }
+    }
+
+    private static class SessionImp implements Session {
+
+        public final long sessionID;
+        private final ProtocolTransport trans;
+
+
+        private SessionImp(ProtocolTransport trans) {
+            this.trans = trans;
+            this.sessionID = sessionIdGenerator.incrementAndGet();
+        }
+
+        @Override
+        public <T> T setAttachment(String key, T value) {
+            return null;
+        }
+
+        @Override
+        public <T> T getAttachment(String key) {
+            return null;
+        }
+
+        @Override
+        public long getSessionID() {
+            return sessionID;
+        }
+
+        @Override
+        public String getUser() {
+            return null;
+        }
+
+        @Override
+        public void setUser(String user) {
+
+        }
+
+        @Override
+        public State getState() {
+            return null;
+        }
+
+        @Override
+        public void setState(State state) {
+
         }
     }
 }

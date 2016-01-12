@@ -15,7 +15,7 @@
  */
 package com.openddal.server.processor;
 
-import com.openddal.engine.SessionInterface;
+import io.netty.buffer.ByteBuf;
 
 import java.net.SocketAddress;
 
@@ -25,11 +25,13 @@ import java.net.SocketAddress;
  *
  */
 public interface Request {
-    
-    
 
-    SocketAddress getRemoteSocketAddress();
+    SocketAddress getRemoteAddress();
 
-    SessionInterface getSession();
+    SocketAddress getLocalAddress();
+
+    Session getSession();
+
+    ByteBuf getInputByteBuf();
 
 }

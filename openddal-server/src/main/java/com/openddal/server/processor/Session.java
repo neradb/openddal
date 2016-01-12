@@ -13,24 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.processor.impl;
+package com.openddal.server.processor;
 
-import com.openddal.server.processor.ProtocolProcessException;
-import com.openddal.server.processor.ProtocolProcessor;
-import com.openddal.server.processor.Request;
-import com.openddal.server.processor.Response;
+public interface Session {
 
-/**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
- */
-public class HandshakeProcessor implements ProtocolProcessor {
+    <T> T setAttachment(String key, T value);
 
+    <T> T getAttachment(String key);
 
-    @Override
-    public void process(Request request, Response response) throws ProtocolProcessException {
-        
+    long getSessionID();
+
+    String getUser();
+
+    void setUser(String user);
+
+    State getState();
+
+    void setState(State state);
+
+    enum State {
+        CONNECTIONING,
+        CONNECTIONED
     }
 
-    
 }

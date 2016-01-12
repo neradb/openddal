@@ -15,12 +15,8 @@
  */
 package com.openddal.server;
 
-import org.apache.thrift.transport.TTransportException;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.AttributeKey;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -38,24 +34,19 @@ public class ProtocolTransport {
         out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
     }
 
-    public int read(byte[] bytes, int offset, int length) throws TTransportException {
-        int _read = Math.min(in.readableBytes(), length);
-        in.readBytes(bytes, offset, _read);
-        return _read;
+    public byte[] getBuffer() {
+        return this.in.array();
     }
 
-    public void write(byte[] bytes, int offset, int length) throws TTransportException {
-        out.writeBytes(bytes, offset, length);
+    public int getBufferPosition() {
+        return 0;
     }
 
-    /**
-     * Writes the buffer to the output
-     *
-     * @param buf The output data buffer
-     * @throws TTransportException if an error occurs writing data
-     */
-    public void write(byte[] buf) throws TTransportException {
-        write(buf, 0, buf.length);
+    public int getBytesRemainingInBuffer() {
+        return 0;
+    }
+
+    public void consumeBuffer(int len) {
     }
 
 

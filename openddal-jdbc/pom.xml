@@ -34,12 +34,10 @@
 
     <build>
         <plugins>
+
             <plugin>
-                <!-- Working with multi-module projects -->
-                <inherited>false</inherited>
                 <groupId>com.mycila.maven-license-plugin</groupId>
                 <artifactId>maven-license-plugin</artifactId>
-                <version>1.10.b1</version>
                 <configuration>
                     <header>${basedir}/../license.txt</header>
                     <failIfMissing>true</failIfMissing>
@@ -68,5 +66,6 @@
                 </executions>
             </plugin>
         </plugins>
+
     </build>
 </project>

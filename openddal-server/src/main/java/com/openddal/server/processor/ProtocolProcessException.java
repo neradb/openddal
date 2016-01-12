@@ -20,18 +20,18 @@ package com.openddal.server.processor;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class ProcessException extends Exception {
+public class ProtocolProcessException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
     protected int errorCode;
     protected String errorMessage;
 
-    public ProcessException(int errorCode, String message) {
+    public ProtocolProcessException(int errorCode, String message) {
         super(message);
     }
 
-    public ProcessException(int errorCode, String message, Throwable cause) {
+    public ProtocolProcessException(int errorCode, String message, Throwable cause) {
         super(cause);
     }
 
