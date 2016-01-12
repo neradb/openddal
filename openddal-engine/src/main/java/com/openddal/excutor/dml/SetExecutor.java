@@ -103,6 +103,26 @@ public class SetExecutor extends CommonPreparedExecutor<Set> {
                 session.setThrottle(getIntValue());
                 break;
             }
+            case SetTypes.QUERY_STATISTICS: {
+                session.getUser().checkAdmin();
+                int value = getIntValue();
+                if (value < 0 || value > 1) {
+                    throw DbException.getInvalidValueException("QUERY_STATISTICS",
+                            getIntValue());
+                }
+                database.setQueryStatistics(value == 1);
+                break;
+            }
+            case SetTypes.QUERY_STATISTICS_MAX_ENTRIES: {
+                session.getUser().checkAdmin();
+                int value = getIntValue();
+                if (value < 1) {
+                    throw DbException.getInvalidValueException("QUERY_STATISTICS_MAX_ENTRIES",
+                            getIntValue());
+                }
+                database.setQueryStatisticsMaxEntries(value);
+                break;
+            }
             case SetTypes.CACHE_SIZE:
             case SetTypes.CLUSTER:
             case SetTypes.COLLATION:
@@ -128,7 +148,6 @@ public class SetExecutor extends CommonPreparedExecutor<Set> {
             case SetTypes.OPTIMIZE_REUSE_RESULTS:
             case SetTypes.REDO_LOG_BINARY:
             case SetTypes.REFERENTIAL_INTEGRITY:
-            case SetTypes.QUERY_STATISTICS:
             case SetTypes.SCHEMA_SEARCH_PATH:
             case SetTypes.TRACE_MAX_FILE_SIZE:
             case SetTypes.UNDO_LOG:

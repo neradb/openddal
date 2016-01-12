@@ -48,6 +48,11 @@ import java.util.HashSet;
 public abstract class Table extends SchemaObjectBase {
 
     /**
+     * The table type name for system tables.
+     */
+    public static final String SYSTEM_TABLE = "SYSTEM TABLE";
+    
+    /**
      * The table type name for regular data tables.
      */
     public static final String TABLE = "TABLE";

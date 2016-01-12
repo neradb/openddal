@@ -15,20 +15,29 @@
  */
 package com.openddal.server;
 
-import com.openddal.server.processor.*;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import java.util.concurrent.Executor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executor;
+import com.openddal.server.processor.ProcessException;
+import com.openddal.server.processor.ProcessorFactory;
+import com.openddal.server.processor.Request;
+import com.openddal.server.processor.RequestFactory;
+import com.openddal.server.processor.Response;
+import com.openddal.server.processor.ResponseFactory;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
  * 
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
+@Sharable
 public class ProtocolHandler extends ChannelInboundHandlerAdapter {
     private static Logger logger = LoggerFactory.getLogger(ProtocolHandler.class);
 

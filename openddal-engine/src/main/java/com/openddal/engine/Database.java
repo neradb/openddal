@@ -15,14 +15,27 @@
  */
 package com.openddal.engine;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.openddal.command.dml.SetTypes;
 import com.openddal.config.Configuration;
 import com.openddal.config.SchemaConfig;
 import com.openddal.config.TableConfig;
-import com.openddal.dbobject.*;
+import com.openddal.dbobject.Comment;
+import com.openddal.dbobject.DbObject;
+import com.openddal.dbobject.Right;
+import com.openddal.dbobject.Role;
+import com.openddal.dbobject.Setting;
+import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.SchemaObject;
+import com.openddal.dbobject.table.MetaTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutorFactory;
@@ -41,8 +54,6 @@ import com.openddal.util.StringUtils;
 import com.openddal.value.CaseInsensitiveMap;
 import com.openddal.value.CompareMode;
 import com.openddal.value.Value;
-
-import java.util.*;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -74,6 +85,9 @@ public class Database {
     private Mode mode = Mode.getInstance(Mode.REGULAR);
     private int maxMemoryRows = SysProperties.MAX_MEMORY_ROWS;
     private int maxOperationMemory = Constants.DEFAULT_MAX_OPERATION_MEMORY;
+    private boolean queryStatistics;
+    private int queryStatisticsMaxEntries = Constants.QUERY_STATISTICS_MAX_ENTRIES;
+    private QueryStatisticsData queryStatisticsData;
     private SourceCompiler compiler;
     private RoutingHandler routingHandler;
     private PreparedExecutorFactory peFactory;
@@ -102,8 +116,10 @@ public class Database {
         systemUser.setPassword(SYSTEM_USER_NAME);
         users.put(SYSTEM_USER_NAME, systemUser);
 
-        Schema schema = new Schema(this, allocateObjectId(), Constants.SCHEMA_MAIN, systemUser, true);
-        schemas.put(schema.getName(), schema);
+        Schema mainSchema = new Schema(this, allocateObjectId(), Constants.SCHEMA_MAIN, systemUser, true);
+        Schema infoSchema = new Schema(this, -1, "INFORMATION_SCHEMA", systemUser, true);
+        schemas.put(mainSchema.getName(), mainSchema);
+        schemas.put(infoSchema.getName(), infoSchema);
 
         Role publicRole = new Role(this, 0, Constants.PUBLIC_ROLE_NAME, true);
         roles.put(Constants.PUBLIC_ROLE_NAME, publicRole);
@@ -115,7 +131,7 @@ public class Database {
             for (TableConfig tableConfig : ctList) {
                 String identifier = tableConfig.getName();
                 identifier = identifier(identifier);
-                TableMate tableMate = new TableMate(schema, allocateObjectId(), identifier);
+                TableMate tableMate = new TableMate(mainSchema, allocateObjectId(), identifier);
                 tableMate.setTableRouter(tableConfig.getTableRouter());
                 tableMate.setShards(tableConfig.getShards());
                 tableMate.setScanLevel(tableConfig.getScanLevel());
@@ -128,8 +144,15 @@ public class Database {
         } finally {
             sysSession.close();
         }
-
+        for (int type = 0, count = MetaTable.getMetaTableTypeCount();
+                type < count; type++) {
+            MetaTable m = new MetaTable(infoSchema, -1 - type, type);
+            infoSchema.add(m);
+        }
+    
     }
+    
+
 
     /**
      * Check if two values are equal with the current comparison mode.
@@ -431,6 +454,23 @@ public class Database {
         }
         return list;
     }
+    
+    /**
+     * Get the tables with the given name, if any.
+     *
+     * @param name the table name
+     * @return the list
+     */
+    public ArrayList<Table> getTableOrViewByName(String name) {
+        ArrayList<Table> list = New.arrayList();
+        for (Schema schema : schemas.values()) {
+            Table table = schema.getTableOrViewByName(name);
+            if (table != null) {
+                list.add(table);
+            }
+        }
+        return list;
+    }
 
     public ArrayList<Schema> getAllSchemas() {
         return New.arrayList(schemas.values());
@@ -661,6 +701,43 @@ public class Database {
 
     public DbSettings getSettings() {
         return dbSettings;
+    }
+    
+
+    public void setQueryStatistics(boolean b) {
+        queryStatistics = b;
+        synchronized (this) {
+            queryStatisticsData = null;
+        }
+    }
+
+    public boolean getQueryStatistics() {
+        return queryStatistics;
+    }
+
+    public void setQueryStatisticsMaxEntries(int n) {
+        queryStatisticsMaxEntries = n;
+        if (queryStatisticsData != null) {
+            synchronized (this) {
+                if (queryStatisticsData != null) {
+                    queryStatisticsData.setMaxQueryEntries(queryStatisticsMaxEntries);
+                }
+            }
+        }
+    }
+
+    public QueryStatisticsData getQueryStatisticsData() {
+        if (!queryStatistics) {
+            return null;
+        }
+        if (queryStatisticsData == null) {
+            synchronized (this) {
+                if (queryStatisticsData == null) {
+                    queryStatisticsData = new QueryStatisticsData(queryStatisticsMaxEntries);
+                }
+            }
+        }
+        return queryStatisticsData;
     }
 
     /**

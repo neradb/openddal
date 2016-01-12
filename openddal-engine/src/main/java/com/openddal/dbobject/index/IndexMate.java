@@ -123,7 +123,6 @@ public class IndexMate extends SchemaObjectBase implements Index {
                     }
                 }
                 cost = getIndexType().isShardingKey() ? rowCount / 1000 : rowCount / 200;
-                break;
             } else if ((mask & IndexCondition.RANGE) == IndexCondition.RANGE) {
                 cost = getIndexType().isShardingKey() ? rowCount / 100 : rowCount / 80;
                 break;

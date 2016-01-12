@@ -228,9 +228,12 @@ public class SetTypes {
      * The type of a SET QUERY_STATISTICS_ACTIVE statement.
      */
     public static final int QUERY_STATISTICS = 41;
-
-    public static final int TRACE_FILE_NAME = 42;
-
+    
+    /**
+     * The type of a SET QUERY_STATISTICS_MAX_ENTRIES statement.
+     */
+    public static final int QUERY_STATISTICS_MAX_ENTRIES = 42;
+    
     private static final ArrayList<String> TYPES = New.arrayList();
 
     static {
@@ -277,8 +280,8 @@ public class SetTypes {
         list.add(JAVA_OBJECT_SERIALIZER, "JAVA_OBJECT_SERIALIZER");
         list.add(RETENTION_TIME, "RETENTION_TIME");
         list.add(QUERY_STATISTICS, "QUERY_STATISTICS");
-
-        list.add(TRACE_FILE_NAME, "TRACE_FILE_NAME");
+        list.add(QUERY_STATISTICS_MAX_ENTRIES, "QUERY_STATISTICS_MAX_ENTRIES");
+        
 
     }
 

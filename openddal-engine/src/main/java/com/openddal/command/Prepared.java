@@ -339,6 +339,11 @@ public abstract class Prepared {
             String params = Trace.formatParams(parameters);
             session.getTrace().infoSQL(sqlStatement, params, rowCount, deltaTime);
         }
+        if (session.getDatabase().getQueryStatistics()) {
+            long deltaTime = System.currentTimeMillis() - startTime;
+            session.getDatabase().getQueryStatisticsData().
+                    update(toString(), deltaTime, rowCount);
+        }
     }
 
     /**
