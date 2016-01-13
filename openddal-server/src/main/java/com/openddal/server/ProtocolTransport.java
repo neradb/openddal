@@ -22,7 +22,7 @@ import io.netty.channel.Channel;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class ProtocolTransport {
-
+    
     public static final int DEFAULT_BUFFER_SIZE = 1024;
     public ByteBuf in;
     public ByteBuf out;
@@ -33,23 +33,7 @@ public class ProtocolTransport {
         this.in = in;
         out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
     }
-
-    public byte[] getBuffer() {
-        return this.in.array();
-    }
-
-    public int getBufferPosition() {
-        return 0;
-    }
-
-    public int getBytesRemainingInBuffer() {
-        return 0;
-    }
-
-    public void consumeBuffer(int len) {
-    }
-
-
+    
     public boolean isOpen() {
         return channel.isOpen();
     }

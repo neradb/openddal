@@ -45,9 +45,8 @@ public class RequestFactory {
 
     private static class RequestImp implements Request {
 
-        private static final AttributeKey<Session> SESSION_KEY =
-                AttributeKey.valueOf("_PROTOCOL_SESSION_KEY");
-        
+        private static final AttributeKey<Session> SESSION_KEY = AttributeKey.valueOf("_PROTOCOL_SESSION_KEY");
+
         private ProtocolTransport trans;
 
         private RequestImp(ProtocolTransport trans) {
@@ -85,9 +84,12 @@ public class RequestFactory {
 
     private static class SessionImp implements Session {
 
-        public final long sessionID;
-        private final ProtocolTransport trans;
+        private final long sessionID;
+        private String charset;
+        private String schema;
+        protected String user;
 
+        private final ProtocolTransport trans;
 
         private SessionImp(ProtocolTransport trans) {
             this.trans = trans;

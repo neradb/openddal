@@ -10,9 +10,9 @@
     </appender>
 
     <appender name="FLOWFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${osp-proxy.logfile}_flow.log</file>
+        <file>${server.logfile}_flow.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>${osp-proxy.logfile}_flow_%i.log
+            <fileNamePattern>${server.logfile}_flow_%i.log
             </fileNamePattern>
             <!-- keep 10G' worth of history -->
             <minIndex>1</minIndex>
@@ -22,7 +22,7 @@
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
             <maxFileSize>1GB</maxFileSize>
         </triggeringPolicy>
-        <encoder class="com.vip.osp.logutil.OspLogTimerLayoutEncoder">
+        <encoder>
             <!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
             <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n</pattern>
             <immediateFlush>false</immediateFlush>
@@ -40,9 +40,9 @@
     </appender>
 
     <appender name="ERRORFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${osp-proxy.logfile}_error.log</file>
+        <file>${server.logfile}_error.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>${osp-proxy.logfile}_error_%i.log
+            <fileNamePattern>${server.logfile}_error_%i.log
             </fileNamePattern>
             <!-- keep 1G' worth of history -->
             <minIndex>1</minIndex>
@@ -53,7 +53,7 @@
             <maxFileSize>100mb</maxFileSize>
         </triggeringPolicy>
 
-        <encoder class="com.vip.osp.logutil.OspLogTimerLayoutEncoder">
+        <encoder>
             <!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
             <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n</pattern>
             <immediateFlush>false</immediateFlush>
@@ -67,9 +67,9 @@
     </appender>
 
     <appender name="ACCESSFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${osp-proxy.logfile}_access.log</file>
+        <file>${server.logfile}_access.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
-            <fileNamePattern>${osp-proxy.logfile}_access_%i.log
+            <fileNamePattern>${server.logfile}_access_%i.log
             </fileNamePattern>
             <!-- keep 10G' worth of history -->
             <minIndex>1</minIndex>
@@ -80,7 +80,7 @@
             <maxFileSize>1GB</maxFileSize>
         </triggeringPolicy>
 
-        <encoder class="com.vip.osp.logutil.OspLogTimerLayoutEncoder">
+        <encoder>
             <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] - %m%n</pattern>
             <immediateFlush>false</immediateFlush>
             <charset>UTF-8</charset>
@@ -97,7 +97,7 @@
     </appender>
 
     <!-- enabled by default -->
-    <if condition='!property("osp.accesslog").equals("false")'>
+    <if condition='!property("server.accesslog").equals("false")'>
         <then>
             <logger name="SimpleFlie-Log" additivity="false" level="INFO">
                 <appender-ref ref="ACCESSFILE-ASYNC"/>

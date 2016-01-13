@@ -116,7 +116,7 @@ public class NettyServer {
         b.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(createProtocolDecoder(), createTProtocolEncoder(), protocolHandler);
+                ch.pipeline().addLast(createProtocolDecoder(), createProtocolEncoder(), protocolHandler);
             }
         });
 
@@ -127,7 +127,7 @@ public class NettyServer {
         return new ProtocolDecoder();
     }
 
-    private ChannelHandler createTProtocolEncoder() {
+    private ChannelHandler createProtocolEncoder() {
         return new ProtocolEncoder();
     }
 

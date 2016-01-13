@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.message.ErrorCode;
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.ProtocolProcessException;
 import com.openddal.server.processor.Request;
@@ -39,7 +40,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 @Sharable
 public class ProtocolHandler extends ChannelInboundHandlerAdapter {
-    private static Logger logger = LoggerFactory.getLogger(ProtocolHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(ProtocolHandler.class);
 
     private final ProcessorFactory processorFactory;
     private final Executor userExecutor;
@@ -73,14 +74,15 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
             Response response = ResponseFactory.getInstance().createResponse(transport);
             try {
                 processorFactory.getProcessor(transport).process(request, response);
-                ctx.writeAndFlush(transport.out);
             } catch (ProtocolProcessException e) {
                 logger.error("process exception happen when call processor", e);
-                // TODO: response thrift wrong exception,
-            } catch (Exception e) {
-                logger.error("User exception happen when call processor", e);
-                // TODO: response user wrong exception,
+                response.sendError(e.getErrorCode(), e.getErrorMessage());
+            } catch (Throwable e) {
+                ProtocolProcessException convert = ProtocolProcessException.convert(e);
+                logger.error("User exception happen when call processor", convert);
+                response.sendError(convert.getErrorCode(), convert.getErrorMessage());
             } finally {
+                ctx.writeAndFlush(transport.out);
                 transport.in.release();
             }
         }
