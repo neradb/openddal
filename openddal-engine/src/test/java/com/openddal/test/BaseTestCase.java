@@ -78,7 +78,21 @@ public abstract class BaseTestCase {
     }
 
     public BaseTestCase() {
-        this(BASE_TEST_CONFIGLOCATION);
+    }
+    
+    
+    public BaseTestCase(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+    
+    
+    
+
+    /**
+     * @param dataSource the dataSource to set
+     */
+    public void setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     /**

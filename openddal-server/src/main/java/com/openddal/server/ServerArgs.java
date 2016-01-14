@@ -20,16 +20,21 @@ public class ServerArgs {
 
 	public int port = -1;
 	public boolean ssl;
+	
+	public String protocol;
 
 	public int bossThreads = 2;
 	public int workerThreads = 0;
-	public int userThreads = Runtime.getRuntime().availableProcessors() * 2;
+	public int maxThreads = 1000;
+	public int keepAliveTime = 10000;
 
 	public int socketTimeoutMills = -1;
 	public int shutdownTimeoutMills = 10000;
 
 	public int sendBuff = -1;
 	public int recvBuff = -1;
+
+	public String configFile;
 
 
 	public ServerArgs port(int port) {
@@ -39,6 +44,11 @@ public class ServerArgs {
 	
 	public ServerArgs ssl(boolean ssl) {
         this.ssl = ssl;
+        return this;
+    }
+	
+	public ServerArgs protocol(String protocol) {
+        this.protocol = protocol;
         return this;
     }
 
@@ -52,10 +62,15 @@ public class ServerArgs {
 		return this;
 	}
 
-	public ServerArgs userThreads(int userThreads) {
-		this.userThreads = userThreads;
+	public ServerArgs maxThreads(int maxThreads) {
+		this.maxThreads = maxThreads;
 		return this;
 	}
+	
+	public ServerArgs keepAliveTime(int keepAliveTime) {
+        this.keepAliveTime = keepAliveTime;
+        return this;
+    }
 
 	public ServerArgs socketTimeoutMills(int socketTimeoutMills) {
 		this.socketTimeoutMills = socketTimeoutMills;
@@ -74,6 +89,11 @@ public class ServerArgs {
 
 	public ServerArgs recvBuff(int recvBuff) {
 		this.recvBuff = recvBuff;
+		return this;
+	}
+
+	public ServerArgs configFile(String configFile) {
+		this.configFile = configFile;
 		return this;
 	}
 

@@ -32,6 +32,6 @@ public interface Request {
 
     Session getSession();
 
-    ByteBuf getInputByteBuf();
+    ByteBuf getInputBuffer();
 
 }

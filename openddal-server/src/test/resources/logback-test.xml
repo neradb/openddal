@@ -9,8 +9,6 @@
         </layout>
     </appender>
 
-    <logger name="jdbc-shards" level="TRACE"/>
-
 
     <root level="debug">
         <appender-ref ref="STDOUT"/>

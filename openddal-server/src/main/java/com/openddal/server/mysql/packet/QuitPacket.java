@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.processor;
-
-import com.openddal.server.ProtocolTransport;
+package com.openddal.server.mysql.packet;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
+ * @author mycat
  */
-public interface ProcessorFactory {
+public class QuitPacket extends MySQLPacket {
+    public static final byte[] QUIT = new byte[] { 1, 0, 0, 0, 1 };
 
-    public ProtocolProcessor getProcessor(ProtocolTransport trans);
+    @Override
+    public int calcPacketSize() {
+        return 1;
+    }
+
+    @Override
+    protected String getPacketInfo() {
+        return "MySQL Quit Packet";
+    }
 
 }

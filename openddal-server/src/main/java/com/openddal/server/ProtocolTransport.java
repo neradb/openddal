@@ -17,6 +17,8 @@ package com.openddal.server;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -45,6 +47,15 @@ public class ProtocolTransport {
     
     public Channel getChannel() {
         return channel;
+    }
+
+    /**
+     * @param key
+     * @return
+     * @see io.netty.util.AttributeMap#attr(io.netty.util.AttributeKey)
+     */
+    public <T> Attribute<T> attr(AttributeKey<T> key) {
+        return channel.attr(key);
     }
 
 

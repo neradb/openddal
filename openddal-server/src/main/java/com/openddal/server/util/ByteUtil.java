@@ -15,7 +15,7 @@
  */
 package com.openddal.server.util;
 
-import com.openddal.server.packet.MySQLMessage;
+import com.openddal.server.mysql.packet.MySQLMessage;
 
 /**
  * @author mycat

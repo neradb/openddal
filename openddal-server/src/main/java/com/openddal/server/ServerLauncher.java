@@ -15,6 +15,8 @@
  */
 package com.openddal.server;
 
+import com.openddal.util.StringUtils;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
@@ -26,78 +28,64 @@ public class ServerLauncher {
         ServerArgs serverArgs = new ServerArgs();
         if (args != null) {
             for (int i = 0; i < args.length; i += 2) {
-                if ("-port".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-port miss value.");
-                    }
-                    if (args[i + 1].matches("(-1)|([0-9]*)")) {
-                        serverArgs.port(Integer.parseInt(args[i + 1]));
+                String key = args[i];
+                if (i + 1 >= args.length) {
+                    usage("the option " + key + " miss value.");
+                }
+                String value = args[i+1]; 
+
+                if ("-port".equals(key)) {
+                    if (value.matches("(-1)|([0-9]*)")) {
+                        serverArgs.port(Integer.parseInt(value));
                     } else {
-                        fail("-port should be positive integer");
+                        usage("-port should be positive integer");
                     }
-                } else if ("-ssl".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-ssl miss value.");
-                    }
-                    serverArgs.ssl(Boolean.valueOf(args[i + 1]));
-                } else if ("-socketTimeoutMills".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-socketTimeoutMills miss value.");
-                    }
-                    if (args[i + 1].matches("([0-9]*)")) {
-                        serverArgs.socketTimeoutMills(Integer.parseInt(args[i + 1]));
+                } else if ("-ssl".equals(key)) {
+                    serverArgs.ssl(Boolean.valueOf(value));
+                } else if ("-socketTimeoutMills".equals(key)) {
+                    if (value.matches("([0-9]*)")) {
+                        serverArgs.socketTimeoutMills(Integer.parseInt(value));
                     } else {
-                        fail("-socketTimeoutMills should be positive integer");
+                        usage("-socketTimeoutMills should be positive integer");
                     }
-                } else if ("-shutdownTimeoutMills".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-shutdownTimeoutMills miss value.");
-                    }
-                    if (args[i + 1].matches("([0-9]*)")) {
-                        serverArgs.shutdownTimeoutMills(Integer.parseInt(args[i + 1]));
+                } else if ("-shutdownTimeoutMills".equals(key)) { 
+                    if (value.matches("([0-9]*)")) {
+                        serverArgs.shutdownTimeoutMills(Integer.parseInt(value));
                     } else {
-                        fail("-shutdownTimeoutMills should be positive integer");
+                        usage("-shutdownTimeoutMills should be positive integer");
                     }
-                }else if ("-sendBuff".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-sendBuff miss value.");
-                    }
-                    if (args[i + 1].matches("([0-9]*)")) {
-                        serverArgs.sendBuff(Integer.parseInt(args[i + 1]));
+                }else if ("-sendBuff".equals(key)) { 
+                    if (value.matches("([0-9]*)")) {
+                        serverArgs.sendBuff(Integer.parseInt(value));
                     } else {
-                        fail("-sendBuff should be positive integer");
+                        usage("-sendBuff should be positive integer");
                     }
-                }else if ("-recvBuff".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-recvBuff miss value.");
-                    }
-                    if (args[i + 1].matches("([0-9]*)")) {
-                        serverArgs.shutdownTimeoutMills(Integer.parseInt(args[i + 1]));
+                }else if ("-recvBuff".equals(key)) { 
+                    if (value.matches("([0-9]*)")) {
+                        serverArgs.shutdownTimeoutMills(Integer.parseInt(value));
                     } else {
-                        fail("-recvBuff should be positive integer");
+                        usage("-recvBuff should be positive integer");
                     }
-                } else if ("-bossThreads".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-bossThreads miss value.");
-                    }
-                    if (args[i + 1].matches("([0-9]*)")) {
-                        serverArgs.bossThreads(Integer.parseInt(args[i + 1]));
+                } else if ("-bossThreads".equals(key)) { 
+                    if (value.matches("([0-9]*)")) {
+                        serverArgs.bossThreads(Integer.parseInt(value));
                     } else {
-                        fail("-bossThreads should be positive integer");
+                        usage("-bossThreads should be positive integer");
                     }
-                } else if ("-workerThreads".equals(args[i])) {
-                    if (i + 1 >= args.length) {
-                        fail("-workerThreads miss value.");
-                    }
-                    if (args[i + 1].matches("([0-9]*)")) {
-                        serverArgs.workerThreads(Integer.parseInt(args[i + 1]));
+                } else if ("-maxThreads".equals(key)) { 
+                    if (value.matches("([0-9]*)")) {
+                        serverArgs.maxThreads(Integer.parseInt(value));
                     } else {
-                        fail("-workerThreads should be positive integer");
+                        usage("-workerThreads should be positive integer");
                     }
-                } else if ("--help".equals(args[i])) {
-                    fail(null);
+                } else if ("-protocol".equals(key)) {
+                    serverArgs.protocol(value);
+                } else if ("-configFile".equals(key)) {
+                    serverArgs.configFile(value);
+                } else if ("--help".equals(key)) {
+                    usage(null);
                 } else {
-                    System.out.println("[warn][the parameter(" + args[i] + ") is not supported now.]");
+                    System.out.println("[warn][the parameter(" + key + ") is not supported now.]");
                 }
             }
         }
@@ -105,7 +93,7 @@ public class ServerLauncher {
     }
 
 
-    private static void fail(String message) {
+    private static void usage(String message) {
         System.out.println();
         if (message != null) {
             System.out.println("Error: " + message);
@@ -118,7 +106,7 @@ public class ServerLauncher {
         System.out.println("\t" + "-port: Integer, the port of server, default port is 6100.");
         System.out.println("\t" + "-ssl: True or false, if true, the server will use ssl protocol.");
         System.out.println("\t" + "-bossThreads: Integer, set the netty bossThreads size.");
-        System.out.println("\t" + "-workerThreads: Integer, set the netty workerThreads size.");
+        System.out.println("\t" + "-maxThreads: Integer, set the netty workerThreads size.");
         System.out.println("\t" + "-userThreads: Integer, set size of the user thread pool that handle client request.");
         System.out.println("\t" + "-socketTimeoutMills: Integer, set the socket timeout in milliseconds.");
         System.out.println("\t" + "-shutdownTimeoutMills: Integer, set thread pool shutdown socket timeout in milliseconds.");
@@ -130,14 +118,18 @@ public class ServerLauncher {
 
 
     
-    private static void launch(String[] args) {
+    public static void launch(String[] args) {
         try {
             ServerArgs serverArgs = parseArgs(args);
-            NettyServer server = new NettyServer(serverArgs);
+            NettyServer server;
+            if("postgresql".equalsIgnoreCase(serverArgs.protocol)) {
+                server = new MySQLProtocolServer(serverArgs);
+            } else {
+                server = new PgSQLProtocolServer(serverArgs);
+            }
             server.listen();
             server.waitForClose();
         } catch (Exception e) {
-            e.printStackTrace();
             System.exit(-1);
         }
     }

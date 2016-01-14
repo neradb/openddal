@@ -28,5 +28,5 @@ public interface Response {
 
     void sendError(int sc, String msg);
 
-    ByteBuf getOutputByteBuf();
+    ByteBuf getOutputBuffer();
 }

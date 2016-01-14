@@ -13,16 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.processor;
-
-import com.openddal.server.ProtocolTransport;
+package com.openddal.server.mysql.packet;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
+ * @author mycat暂时只发现在load data infile时用到
  */
-public interface ProcessorFactory {
+public class EmptyPacket extends MySQLPacket {
+    public static final byte[] EMPTY = new byte[] { 0, 0, 0,3 };
 
-    public ProtocolProcessor getProcessor(ProtocolTransport trans);
+    @Override
+    public int calcPacketSize() {
+        return 0;
+    }
+
+    @Override
+    protected String getPacketInfo() {
+        return "MySQL Empty Packet";
+    }
 
 }

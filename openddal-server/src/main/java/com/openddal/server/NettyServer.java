@@ -15,13 +15,18 @@
  */
 package com.openddal.server;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.server.processor.ProcessorFactory;
+import com.openddal.server.processor.RequestFactory;
+import com.openddal.server.processor.ResponseFactory;
 import com.openddal.util.Threads;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -36,7 +41,11 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
-public class NettyServer {
+public abstract class NettyServer {
+
+    public static final byte PROTOCOL_VERSION = 10;
+
+    public static final byte[] SERVER_VERSION = "openddal-server-1.0.0-SNAPSHOT".getBytes();
 
     private static Logger logger = LoggerFactory.getLogger(NettyServer.class);
 
@@ -48,7 +57,7 @@ public class NettyServer {
     private ServerArgs args;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
-    private ExecutorService userThreadPool;
+    private ThreadPoolExecutor userExecutor;
     private ChannelFuture f;
 
     public NettyServer(ServerArgs args) {
@@ -85,21 +94,27 @@ public class NettyServer {
         logger.info("Server is stopping");
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        Threads.shutdownGracefully(userThreadPool, args.shutdownTimeoutMills, args.shutdownTimeoutMills, TimeUnit.SECONDS);
+        int timeoutMills = args.shutdownTimeoutMills;
+        Threads.shutdownGracefully(userExecutor, timeoutMills, timeoutMills,
+                TimeUnit.SECONDS);
         logger.info("Server stoped");
     }
 
     private ServerBootstrap configServer() {
         bossGroup = new NioEventLoopGroup(args.bossThreads, new DefaultThreadFactory("NettyBossGroup", true));
-        workerGroup = new NioEventLoopGroup(args.workerThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
-        userThreadPool = Executors.newFixedThreadPool(args.userThreads, new DefaultThreadFactory("UserThreads", true));
-
-        final ProtocolHandler protocolHandler = new ProtocolHandler(userThreadPool);
+        workerGroup = new NioEventLoopGroup(args.maxThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
+        userExecutor = createUserThreadExecutor();
+        ProcessorFactory processorFactory = createProcessorFactory();
+        RequestFactory requestFactory = createRequestFactory();
+        ResponseFactory responseFactory = createResponseFactory();
+        final ProtocolHandler protocolHandler = new ProtocolHandler(processorFactory, requestFactory, responseFactory,
+                userExecutor);
 
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
                 .childOption(ChannelOption.SO_REUSEADDR, true).childOption(ChannelOption.SO_KEEPALIVE, true)
-                .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+                .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .childOption(ChannelOption.TCP_NODELAY, true);
 
         if (args.socketTimeoutMills > 0) {
             b.childOption(ChannelOption.SO_TIMEOUT, args.socketTimeoutMills);
@@ -123,13 +138,28 @@ public class NettyServer {
         return b;
     }
 
-    private ChannelHandler createProtocolDecoder() {
-        return new ProtocolDecoder();
+    public ThreadPoolExecutor createUserThreadExecutor() {
+        int corePoolSize = Runtime.getRuntime().availableProcessors();
+        int capacity = 200;
+        int maximumPoolSize = args.maxThreads;
+        int keepAliveTime = args.keepAliveTime;
+        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>(capacity);
+        ThreadPoolExecutor userExecutor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime,
+                TimeUnit.MILLISECONDS, workQueue, new DefaultThreadFactory("request-processor", true),
+                new AbortPolicy());
+        userExecutor.allowCoreThreadTimeOut(true);
+        return userExecutor;
     }
 
-    private ChannelHandler createProtocolEncoder() {
-        return new ProtocolEncoder();
-    }
+    protected abstract ChannelHandler createProtocolDecoder();
+
+    protected abstract ChannelHandler createProtocolEncoder();
+
+    protected abstract ProcessorFactory createProcessorFactory();
+
+    protected abstract RequestFactory createRequestFactory();
+
+    protected abstract ResponseFactory createResponseFactory();
 
     class ShutdownThread extends Thread {
         @Override

@@ -17,10 +17,12 @@ package com.openddal.server.util;
 
 import java.io.UnsupportedEncodingException;
 
-import com.openddal.server.packet.BinaryPacket;
-import com.openddal.server.packet.ErrorPacket;
-import com.openddal.server.packet.FieldPacket;
-import com.openddal.server.packet.ResultSetHeaderPacket;
+import com.openddal.server.mysql.Charsets;
+import com.openddal.server.mysql.ErrorCode;
+import com.openddal.server.mysql.packet.BinaryPacket;
+import com.openddal.server.mysql.packet.ErrorPacket;
+import com.openddal.server.mysql.packet.FieldPacket;
+import com.openddal.server.mysql.packet.ResultSetHeaderPacket;
 
 /**
  * @author mycat
@@ -48,7 +50,7 @@ public class PacketUtil {
 
     public static final FieldPacket getField(String name, String orgName, int type) {
         FieldPacket packet = new FieldPacket();
-        packet.charsetIndex = CharsetUtil.getIndex(CODE_PAGE_1252);
+        packet.charsetIndex = Charsets.getIndex(CODE_PAGE_1252);
         packet.name = encode(name, CODE_PAGE_1252);
         packet.orgName = encode(orgName, CODE_PAGE_1252);
         packet.type = (byte) type;
@@ -57,7 +59,7 @@ public class PacketUtil {
 
     public static final FieldPacket getField(String name, int type) {
         FieldPacket packet = new FieldPacket();
-        packet.charsetIndex = CharsetUtil.getIndex(CODE_PAGE_1252);
+        packet.charsetIndex = Charsets.getIndex(CODE_PAGE_1252);
         packet.name = encode(name, CODE_PAGE_1252);
         packet.type = (byte) type;
         return packet;

@@ -15,12 +15,11 @@
  */
 package com.openddal.server;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openddal.message.ErrorCode;
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.ProtocolProcessException;
 import com.openddal.server.processor.Request;
@@ -43,10 +42,15 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(ProtocolHandler.class);
 
     private final ProcessorFactory processorFactory;
-    private final Executor userExecutor;
+    private final RequestFactory requestFactory;
+    private final ResponseFactory responseFactory;
+    private final ThreadPoolExecutor userExecutor;
 
-    public ProtocolHandler(Executor executor) {
-        this.processorFactory = new ProcessorFactory();
+    public ProtocolHandler(ProcessorFactory processorFactory, RequestFactory requestFactory,
+            ResponseFactory responseFactory, ThreadPoolExecutor executor) {
+        this.processorFactory = processorFactory;
+        this.requestFactory = requestFactory;
+        this.responseFactory = responseFactory;
         this.userExecutor = executor;
     }
 
@@ -70,8 +74,8 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
 
         @Override
         public void run() {
-            Request request = RequestFactory.getInstance().createRequest(transport);
-            Response response = ResponseFactory.getInstance().createResponse(transport);
+            Request request = requestFactory.createRequest(transport);
+            Response response = responseFactory.createResponse(transport);
             try {
                 processorFactory.getProcessor(transport).process(request, response);
             } catch (ProtocolProcessException e) {

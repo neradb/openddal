@@ -15,76 +15,13 @@
  */
 package com.openddal.server.processor;
 
-import java.io.UnsupportedEncodingException;
-
 import com.openddal.server.ProtocolTransport;
-import com.openddal.server.packet.ErrorPacket;
+/**
+ * 
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ *
+ */
+public interface ResponseFactory {
 
-import io.netty.buffer.ByteBuf;
-
-public class ResponseFactory {
-    private static ResponseFactory instance = new ResponseFactory();
-
-    private ResponseFactory() {
-    }
-
-    public static ResponseFactory getInstance() {
-        return instance;
-    }
-
-    public Response createResponse(ProtocolTransport trans) {
-        return new ResponseImpl(trans);
-    }
-    
-    
-    private static class ResponseImpl implements Response {
-        
-        private String charset;
-        
-        private ProtocolTransport trans;
-
-        private ResponseImpl(ProtocolTransport trans) {
-            this.trans = trans;
-        }
-
-        
-        @Override
-        public void sendError(int sc) {
-            
-        }
-
-        /* (non-Javadoc)
-         * @see com.openddal.server.processor.Response#sendError(int, java.lang.String)
-         */
-        @Override
-        public void sendError(int errno, String msg) {
-            getOutputByteBuf().clear();
-            ErrorPacket err = new ErrorPacket();
-            err.packetId = 1;
-            err.errno = errno;
-            err.message = encodeString(msg, charset);
-            err.write(trans.out);            
-        }
-
-
-        @Override
-        public ByteBuf getOutputByteBuf() {
-            return trans.out;
-        }
-        
-        private final static byte[] encodeString(String src, String charset) {
-            if (src == null) {
-                return null;
-            }
-            if (charset == null) {
-                return src.getBytes();
-            }
-            try {
-                return src.getBytes(charset);
-            } catch (UnsupportedEncodingException e) {
-                return src.getBytes();
-            }
-        }
-        
-    }
+    public Response createResponse(ProtocolTransport trans);
 }

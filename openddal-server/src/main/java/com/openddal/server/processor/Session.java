@@ -15,25 +15,37 @@
  */
 package com.openddal.server.processor;
 
+import java.sql.Connection;
+
+/**
+ * 
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ *
+ */
 public interface Session {
 
-    <T> T setAttachment(String key, T value);
+    <T> void setAttachment(String key, T value);
 
     <T> T getAttachment(String key);
 
-    long getSessionID();
+    long getSessionId();
 
     String getUser();
 
     void setUser(String user);
 
+    String getSchema();
+
+    String getCharset();
+
     State getState();
 
     void setState(State state);
 
+    Connection getEngineConnection();
+
     enum State {
-        CONNECTIONING,
-        CONNECTIONED
+        CONNECTIONING, CONNECTIONED
     }
 
 }

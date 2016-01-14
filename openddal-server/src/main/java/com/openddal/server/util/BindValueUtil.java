@@ -17,7 +17,7 @@ package com.openddal.server.util;
 
 import java.io.UnsupportedEncodingException;
 
-import com.openddal.server.packet.MySQLMessage;
+import com.openddal.server.mysql.packet.MySQLMessage;
 
 /**
  * @author mycat

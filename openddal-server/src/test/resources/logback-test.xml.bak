@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n</pattern>
+            <immediateFlush>true</immediateFlush>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="FLOWFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${server.logfile}_flow.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${server.logfile}_flow_%i.log
+            </fileNamePattern>
+            <!-- keep 10G' worth of history -->
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <append>true</append>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>1GB</maxFileSize>
+        </triggeringPolicy>
+        <encoder>
+            <!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n</pattern>
+            <immediateFlush>false</immediateFlush>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="FLOWFILE-ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>1024</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="FLOWFILE"/>
+    </appender>
+
+    <appender name="ERRORFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${server.logfile}_error.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${server.logfile}_error_%i.log
+            </fileNamePattern>
+            <!-- keep 1G' worth of history -->
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <append>true</append>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>100mb</maxFileSize>
+        </triggeringPolicy>
+
+        <encoder>
+            <!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n</pattern>
+            <immediateFlush>false</immediateFlush>
+            <charset>UTF-8</charset>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="ACCESSFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${server.logfile}_access.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+            <fileNamePattern>${server.logfile}_access_%i.log
+            </fileNamePattern>
+            <!-- keep 10G' worth of history -->
+            <minIndex>1</minIndex>
+            <maxIndex>10</maxIndex>
+        </rollingPolicy>
+        <append>true</append>
+        <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+            <maxFileSize>1GB</maxFileSize>
+        </triggeringPolicy>
+
+        <encoder>
+            <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] - %m%n</pattern>
+            <immediateFlush>false</immediateFlush>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <appender name="ACCESSFILE-ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <!-- 不丢失日志.默认的,如果队列的80%已满,则会丢弃TRACT、DEBUG、INFO级别的日志 -->
+        <discardingThreshold>0</discardingThreshold>
+        <!-- 更改默认的队列的深度,该值会影响性能.默认值为256 -->
+        <queueSize>1024</queueSize>
+        <!-- 添加附加的appender,最多只能添加一个 -->
+        <appender-ref ref="ACCESSFILE"/>
+    </appender>
+
+    <!-- enabled by default -->
+    <if condition='!property("server.accesslog").equals("false")'>
+        <then>
+            <logger name="AccessLogger" additivity="false" level="INFO">
+                <appender-ref ref="ACCESSFILE-ASYNC"/>
+                <!-- disabled by default -->
+                <!-- <if condition='property("osp.flowlog").equals("true")'> <then> <appender-ref ref="FLOWFILE-ASYNC" /> </then> </if> -->
+            </logger>
+        </then>
+        <else>
+            <logger name="AccessLogger" level="OFF"/>
+        </else>
+    </if>
+
+    <!-- disabled info level log by default -->
+    <if condition='property("ddal.flowlog").equals("true")'>
+        <then>
+            <root level="INFO">
+                <appender-ref ref="FLOWFILE-ASYNC"/>
+                <appender-ref ref="ERRORFILE"/>
+                <if condition='property("ddal.stdout").equals("true")'>
+                    <then>
+                        <appender-ref ref="STDOUT"/>
+                    </then>
+                </if>
+            </root>
+        </then>
+        <else>
+            <root level="WARN">
+                <appender-ref ref="FLOWFILE-ASYNC"/>
+                <appender-ref ref="ERRORFILE"/>
+                <if condition='property("ddal.stdout").equals("true")'>
+                    <then>
+                        <appender-ref ref="STDOUT"/>
+                    </then>
+                </if>
+            </root>
+        </else>
+    </if>
+</configuration>
