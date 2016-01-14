@@ -16,8 +16,8 @@ public class NettyServerTestCase {
                 "-maxThreads","500",
                 "-sendBuff","1024",
                 "-recvBuff","1024",
-                "protocol","mysql",
-                "configFile","",
+                "-protocol","mysql",
+                "-configFile","",
                 
         };
         ServerLauncher.launch(args);

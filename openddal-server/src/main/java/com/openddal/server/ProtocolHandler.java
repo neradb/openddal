@@ -16,6 +16,7 @@
 package com.openddal.server;
 
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +27,11 @@ import com.openddal.server.processor.Request;
 import com.openddal.server.processor.RequestFactory;
 import com.openddal.server.processor.Response;
 import com.openddal.server.processor.ResponseFactory;
+import com.openddal.server.processor.Session;
+import com.openddal.server.processor.SessionImpl;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -45,6 +49,7 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
     private final RequestFactory requestFactory;
     private final ResponseFactory responseFactory;
     private final ThreadPoolExecutor userExecutor;
+    private final AtomicLong sessionIdGenerator = new AtomicLong(0);
 
     public ProtocolHandler(ProcessorFactory processorFactory, RequestFactory requestFactory,
             ResponseFactory responseFactory, ThreadPoolExecutor executor) {
@@ -54,14 +59,31 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
         this.userExecutor = executor;
     }
 
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        ByteBuf in = Unpooled.wrappedBuffer(new byte[0]);
+        ProtocolTransport transport = new ProtocolTransport(ctx.channel(), in);
+        SessionImpl session = new SessionImpl(sessionIdGenerator.incrementAndGet());
+        Session old = ctx.attr(SessionImpl.SESSION_KEY).get();
+        if(old != null) {
+            throw new IllegalStateException("session is already existing in channel");
+        }
+        ctx.attr(SessionImpl.SESSION_KEY).set(session);        
+        userExecutor.execute(new ProcessorTask(ctx, transport));
+        //ctx.read();
+    }
+
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ProtocolTransport transport = new ProtocolTransport(ctx.channel(), (ByteBuf) msg);
         userExecutor.execute(new ProcessorTask(ctx, transport));
     }
+    
 
     /**
-     * Execute the thrift processor and user code in user threads.
+     * Execute the processor in user threads.
      */
     class ProcessorTask implements Runnable {
         private ChannelHandlerContext ctx;
@@ -82,8 +104,8 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
                 logger.error("process exception happen when call processor", e);
                 response.sendError(e.getErrorCode(), e.getErrorMessage());
             } catch (Throwable e) {
+                logger.error("User exception happen when call processor", e);
                 ProtocolProcessException convert = ProtocolProcessException.convert(e);
-                logger.error("User exception happen when call processor", convert);
                 response.sendError(convert.getErrorCode(), convert.getErrorMessage());
             } finally {
                 ctx.writeAndFlush(transport.out);

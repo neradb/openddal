@@ -96,5 +96,12 @@ public class ServerArgs {
 		this.configFile = configFile;
 		return this;
 	}
+	
+	
+	public void validate() {
+        if (port < 0) {
+            throw new IllegalArgumentException("port " + port + " is wrong.");
+        }
+    }
 
 }

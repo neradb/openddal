@@ -15,8 +15,6 @@
  */
 package com.openddal.server;
 
-import com.openddal.util.StringUtils;
-
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
@@ -121,11 +119,14 @@ public class ServerLauncher {
     public static void launch(String[] args) {
         try {
             ServerArgs serverArgs = parseArgs(args);
+            if(serverArgs.port == -1) {
+                serverArgs.port = NettyServer.DEFAULT_LISTEN_PORT;
+            }
             NettyServer server;
             if("postgresql".equalsIgnoreCase(serverArgs.protocol)) {
-                server = new MySQLProtocolServer(serverArgs);
-            } else {
                 server = new PgSQLProtocolServer(serverArgs);
+            } else {
+                server = new MySQLProtocolServer(serverArgs);
             }
             server.listen();
             server.waitForClose();

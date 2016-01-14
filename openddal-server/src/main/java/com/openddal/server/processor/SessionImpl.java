@@ -1,8 +1,9 @@
 package com.openddal.server.processor;
 
 import java.sql.Connection;
+import java.util.Map;
 
-import com.openddal.server.ProtocolTransport;
+import com.openddal.util.New;
 
 import io.netty.util.AttributeKey;
 
@@ -10,17 +11,16 @@ public class SessionImpl implements Session {
 
     public static final AttributeKey<Session> SESSION_KEY = AttributeKey.valueOf("_PROTOCOL_SESSION_KEY");
 
-    private long sessionId;
-    private State state;
+    private final long sessionId;
+    private State state = State.NEW;
     private String user;
     private String charset;
     private String schema;
     private Connection engineConnection;
-    private ProtocolTransport trans;
+    private Map<String, Object> attachments = New.hashMap();
 
-    public SessionImpl(ProtocolTransport trans) {
-        super();
-        this.trans = trans;
+    public SessionImpl(long sessionId) {
+        this.sessionId = sessionId;
     }
     
 
@@ -32,24 +32,19 @@ public class SessionImpl implements Session {
     }
 
 
-    /**
-     * @param sessionId the sessionId to set
-     */
-    public void setSessionId(long sessionId) {
-        this.sessionId = sessionId;
-    }
-
-
+    @SuppressWarnings("unchecked")
     @Override
-    public <T> void setAttachment(String key, T value) {
-        AttributeKey<T> attrKey = AttributeKey.valueOf(key);
-        trans.getChannel().attr(attrKey).set(value);
+    public <T> T setAttachment(String key, T value) {
+        T old = (T)attachments.get(key);
+        attachments.put(key, value);
+        return old;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T getAttachment(String key) {
-        AttributeKey<T> attrKey = AttributeKey.valueOf(key);
-        return trans.getChannel().attr(attrKey).get();
+        T val = (T)attachments.get(key);
+        return val;
     }
 
     /**

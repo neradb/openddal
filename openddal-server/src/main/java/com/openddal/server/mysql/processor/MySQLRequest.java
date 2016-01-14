@@ -33,11 +33,6 @@ public class MySQLRequest implements Request {
     @Override
     public Session getSession() {
         Session session = trans.attr(SessionImpl.SESSION_KEY).get();
-        if (session == null) {
-            session = new SessionImpl(trans);
-            session.setState(Session.State.CONNECTIONING);
-        }
-        trans.attr(SessionImpl.SESSION_KEY).set(session);
         return session;
     }
 

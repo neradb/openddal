@@ -52,7 +52,7 @@ public abstract class NettyServer {
     /**
      * The default port to use for the server.
      */
-    public static final int DEFAULT_PORT = 6100;
+    public static final int DEFAULT_LISTEN_PORT = 6100;
 
     private ServerArgs args;
     private EventLoopGroup bossGroup;
@@ -69,11 +69,11 @@ public abstract class NettyServer {
      */
     public void listen() {
         logger.info("Server server is starting");
+        args.validate();
         ServerBootstrap b = configServer();
         try {
             // start server
-            int port = args.port > 0 ? args.port : DEFAULT_PORT;
-            f = b.bind(port).sync();
+            f = b.bind(args.port).sync();
             logger.info("Server started and listening on " + args.port);
             // register shutown hook
             Runtime.getRuntime().addShutdownHook(new ShutdownThread());
@@ -102,7 +102,7 @@ public abstract class NettyServer {
 
     private ServerBootstrap configServer() {
         bossGroup = new NioEventLoopGroup(args.bossThreads, new DefaultThreadFactory("NettyBossGroup", true));
-        workerGroup = new NioEventLoopGroup(args.maxThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
+        workerGroup = new NioEventLoopGroup(args.workerThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
         userExecutor = createUserThreadExecutor();
         ProcessorFactory processorFactory = createProcessorFactory();
         RequestFactory requestFactory = createRequestFactory();

@@ -37,6 +37,7 @@ public class ProtocolDecoder extends ByteToMessageDecoder {
             // The length field was not received yet - return.
             // This method will be invoked again when more packets are
             // received and appended to the buffer.
+            System.out.println("ProtocolDecoder decode return.");
             return;
         }
         // The length field is in the buffer.

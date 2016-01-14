@@ -24,7 +24,7 @@ import java.sql.Connection;
  */
 public interface Session {
 
-    <T> void setAttachment(String key, T value);
+    <T> T setAttachment(String key, T value);
 
     <T> T getAttachment(String key);
 
@@ -45,7 +45,7 @@ public interface Session {
     Connection getEngineConnection();
 
     enum State {
-        CONNECTIONING, CONNECTIONED
+        NEW, CONNECTIONING, CONNECTIONED
     }
 
 }
