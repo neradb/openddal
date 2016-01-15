@@ -13,6 +13,7 @@ public class SessionImpl implements Session {
 
     private final long sessionId;
     private State state = State.NEW;
+    private boolean authenticated;
     private String user;
     private String charset;
     private String schema;
@@ -116,6 +117,22 @@ public class SessionImpl implements Session {
      */
     public void setEngineConnection(Connection engineConnection) {
         this.engineConnection = engineConnection;
+    }
+
+
+    /**
+     * @return the authenticated
+     */
+    public boolean isAuthenticated() {
+        return authenticated;
+    }
+
+
+    /**
+     * @param authenticated the authenticated to set
+     */
+    public void setAuthenticated(boolean authenticated) {
+        this.authenticated = authenticated;
     } 
     
 }

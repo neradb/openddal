@@ -52,6 +52,10 @@ public class ProtocolProcessException extends Exception {
         }
         return null;
     }
+    
+    public ProtocolProcessException get(int errorCode, String message) {
+        return new ProtocolProcessException(errorCode, message);
+    }
 
     protected int errorCode;
     protected String errorMessage;
