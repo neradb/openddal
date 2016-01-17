@@ -15,25 +15,32 @@
  */
 package com.openddal.server;
 
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.Channel;
-import io.netty.util.Attribute;
-import io.netty.util.AttributeKey;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class ProtocolTransport {
     
-    public static final int DEFAULT_BUFFER_SIZE = 1024;
-    public ByteBuf in;
-    public ByteBuf out;
-    private Channel channel;
+    public static final int DEFAULT_BUFFER_SIZE = 16384;
+    public final ByteBuf in;
+    public final ByteBuf out;
+    private final InputStream input;
+    private final OutputStream output;
+    private final Channel channel;
 
     public ProtocolTransport(Channel channel, ByteBuf in) {
         this.channel = channel;
         this.in = in;
         out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
+        input = new ByteBufInputStream(in);
+        output = new ByteBufOutputStream(out);
     }
     
     public boolean isOpen() {
@@ -50,13 +57,17 @@ public class ProtocolTransport {
     }
 
     /**
-     * @param key
-     * @return
-     * @see io.netty.util.AttributeMap#attr(io.netty.util.AttributeKey)
+     * @return the input
      */
-    public <T> Attribute<T> attr(AttributeKey<T> key) {
-        return channel.attr(key);
+    public InputStream getInputStream() {
+        return input;
     }
 
+    /**
+     * @return the output
+     */
+    public OutputStream getOutputStream() {
+        return output;
+    }
 
 }

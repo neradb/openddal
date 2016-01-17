@@ -40,11 +40,13 @@ public class JdbcDriver implements java.sql.Driver {
     /**
      * INTERNAL
      */
-    public static synchronized JdbcDriver load() {
+    public static JdbcDriver load() {
         try {
             if (!registered) {
-                registered = true;
-                DriverManager.registerDriver(INSTANCE);
+                synchronized (INSTANCE) {
+                    registered = true;
+                    DriverManager.registerDriver(INSTANCE);
+                }
             }
         } catch (SQLException e) {
             DbException.traceThrowable(e);
@@ -55,11 +57,13 @@ public class JdbcDriver implements java.sql.Driver {
     /**
      * INTERNAL
      */
-    public static synchronized void unload() {
+    public static void unload() {
         try {
             if (registered) {
-                registered = false;
-                DriverManager.deregisterDriver(INSTANCE);
+                synchronized (INSTANCE) {
+                    registered = false;
+                    DriverManager.deregisterDriver(INSTANCE);
+                }
             }
         } catch (SQLException e) {
             DbException.traceThrowable(e);

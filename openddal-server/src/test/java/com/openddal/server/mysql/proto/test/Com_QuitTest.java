@@ -1,0 +1,20 @@
+package com.openddal.server.mysql.proto.test;
+
+import static org.junit.Assert.assertArrayEquals;
+
+import org.junit.Test;
+
+import com.openddal.server.mysql.proto.Com_Quit;
+import com.openddal.server.mysql.proto.Proto;
+
+public class Com_QuitTest {
+    @Test
+    public void test1() {
+        byte[] packet = Proto.packet_string_to_bytes(""
+            + "01 00 00 00 01"
+        );
+
+        Com_Quit pkt = Com_Quit.loadFromPacket(packet);
+        assertArrayEquals(packet, pkt.toPacket());
+    }
+}

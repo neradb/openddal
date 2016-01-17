@@ -15,11 +15,9 @@
  */
 package com.openddal.server.processor;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.sql.SQLException;
-
+import com.openddal.jdbc.JdbcSQLException;
 import com.openddal.message.DbException;
+import com.openddal.server.mysql.ErrorCode;
 
 /**
  * 
@@ -32,28 +30,22 @@ public class ProtocolProcessException extends Exception {
     
     
     public static ProtocolProcessException convert(Throwable e) {
-        
         if (e instanceof ProtocolProcessException) {
             return (ProtocolProcessException) e;
         } else if (e instanceof DbException) {
-            
-        } else if (e instanceof SQLException) {
-            
-        } else if (e instanceof InvocationTargetException) {
-
-        } else if (e instanceof IOException) {
-
+             DbException dbe = (DbException) e;
+            return new ProtocolProcessException(dbe.getErrorCode(),dbe.getMessage(),e);
+        } else if (e instanceof JdbcSQLException) {
+            JdbcSQLException sqle = (JdbcSQLException) e;
+            return new ProtocolProcessException(sqle.getErrorCode(),sqle.getMessage(),e);
         } else if (e instanceof OutOfMemoryError) {
-
-        } else if (e instanceof StackOverflowError || e instanceof LinkageError) {
-
-        } else if (e instanceof Error) {
-            throw (Error) e;
+            return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
+        } else {
+            return new ProtocolProcessException(ErrorCode.ERR_GENERAL_EXCEPION,"ERR_GENERAL_EXCEPION",e);
         }
-        return null;
     }
     
-    public ProtocolProcessException get(int errorCode, String message) {
+    public static ProtocolProcessException get(int errorCode, String message) {
         return new ProtocolProcessException(errorCode, message);
     }
 

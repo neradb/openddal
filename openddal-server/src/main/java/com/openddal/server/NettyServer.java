@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.server.processor.Authenticator;
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.RequestFactory;
 import com.openddal.server.processor.ResponseFactory;
@@ -45,7 +46,7 @@ public abstract class NettyServer {
 
     public static final byte PROTOCOL_VERSION = 10;
 
-    public static final byte[] SERVER_VERSION = "openddal-server-1.0.0-SNAPSHOT".getBytes();
+    public static final String SERVER_VERSION = "openddal-server-1.0.0-SNAPSHOT";
 
     private static Logger logger = LoggerFactory.getLogger(NettyServer.class);
 
@@ -68,17 +69,17 @@ public abstract class NettyServer {
      * Listen for incoming connections.
      */
     public void listen() {
-        logger.info("Server server is starting");
+        logger.info("{} server is starting",getServerName());
         args.validate();
         ServerBootstrap b = configServer();
         try {
             // start server
             f = b.bind(args.port).sync();
-            logger.info("Server started and listening on " + args.port);
+            logger.info("{} server started and listening on {}", getServerName(), args.port);
             // register shutown hook
             Runtime.getRuntime().addShutdownHook(new ShutdownThread());
         } catch (Exception e) {
-            logger.error("Exception happen when start server", e);
+            logger.error("Exception happen when start "+ getServerName() +" server", e);
             throw new RuntimeException(e);
         }
     }
@@ -95,8 +96,7 @@ public abstract class NettyServer {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         int timeoutMills = args.shutdownTimeoutMills;
-        Threads.shutdownGracefully(userExecutor, timeoutMills, timeoutMills,
-                TimeUnit.SECONDS);
+        Threads.shutdownGracefully(userExecutor, timeoutMills, timeoutMills, TimeUnit.SECONDS);
         logger.info("Server stoped");
     }
 
@@ -104,11 +104,12 @@ public abstract class NettyServer {
         bossGroup = new NioEventLoopGroup(args.bossThreads, new DefaultThreadFactory("NettyBossGroup", true));
         workerGroup = new NioEventLoopGroup(args.workerThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
         userExecutor = createUserThreadExecutor();
+        Authenticator authenticator = createAuthenticator();
         ProcessorFactory processorFactory = createProcessorFactory();
         RequestFactory requestFactory = createRequestFactory();
         ResponseFactory responseFactory = createResponseFactory();
-        final ProtocolHandler protocolHandler = new ProtocolHandler(processorFactory, requestFactory, responseFactory,
-                userExecutor);
+        final ProtocolHandler protocolHandler = new ProtocolHandler(authenticator, processorFactory, requestFactory,
+                responseFactory, userExecutor);
 
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
@@ -150,10 +151,14 @@ public abstract class NettyServer {
         userExecutor.allowCoreThreadTimeOut(true);
         return userExecutor;
     }
+    
+    protected abstract String getServerName();
 
     protected abstract ChannelHandler createProtocolDecoder();
 
     protected abstract ChannelHandler createProtocolEncoder();
+
+    protected abstract Authenticator createAuthenticator();
 
     protected abstract ProcessorFactory createProcessorFactory();
 

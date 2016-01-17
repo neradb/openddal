@@ -17,12 +17,16 @@ package com.openddal.server.processor;
 
 import java.sql.Connection;
 
+import io.netty.util.AttributeKey;
+
 /**
  * 
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
 public interface Session {
+    
+    AttributeKey<Session> CHANNEL_SESSION_KEY = AttributeKey.valueOf("_PROTOCOL_SESSION_KEY");
 
     <T> T setAttachment(String key, T value);
 
@@ -32,20 +36,10 @@ public interface Session {
 
     String getUser();
 
-    void setUser(String user);
-
     String getSchema();
 
     String getCharset();
 
-    State getState();
-
-    void setState(State state);
-
     Connection getEngineConnection();
-
-    enum State {
-        NEW, CONNECTIONING, CONNECTIONED
-    }
 
 }

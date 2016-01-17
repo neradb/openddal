@@ -16,11 +16,11 @@
 package com.openddal.server;
 
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.server.processor.Authenticator;
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.ProtocolProcessException;
 import com.openddal.server.processor.Request;
@@ -28,10 +28,9 @@ import com.openddal.server.processor.RequestFactory;
 import com.openddal.server.processor.Response;
 import com.openddal.server.processor.ResponseFactory;
 import com.openddal.server.processor.Session;
-import com.openddal.server.processor.SessionImpl;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -45,42 +44,42 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 public class ProtocolHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(ProtocolHandler.class);
 
+    private final Authenticator authenticator;
     private final ProcessorFactory processorFactory;
     private final RequestFactory requestFactory;
     private final ResponseFactory responseFactory;
     private final ThreadPoolExecutor userExecutor;
-    private final AtomicLong sessionIdGenerator = new AtomicLong(0);
 
-    public ProtocolHandler(ProcessorFactory processorFactory, RequestFactory requestFactory,
-            ResponseFactory responseFactory, ThreadPoolExecutor executor) {
+    public ProtocolHandler(Authenticator authenticator, 
+            ProcessorFactory processorFactory,
+            RequestFactory requestFactory, 
+            ResponseFactory responseFactory, 
+            ThreadPoolExecutor executor) {
+        this.authenticator = authenticator;
         this.processorFactory = processorFactory;
         this.requestFactory = requestFactory;
         this.responseFactory = responseFactory;
         this.userExecutor = executor;
     }
 
-
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ByteBuf in = Unpooled.wrappedBuffer(new byte[0]);
-        ProtocolTransport transport = new ProtocolTransport(ctx.channel(), in);
-        SessionImpl session = new SessionImpl(sessionIdGenerator.incrementAndGet());
-        Session old = ctx.attr(SessionImpl.SESSION_KEY).get();
-        if(old != null) {
-            throw new IllegalStateException("session is already existing in channel");
-        }
-        ctx.attr(SessionImpl.SESSION_KEY).set(session);        
-        userExecutor.execute(new ProcessorTask(ctx, transport));
-        //ctx.read();
+        authenticator.onConnected(ctx.channel());
     }
-
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        ProtocolTransport transport = new ProtocolTransport(ctx.channel(), (ByteBuf) msg);
-        userExecutor.execute(new ProcessorTask(ctx, transport));
+        ByteBuf buf = (ByteBuf) msg;
+        Channel channel = ctx.channel();
+        Session session = channel.attr(Session.CHANNEL_SESSION_KEY).get();
+        if(session == null) {
+            authenticator.authorize(channel, buf);
+        } else {
+            ProtocolTransport transport = new ProtocolTransport(channel, buf);
+            userExecutor.execute(new ProcessorTask(ctx, transport));
+        }
+        
     }
-    
 
     /**
      * Execute the processor in user threads.

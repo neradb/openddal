@@ -1,5 +1,6 @@
 package com.openddal.server;
 
+import com.openddal.server.processor.Authenticator;
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.RequestFactory;
 import com.openddal.server.processor.ResponseFactory;
@@ -33,6 +34,17 @@ public class PgSQLProtocolServer extends NettyServer {
 
     @Override
     protected ResponseFactory createResponseFactory() {
+        return null;
+    }
+
+    @Override
+    protected Authenticator createAuthenticator() {
+        return null;
+    }
+
+   
+    @Override
+    protected String getServerName() {
         return null;
     }
 }

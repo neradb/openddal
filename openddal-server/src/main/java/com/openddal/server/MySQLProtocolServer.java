@@ -1,8 +1,11 @@
 package com.openddal.server;
 
+import com.openddal.engine.Constants;
+import com.openddal.server.mysql.processor.MySQLAuthenticator;
 import com.openddal.server.mysql.processor.MySQLProcessorFactory;
 import com.openddal.server.mysql.processor.MySQLRequestFactory;
 import com.openddal.server.mysql.processor.MySQLResponseFactory;
+import com.openddal.server.processor.Authenticator;
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.RequestFactory;
 import com.openddal.server.processor.ResponseFactory;
@@ -14,6 +17,15 @@ import io.netty.channel.ChannelHandler;
  *
  */
 public class MySQLProtocolServer extends NettyServer {
+    
+
+    public static final String SERVER_NAME = "openddal-server-for-mysql";
+
+    public static final String DEFAULT_CHARSET = "utf8";
+    
+    public static final byte PROTOCOL_VERSION = 10;
+
+    public static final String SERVER_VERSION = SERVER_NAME + Constants.getFullVersion();
 
     public MySQLProtocolServer(ServerArgs args) {
         super(args);
@@ -42,5 +54,15 @@ public class MySQLProtocolServer extends NettyServer {
     @Override
     protected ResponseFactory createResponseFactory() {
         return new MySQLResponseFactory();
+    }
+
+    @Override
+    protected Authenticator createAuthenticator() {
+        return new MySQLAuthenticator();
+    }
+
+    @Override
+    protected String getServerName() {
+        return SERVER_NAME;
     }
 }

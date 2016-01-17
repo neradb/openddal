@@ -15,6 +15,8 @@
  */
 package com.openddal.server.processor;
 
+import java.io.OutputStream;
+
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -24,9 +26,10 @@ import io.netty.buffer.ByteBuf;
  */
 public interface Response {
 
-    void sendError(int sc);
-
     void sendError(int sc, String msg);
 
+    OutputStream getOutputStream();
+    
     ByteBuf getOutputBuffer();
+
 }

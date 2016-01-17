@@ -1,13 +1,14 @@
 package com.openddal.server.mysql.processor;
 
+import java.io.InputStream;
 import java.net.SocketAddress;
 
 import com.openddal.server.ProtocolTransport;
 import com.openddal.server.processor.Request;
 import com.openddal.server.processor.Session;
-import com.openddal.server.processor.SessionImpl;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 
 public class MySQLRequest implements Request {
 
@@ -32,12 +33,18 @@ public class MySQLRequest implements Request {
 
     @Override
     public Session getSession() {
-        Session session = trans.attr(SessionImpl.SESSION_KEY).get();
+        Channel channel = trans.getChannel();
+        Session session = channel.attr(Session.CHANNEL_SESSION_KEY).get();
         return session;
     }
 
     @Override
     public ByteBuf getInputBuffer() {
         return trans.in;
+    }
+
+    @Override
+    public InputStream getInputStream() {
+        return trans.getInputStream();
     }
 }

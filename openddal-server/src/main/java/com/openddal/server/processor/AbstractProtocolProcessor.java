@@ -16,7 +16,7 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
     private static ThreadLocal<Session> sessionHolder = new ThreadLocal<Session>();
 
     @Override
-    public final void process(Request request, Response response) throws ProtocolProcessException {
+    public final boolean process(Request request, Response response) throws ProtocolProcessException {
         long costTime, start = System.currentTimeMillis();
         ProtocolProcessException e = null;
         try {
@@ -35,6 +35,7 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
             responseHolder.remove();
             sessionHolder.remove();
         }
+        return e == null;
        
     }
 
@@ -46,7 +47,6 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
                     .append("remote: ").append(request.getRemoteAddress()).append(", ")
                     .append("local ").append(request.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")
-                    .append("sessionState:").append(session.getState()).append(", ")
                     .append("processor:").append(getClass().getName()).append(", ") 
                     .append("processTime:").append(processTime).append("")
                     .append("}");
@@ -63,7 +63,6 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
                     .append("remote: ").append(request.getRemoteAddress()).append(", ")
                     .append("local ").append(request.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")
-                    .append("sessionState:").append(session.getState()).append(", ")
                     .append("processor:").append(getClass().getName()).append(", ") 
                     .append("costTime:").append(costTime).append("ms, ")
                     .append("status:").append(e == null ? "success" : "failure, ");

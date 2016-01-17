@@ -1,7 +1,7 @@
 /*
  * Copyright 2014-2016 the original author or authors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the “License”);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -16,12 +16,13 @@
 package com.openddal.server.processor;
 
 import com.openddal.server.ProtocolTransport;
+
 /**
- * 
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface ResponseFactory {
+public interface ResponseFactory { 
+    
+    Response createResponse(ProtocolTransport transport);
 
-    public Response createResponse(ProtocolTransport trans);
 }
