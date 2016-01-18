@@ -20,6 +20,7 @@ import com.openddal.message.Trace;
 import com.openddal.value.Value;
 
 import java.io.Closeable;
+import java.sql.SQLException;
 
 /**
  * A local or remote session. A session represents a database connection.
@@ -88,5 +89,36 @@ public interface SessionInterface extends Closeable {
      * @param v the value
      */
     void addTemporaryLob(Value v);
+    
+    /**
+     * Check if this session is in auto-commit mode.
+     *
+     * @return true if the session is in auto-commit mode
+     */
+    boolean getAutoCommit();
+
+    /**
+     * Set the auto-commit mode. This call doesn't commit the current
+     * transaction.
+     *
+     * @param autoCommit the new value
+     */
+    void setAutoCommit(boolean autoCommit);
+    
+    /**
+     * Puts this connection in read-only mode as a hint to the driver to enable
+     * database optimizations. 
+     * This method cannot be called during a transaction.
+     * @param readOnly true enables read-only mode false disables it
+     */
+    void setReadOnly(boolean readOnly);
+
+    /**
+     * Retrieves whether this <code>Connection</code>
+     * object is in read-only mode.
+     * @return true if this session
+     *         is read-only; false otherwise 
+     */
+    boolean isReadOnly() throws SQLException;
 
 }

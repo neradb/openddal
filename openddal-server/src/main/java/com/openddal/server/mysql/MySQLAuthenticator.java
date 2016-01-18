@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.mysql.processor;
+package com.openddal.server.mysql;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.openddal.server.MySQLProtocolServer;
-import com.openddal.server.mysql.Charsets;
-import com.openddal.server.mysql.ErrorCode;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.mysql.proto.OK;
-import com.openddal.server.mysql.proto.ResultSet;
 import com.openddal.server.processor.Authenticator;
 
 import io.netty.buffer.ByteBuf;
@@ -45,23 +43,24 @@ public class MySQLAuthenticator implements Authenticator {
             handshake.protocolVersion = 0x0a;
             handshake.serverVersion = "";
             handshake.connectionId = connIdGenerator.incrementAndGet();
-            handshake.challenge1 = "";
-            handshake.capabilityFlags = Flags.CLIENT_SECURE_CONNECTION;
+            handshake.challenge1 = getRandomString(8);
+            handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
             handshake.characterSet = Charsets.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
-            handshake.statusFlags = 0;
-            handshake.challenge2 = "";
-            handshake.authPluginDataLength = 0;
-            handshake.authPluginName = "";
+            handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
+            handshake.challenge2 = getRandomString(12);
+            handshake.authPluginDataLength = 21;
+            handshake.authPluginName = "mysql_native_password";
             // Remove some flags from the reply
             handshake.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
-            handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
+            handshake.removeCapabilityFlag(Flags.CLIENT_IGNORE_SPACE);
+            handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
             handshake.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
+            handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
+            handshake.removeCapabilityFlag(Flags.CLIENT_TRANSACTIONS);
             handshake.removeCapabilityFlag(Flags.CLIENT_RESERVED);
-            // Set the default result set creation to the server's character set
-            ResultSet.characterSet = handshake.characterSet;
+            handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
+            // Set the default result set creation to the server's character set            
             channel.writeAndFlush(out);
-        } catch (Exception e) {
-            
         } finally {
             out.release();
         }
@@ -78,12 +77,7 @@ public class MySQLAuthenticator implements Authenticator {
             if (!authReply.hasCapabilityFlag(Flags.CLIENT_PROTOCOL_41)) {
                 writeErrMessage(channel, ErrorCode.ER_DBACCESS_DENIED_ERROR,"We do not support Protocols under 4.1");
                 return;
-            } 
-            authReply.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
-            authReply.removeCapabilityFlag(Flags.CLIENT_SSL);
-            authReply.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
-            
-            
+            }
             OK ok = new OK();
             ByteBuf out = channel.alloc().buffer();
             buf.writeBytes(ok.toPacket());
@@ -96,6 +90,14 @@ public class MySQLAuthenticator implements Authenticator {
         }    
     }
     
+    public static String getRandomString(int length) {   
+        char[] chars = new char[length];
+        Random random = new Random();   
+        for (int i = 0; i < length; i ++) {   
+            chars[i] = (char)random.nextInt(127);
+        }   
+        return String.valueOf(chars);
+    }  
 
     
     private static void writeErrMessage(Channel channel, int errno,

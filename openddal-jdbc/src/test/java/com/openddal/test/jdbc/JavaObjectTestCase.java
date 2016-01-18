@@ -15,14 +15,20 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.engine.SysProperties;
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.io.Serializable;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.Arrays;
 import java.util.UUID;
+
+import org.junit.Test;
+
+import com.openddal.engine.SysProperties;
+import com.openddal.test.BaseTestCase;
 
 public class JavaObjectTestCase extends BaseTestCase {
 

@@ -15,15 +15,26 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
 
 /**
  * Updatable result set tests.

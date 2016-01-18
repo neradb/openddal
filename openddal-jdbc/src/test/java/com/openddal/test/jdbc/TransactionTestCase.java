@@ -15,13 +15,14 @@
  */
 package com.openddal.test.jdbc;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import org.junit.Test;
+
 import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.ErrorCode;
 import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
-import java.sql.Connection;
-import java.sql.SQLException;
 
 /**
  * Transaction isolation level tests.

@@ -15,12 +15,13 @@
  */
 package com.openddal.test.sql.ddl;
 
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import org.junit.Test;
+
+import com.openddal.test.BaseTestCase;
 
 /**
  * Test DROP statement

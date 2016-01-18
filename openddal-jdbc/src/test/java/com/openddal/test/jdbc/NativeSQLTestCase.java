@@ -15,15 +15,16 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Random;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
 
 public class NativeSQLTestCase extends BaseTestCase {
 

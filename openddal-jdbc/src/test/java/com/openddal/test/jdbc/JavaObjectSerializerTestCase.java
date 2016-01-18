@@ -15,12 +15,17 @@
  */
 package com.openddal.test.jdbc;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.Types;
+
+import org.junit.Test;
+
 import com.openddal.test.BaseTestCase;
 import com.openddal.util.JavaObjectSerializer;
 import com.openddal.util.JdbcUtils;
-import org.junit.Test;
-
-import java.sql.*;
 
 /**
  * Tests {@link JavaObjectSerializer}.

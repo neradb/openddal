@@ -15,15 +15,21 @@
  */
 package com.openddal.test.jdbc;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Properties;
+
+import org.junit.Test;
+
 import com.openddal.engine.SysProperties;
 import com.openddal.message.ErrorCode;
 import com.openddal.test.BaseTestCase;
 import com.openddal.util.New;
-import org.junit.Test;
-
-import java.sql.*;
-import java.util.HashMap;
-import java.util.Properties;
 
 
 public class StatementTestCase extends BaseTestCase {

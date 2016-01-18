@@ -15,11 +15,17 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+
 import org.junit.Test;
 
-import java.sql.*;
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
 
 /**
  * Tests Statement.cancel

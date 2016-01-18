@@ -15,18 +15,25 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.result.SimpleResultSet;
-import com.openddal.test.BaseTestCase;
-import com.openddal.util.IOUtils;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Collections;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.result.SimpleResultSet;
+import com.openddal.test.BaseTestCase;
+import com.openddal.util.IOUtils;
 
 /**
  * Tests for the CallableStatement class.

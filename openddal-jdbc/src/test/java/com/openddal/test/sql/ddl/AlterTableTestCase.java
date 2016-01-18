@@ -15,11 +15,16 @@
  */
 package com.openddal.test.sql.ddl;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import org.junit.Test;
 
-import java.sql.*;
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
 
 /**
  * Test ALTER statements.

@@ -1,10 +1,10 @@
 package com.openddal.server;
 
 import com.openddal.engine.Constants;
-import com.openddal.server.mysql.processor.MySQLAuthenticator;
-import com.openddal.server.mysql.processor.MySQLProcessorFactory;
-import com.openddal.server.mysql.processor.MySQLRequestFactory;
-import com.openddal.server.mysql.processor.MySQLResponseFactory;
+import com.openddal.server.mysql.MySQLAuthenticator;
+import com.openddal.server.mysql.MySQLProcessorFactory;
+import com.openddal.server.mysql.MySQLRequestFactory;
+import com.openddal.server.mysql.MySQLResponseFactory;
 import com.openddal.server.processor.Authenticator;
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.RequestFactory;

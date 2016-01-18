@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.mysql.processor;
+package com.openddal.server.mysql;
 
 import java.sql.Connection;
 import java.util.Map;
 
-import com.openddal.server.mysql.Charsets;
 import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.processor.Session;

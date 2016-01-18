@@ -15,13 +15,14 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.junit.Test;
+
+import com.openddal.test.BaseTestCase;
 
 /**
  * Test for limit updates.

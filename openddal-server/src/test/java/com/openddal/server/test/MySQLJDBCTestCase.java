@@ -4,10 +4,7 @@ import java.sql.Connection;
 
 import org.apache.commons.dbcp.BasicDataSource;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 
 public class MySQLJDBCTestCase {
@@ -21,9 +18,9 @@ public class MySQLJDBCTestCase {
         datasource.setMaxActive(10000);
         datasource.setValidationQuery("select 1");
         datasource.setDriverClassName(MYSQL_DRIVER);
-        datasource.setUrl("jdbc:mysql://localhost:6100/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true");
-        datasource.setUsername("username");
-        datasource.setPassword("password");
+        datasource.setUrl("jdbc:mysql://10.199.249.251:3306/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true");
+        datasource.setUsername("root");
+        datasource.setPassword("admin");
     }
     
     @Test

@@ -15,18 +15,27 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import com.openddal.util.Task;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.UUID;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+import com.openddal.util.Task;
 
 /**
  * Tests for the PreparedStatement implementation.

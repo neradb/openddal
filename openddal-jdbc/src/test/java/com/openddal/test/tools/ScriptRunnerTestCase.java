@@ -18,15 +18,17 @@
 
 package com.openddal.test.tools;
 
-import com.openddal.test.BaseTestCase;
-import com.openddal.util.ScriptRunner;
-import com.openddal.util.Utils;
-import junit.framework.Assert;
-import org.junit.Test;
-
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.sql.Connection;
+
+import org.junit.Test;
+
+import com.openddal.test.BaseTestCase;
+import com.openddal.util.ScriptRunner;
+import com.openddal.util.Utils;
+
+import junit.framework.Assert;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>

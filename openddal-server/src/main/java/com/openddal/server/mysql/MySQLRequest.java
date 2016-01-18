@@ -1,4 +1,4 @@
-package com.openddal.server.mysql.processor;
+package com.openddal.server.mysql;
 
 import java.io.InputStream;
 import java.net.SocketAddress;

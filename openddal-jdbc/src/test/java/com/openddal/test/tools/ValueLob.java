@@ -18,13 +18,14 @@
 
 package com.openddal.test.tools;
 
-import com.openddal.util.IOUtils;
-import com.openddal.value.ValueLobDb;
-import org.junit.Test;
-
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+
+import org.junit.Test;
+
+import com.openddal.util.IOUtils;
+import com.openddal.value.ValueLobDb;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>

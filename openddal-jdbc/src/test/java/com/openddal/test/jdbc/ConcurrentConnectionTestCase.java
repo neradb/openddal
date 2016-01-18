@@ -15,14 +15,15 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.test.BaseTestCase;
-import com.openddal.util.Task;
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+
+import org.junit.Test;
+
+import com.openddal.test.BaseTestCase;
+import com.openddal.util.Task;
 
 /**
  * Test concurrent usage of the same connection.

@@ -15,15 +15,16 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
 
 /**
  * Tests a custom BigDecimal implementation, as well

@@ -16,10 +16,10 @@
 
 package com.openddal.test.utils;
 
-import com.openddal.message.DbException;
-
 import java.lang.reflect.Method;
 import java.sql.SQLException;
+
+import com.openddal.message.DbException;
 
 /**
  * Helper class to simplify negative testing. Usage:
