@@ -385,7 +385,7 @@ public class Constants {
     /**
      * The name of the default schema.
      */
-    public static final String SCHEMA_MAIN = "PUBLIC";
+    public static final String SCHEMA_MAIN = "SCHEMA_MAIN";
 
     /**
      * The default selectivity (used if the selectivity is not calculated).
