@@ -491,7 +491,6 @@ public class SysProperties {
      */
     public static final String JAVA_OBJECT_SERIALIZER =
             Utils.getProperty("h2.javaObjectSerializer", null);
-    private static final String H2_BASE_DIR = "h2.baseDir";
     /**
      * System property <code>h2.serializeJavaObject</code>
      * (default: true).<br />
@@ -529,21 +528,19 @@ public class SysProperties {
         // utility class
     }
 
+    private static final String ENGINE_CONFIG_LOCATION = "ddal.engineConfigLocation";
     /**
      * INTERNAL
      */
-    public static String getBaseDir() {
-        return Utils.getProperty(H2_BASE_DIR, null);
+    public static String getEngineConfigLocation() {
+        return Utils.getProperty(ENGINE_CONFIG_LOCATION, "ddal-config.xml");
     }
 
     /**
      * INTERNAL
      */
-    public static void setBaseDir(String dir) {
-        if (!dir.endsWith("/")) {
-            dir += "/";
-        }
-        System.setProperty(H2_BASE_DIR, dir);
+    public static void setEngineConfigLocation(String file) {
+        System.setProperty(ENGINE_CONFIG_LOCATION, file);
     }
 
     /**

@@ -15,20 +15,13 @@
  */
 package com.openddal.engine;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.sql.SQLException;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Properties;
 
 import com.openddal.config.Configuration;
 import com.openddal.config.parser.XmlConfigParser;
 import com.openddal.dbobject.User;
-import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
 import com.openddal.util.StringUtils;
 import com.openddal.util.Utils;
 
@@ -37,19 +30,43 @@ import com.openddal.util.Utils;
  */
 public class Engine implements SessionFactory {
 
-    private static final Engine INSTANCE = new Engine();
-    private static Database DATABASE;
+    private static Engine INSTANCE = null;
+    private static Database DATABASE = null;
 
     private Engine() {
-        Runtime.getRuntime().addShutdownHook(new Closer());
+        Runtime.getRuntime().addShutdownHook(new Shutdown());
     }
 
-    public static Engine getInstance() {
+    public synchronized static Engine getInstance() {
+        if (INSTANCE == null) {
+            String configLocation = SysProperties.getEngineConfigLocation();
+            INSTANCE = configuration(configLocation);
+        }
         return INSTANCE;
     }
 
-    private static String removeProperty(Properties info, String key) {
-        return (String) info.remove(key);
+    private static Engine configuration(String configLocation) {
+        if (StringUtils.isNullOrEmpty(configLocation)) {
+            throw new IllegalArgumentException("Engine configLocation file must not be null");
+        }
+        InputStream source = null;
+        try {
+            source = Utils.getResourceAsStream(configLocation);
+            if (source == null) {
+                throw new IllegalArgumentException(
+                        "Can't load engine configLocation " + configLocation + " from classpath.");
+            }
+            XmlConfigParser parser = new XmlConfigParser(source);
+            Configuration configuration = parser.parse();
+            DATABASE = new Database(configuration);
+            return new Engine();
+        } finally {
+            try {
+                source.close();
+            } catch (Exception e) {
+                //ignored
+            }
+        }
     }
 
     @Override
@@ -60,58 +77,20 @@ public class Engine implements SessionFactory {
         return INSTANCE.openSession(url, ci);
     }
 
-    private synchronized Session openSession(String url, Properties info) {
-        String userName = removeProperty(info, "user");
-        String password = removeProperty(info, "password");
+    private Session openSession(String url, Properties info) {
+        String userName = info.getProperty("user");
+        String password = info.getProperty("password");
         if (userName == null) {
             userName = Database.SYSTEM_USER_NAME;
         }
-        if (DATABASE == null) {
-            Properties urlProps = parseURL(url, info);
-            String configLocation = removeProperty(urlProps, "configLocation");
-            if (StringUtils.isNullOrEmpty(configLocation)) {
-                throw new IllegalArgumentException("config file must not be null");
-            }
-            String resource = removeProperty(urlProps, "resource");
-            InputStream source;
-            if ("classpath".equals(resource)) {
-                source = Utils.getResourceAsStream(configLocation);
-                if (source == null) {
-                    throw new IllegalArgumentException("Can't load " + configLocation + " from classpath.");
-                }
-            } else {
-                try {
-                    source = new BufferedInputStream(new FileInputStream(configLocation));
-                } catch (FileNotFoundException e) {
-                    throw new IllegalArgumentException("Can't load " + configLocation + " from filesystem.");
-                }
-            }
-            removeProperty(urlProps, "remote");
-            removeProperty(urlProps, "ssl");
-            XmlConfigParser parser = new XmlConfigParser(source);
-            Configuration configuration = parser.parse();
-            HashMap<String, Object> settings = configuration.getSettings();
-            Enumeration<?> enumeration = urlProps.propertyNames();
-            while (enumeration.hasMoreElements()) {
-                String key = (String) enumeration.nextElement();
-                String value = urlProps.getProperty(key);
-                Object old = settings.get(key);
-                if (old != null && !old.equals(value)) {
-                    throw DbException.get(ErrorCode.DUPLICATE_PROPERTY_1, key);
-                } else {
-                    settings.put(key, value);
-                }
-            }
-            DATABASE = new Database(configuration);
-            User user = DATABASE.findUser(userName);
-            if (user == null) {
-                // users is the last thing we add, so if no user is around,
-                // the database is new (or not initialized correctly)
-                user = new User(DATABASE, DATABASE.allocateObjectId(), userName);
-                user.setAdmin(true);
-                user.setPassword(password);
-                DATABASE.addDatabaseObject(user);
-            }
+        User user = DATABASE.findUser(userName);
+        if (user == null) {
+            // users is the last thing we add, so if no user is around,
+            // the database is new (or not initialized correctly)
+            user = new User(DATABASE, DATABASE.allocateObjectId(), userName);
+            user.setAdmin(true);
+            user.setPassword(password);
+            DATABASE.addDatabaseObject(user);
         }
         User userObject = DATABASE.getUser(userName);
         Session session = DATABASE.createSession(userObject);
@@ -119,79 +98,21 @@ public class Engine implements SessionFactory {
 
     }
 
-    public Properties parseURL(String url, Properties defaults) {
-        Properties urlProps = (defaults != null) ? new Properties(defaults) : new Properties();
-        int idx = url.indexOf(';');
-        if (idx >= 0) {
-            String settings = url.substring(idx + 1);
-            url = url.substring(0, idx);
-            String[] list = StringUtils.arraySplit(settings, ';', false);
-            for (String setting : list) {
-                if (setting.length() == 0) {
-                    continue;
-                }
-                int equal = setting.indexOf('=');
-                if (equal < 0) {
-                    throw getFormatException(settings);
-                }
-                String value = setting.substring(equal + 1);
-                String key = setting.substring(0, equal);
-                key = StringUtils.toUpperEnglish(key);
-                String old = defaults.getProperty(key);
-                if (old != null && !old.equals(value)) {
-                    throw DbException.get(ErrorCode.DUPLICATE_PROPERTY_1, key);
-                }
-                urlProps.setProperty(key, value);
-            }
-        }
-        url = url.substring(Constants.START_URL.length());
-        if (url.startsWith("tcp:")) {
-            urlProps.put("remote", true);
-            url = url.substring("tcp:".length());
-        } else if (url.startsWith("ssl:")) {
-            urlProps.put("remote", true);
-            urlProps.put("ssl", true);
-            url = url.substring("ssl:".length());
-        } else if (url.startsWith("file:")) {
-            urlProps.put("resource", "file");
-            url = url.substring("file:".length());
-        } else if (url.startsWith("classpath:")) {
-            urlProps.put("resource", "classpath");
-            url = url.substring("classpath:".length());
-        } else {
 
-        }
-        urlProps.put("configLocation", url);
-        return urlProps;
-    }
-
-    /**
-     * Generate an URL format exception.
-     *
-     * @return the exception
-     */
-    DbException getFormatException(String url) {
-        String format = Constants.URL_FORMAT;
-        return DbException.get(ErrorCode.URL_FORMAT_ERROR_2, format, url);
-    }
-
-    private static class Closer extends Thread {
-        private Closer() {
+    private static class Shutdown extends Thread {
+        private Shutdown() {
             super("database-engine-closer");
         }
-
         @Override
         public void run() {
-            synchronized (INSTANCE) {
+            synchronized (Engine.class) {
                 try {
                     DATABASE.close();
                 } catch (Exception e) {
 
                 }
             }
-
         }
-
     }
 
 }
