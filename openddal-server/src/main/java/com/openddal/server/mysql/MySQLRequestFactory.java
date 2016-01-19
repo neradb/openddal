@@ -1,8 +1,8 @@
 package com.openddal.server.mysql;
 
 import com.openddal.server.ProtocolTransport;
-import com.openddal.server.processor.Request;
-import com.openddal.server.processor.RequestFactory;
+import com.openddal.server.Request;
+import com.openddal.server.RequestFactory;
 
 public class MySQLRequestFactory implements RequestFactory {
 

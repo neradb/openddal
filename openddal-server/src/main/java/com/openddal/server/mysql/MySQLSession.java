@@ -18,9 +18,9 @@ package com.openddal.server.mysql;
 import java.sql.Connection;
 import java.util.Map;
 
+import com.openddal.server.Session;
 import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
-import com.openddal.server.processor.Session;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 
@@ -33,24 +33,10 @@ import io.netty.channel.Channel;
 public class MySQLSession implements Session {
 
     private Channel channel;
-    private final Handshake handshake;
-    private final HandshakeResponse handshakeResponse;
+    private Handshake handshake;
+    private HandshakeResponse handshakeResponse;
     private Connection engineConnection;
     private Map<String, Object> attachments = New.hashMap();
-
-
-    
-
-    /**
-     * @param channel
-     * @param handshake
-     * @param handshakeResponse
-     */
-    public MySQLSession(Handshake handshake, HandshakeResponse handshakeResponse) {
-        super();
-        this.handshake = handshake;
-        this.handshakeResponse = handshakeResponse;
-    }
 
     /**
      * @return the sessionId
@@ -86,7 +72,7 @@ public class MySQLSession implements Session {
      * @return the charset
      */
     public String getCharset() {
-        return Charsets.getCharset((int)handshake.characterSet);
+        return Charsets.getCharset((int)handshakeResponse.characterSet);
     }
 
     /**
@@ -113,6 +99,20 @@ public class MySQLSession implements Session {
     }
     
 
+    /**
+     * @param handshake the handshake to set
+     */
+    public void setHandshake(Handshake handshake) {
+        this.handshake = handshake;
+    }
+
+    /**
+     * @param handshakeResponse the handshakeResponse to set
+     */
+    public void setHandshakeResponse(HandshakeResponse handshakeResponse) {
+        this.handshakeResponse = handshakeResponse;
+    }
+
     public void bind(Channel channel) {
         this.channel = channel;
         Session old = channel.attr(Session.CHANNEL_SESSION_KEY).get();
@@ -126,6 +126,7 @@ public class MySQLSession implements Session {
         JdbcUtils.closeSilently(getEngineConnection());
         attachments.clear();
         if(channel != null && channel.isOpen()) {
+            channel.attr(Session.CHANNEL_SESSION_KEY).remove();
             channel.close();
         }
     }

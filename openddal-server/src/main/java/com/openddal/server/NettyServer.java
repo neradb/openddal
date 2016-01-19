@@ -24,10 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openddal.server.processor.Authenticator;
 import com.openddal.server.processor.ProcessorFactory;
-import com.openddal.server.processor.RequestFactory;
-import com.openddal.server.processor.ResponseFactory;
 import com.openddal.util.Threads;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -43,10 +40,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
 public abstract class NettyServer {
-
-    public static final byte PROTOCOL_VERSION = 10;
-
-    public static final String SERVER_VERSION = "openddal-server-1.0.0-SNAPSHOT";
 
     private static Logger logger = LoggerFactory.getLogger(NettyServer.class);
 
@@ -92,12 +85,13 @@ public abstract class NettyServer {
     }
 
     public void stop() {
-        logger.info("Server is stopping");
+        System.out.println("xxxxxxxxx");
+        logger.info("{} server is stopping",getServerName());
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         int timeoutMills = args.shutdownTimeoutMills;
         Threads.shutdownGracefully(userExecutor, timeoutMills, timeoutMills, TimeUnit.SECONDS);
-        logger.info("Server stoped");
+        logger.info("{} server stoped", getServerName());
     }
 
     private ServerBootstrap configServer() {
@@ -132,7 +126,7 @@ public abstract class NettyServer {
         b.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(createProtocolDecoder(), createProtocolEncoder(), protocolHandler);
+                ch.pipeline().addLast(createProtocolDecoder(), /*createProtocolEncoder(),*/ protocolHandler);
             }
         });
 

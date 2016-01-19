@@ -1,14 +1,14 @@
-package com.openddal.server;
+package com.openddal.server.mysql;
 
 import com.openddal.engine.Constants;
-import com.openddal.server.mysql.MySQLAuthenticator;
-import com.openddal.server.mysql.MySQLProcessorFactory;
-import com.openddal.server.mysql.MySQLRequestFactory;
-import com.openddal.server.mysql.MySQLResponseFactory;
-import com.openddal.server.processor.Authenticator;
+import com.openddal.server.Authenticator;
+import com.openddal.server.NettyServer;
+import com.openddal.server.RequestFactory;
+import com.openddal.server.ResponseFactory;
+import com.openddal.server.ServerArgs;
+import com.openddal.server.mysql.processor.MySQLProcessorFactory;
 import com.openddal.server.processor.ProcessorFactory;
-import com.openddal.server.processor.RequestFactory;
-import com.openddal.server.processor.ResponseFactory;
+
 import io.netty.channel.ChannelHandler;
 
 /**
@@ -33,12 +33,12 @@ public class MySQLProtocolServer extends NettyServer {
 
     @Override
     protected ChannelHandler createProtocolDecoder() {
-        return new ProtocolDecoder();
+        return new MySQLProtocolDecoder();
     }
 
     @Override
     protected ChannelHandler createProtocolEncoder() {
-        return new ProtocolEncoder();
+        return null;
     }
 
     @Override

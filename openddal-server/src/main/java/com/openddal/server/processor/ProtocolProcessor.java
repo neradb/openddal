@@ -15,6 +15,9 @@
  */
 package com.openddal.server.processor;
 
+import com.openddal.server.Request;
+import com.openddal.server.Response;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *

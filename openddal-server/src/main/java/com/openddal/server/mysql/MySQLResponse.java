@@ -3,8 +3,8 @@ package com.openddal.server.mysql;
 import java.io.OutputStream;
 
 import com.openddal.server.ProtocolTransport;
+import com.openddal.server.Response;
 import com.openddal.server.mysql.proto.ERR;
-import com.openddal.server.processor.Response;
 
 import io.netty.buffer.ByteBuf;
 

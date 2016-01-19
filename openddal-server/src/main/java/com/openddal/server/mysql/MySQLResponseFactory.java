@@ -1,8 +1,8 @@
 package com.openddal.server.mysql;
 
 import com.openddal.server.ProtocolTransport;
-import com.openddal.server.processor.Response;
-import com.openddal.server.processor.ResponseFactory;
+import com.openddal.server.Response;
+import com.openddal.server.ResponseFactory;
 
 /**
  * 

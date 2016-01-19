@@ -13,10 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.processor;
+package com.openddal.server;
 
-import java.io.InputStream;
-import java.net.SocketAddress;
+import java.io.OutputStream;
 
 import io.netty.buffer.ByteBuf;
 
@@ -25,16 +24,12 @@ import io.netty.buffer.ByteBuf;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface Request {
+public interface Response {
 
-    SocketAddress getRemoteAddress();
+    void sendError(int sc, String msg);
 
-    SocketAddress getLocalAddress();
-
-    Session getSession();
-
-    InputStream getInputStream();
-
-    ByteBuf getInputBuffer();
+    OutputStream getOutputStream();
+    
+    ByteBuf getOutputBuffer();
 
 }

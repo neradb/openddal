@@ -1,4 +1,4 @@
-package com.openddal.server.mysql;
+package com.openddal.server.mysql.processor;
 
 import com.openddal.server.ProtocolTransport;
 import com.openddal.server.mysql.proto.Flags;

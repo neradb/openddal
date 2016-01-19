@@ -1,7 +1,7 @@
 /*
  * Copyright 2014-2016 the original author or authors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
+ * Licensed under the Apache License, Version 2.0 (the “License”);
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server;
+package com.openddal.server.mysql;
+
+import java.util.List;
+
+import com.openddal.server.mysql.proto.Packet;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
-import java.util.List;
-
 /**
- * 
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class ProtocolDecoder extends ByteToMessageDecoder {
+public class MySQLProtocolDecoder extends ByteToMessageDecoder {
 
     private static final int FRAME_LENGTH_FIELD_LENGTH = 4;
 
@@ -37,7 +38,6 @@ public class ProtocolDecoder extends ByteToMessageDecoder {
             // The length field was not received yet - return.
             // This method will be invoked again when more packets are
             // received and appended to the buffer.
-            System.out.println("ProtocolDecoder decode return.");
             return;
         }
         // The length field is in the buffer.
@@ -46,10 +46,8 @@ public class ProtocolDecoder extends ByteToMessageDecoder {
         // We will reset the buffer position to the marked position if
         // there's not enough bytes in the buffer.
         in.markReaderIndex();
-
-        // Read the length field.
-        int frameLength = in.readInt();
-
+        
+        int frameLength = readLength(in);// in.readInt();
         // Make sure if there's enough bytes in the buffer.
         if (in.readableBytes() < frameLength) {
             // The whole bytes were not received yet - return.
@@ -61,8 +59,19 @@ public class ProtocolDecoder extends ByteToMessageDecoder {
             return;
         }
         // There's enough bytes in the buffer. Read it.
-        ByteBuf frame = in.readSlice(frameLength).retain();
-        // Successfully decoded a frame.  Add the decoded frame.
+        ByteBuf frame = in.resetReaderIndex().readSlice(frameLength).retain();
+        // Successfully decoded a frame. Add the decoded frame.
         out.add(frame);
+    }
+
+    /**
+     * @param in
+     * @return
+     */
+    private int readLength(ByteBuf in) {
+        byte[] lens = new byte[4];
+        in.readBytes(lens);
+        int size = Packet.getSize(lens);
+        return size;
     }
 }

@@ -1,9 +1,12 @@
-package com.openddal.server;
+package com.openddal.server.postgresql;
 
-import com.openddal.server.processor.Authenticator;
+import com.openddal.server.Authenticator;
+import com.openddal.server.NettyServer;
+import com.openddal.server.RequestFactory;
+import com.openddal.server.ResponseFactory;
+import com.openddal.server.ServerArgs;
 import com.openddal.server.processor.ProcessorFactory;
-import com.openddal.server.processor.RequestFactory;
-import com.openddal.server.processor.ResponseFactory;
+
 import io.netty.channel.ChannelHandler;
 
 public class PgSQLProtocolServer extends NettyServer {

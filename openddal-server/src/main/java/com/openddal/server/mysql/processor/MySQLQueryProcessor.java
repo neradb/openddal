@@ -3,10 +3,10 @@ package com.openddal.server.mysql.processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.server.Request;
+import com.openddal.server.Response;
 import com.openddal.server.processor.AbstractProtocolProcessor;
 import com.openddal.server.processor.ProtocolProcessException;
-import com.openddal.server.processor.Request;
-import com.openddal.server.processor.Response;
 
 /**
  * 

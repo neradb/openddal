@@ -15,6 +15,9 @@
  */
 package com.openddal.server;
 
+import com.openddal.server.mysql.MySQLProtocolServer;
+import com.openddal.server.postgresql.PgSQLProtocolServer;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *

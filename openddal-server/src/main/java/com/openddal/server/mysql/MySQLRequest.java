@@ -4,8 +4,8 @@ import java.io.InputStream;
 import java.net.SocketAddress;
 
 import com.openddal.server.ProtocolTransport;
-import com.openddal.server.processor.Request;
-import com.openddal.server.processor.Session;
+import com.openddal.server.Request;
+import com.openddal.server.Session;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;

@@ -15,99 +15,126 @@
  */
 package com.openddal.server.mysql;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.openddal.server.MySQLProtocolServer;
+import com.openddal.jdbc.JdbcDriver;
+import com.openddal.server.Authenticator;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.mysql.proto.OK;
-import com.openddal.server.processor.Authenticator;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
 public class MySQLAuthenticator implements Authenticator {
-    private static final AtomicLong connIdGenerator = new AtomicLong(0);
+    private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2,
+            0, 0, 0 };
+    private final AtomicLong connIdGenerator = new AtomicLong(0);
+    private final AttributeKey<MySQLSession> TMP_SESSION_KEY = AttributeKey.valueOf("_AUTHTMP_SESSION_KEY");
+
     @Override
     public void onConnected(Channel channel) {
         ByteBuf out = channel.alloc().buffer();
-        try {
-            Handshake handshake = new Handshake();
-            handshake.protocolVersion = 0x0a;
-            handshake.serverVersion = "";
-            handshake.connectionId = connIdGenerator.incrementAndGet();
-            handshake.challenge1 = getRandomString(8);
-            handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
-            handshake.characterSet = Charsets.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
-            handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
-            handshake.challenge2 = getRandomString(12);
-            handshake.authPluginDataLength = 21;
-            handshake.authPluginName = "mysql_native_password";
-            // Remove some flags from the reply
-            handshake.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
-            handshake.removeCapabilityFlag(Flags.CLIENT_IGNORE_SPACE);
-            handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
-            handshake.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
-            handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
-            handshake.removeCapabilityFlag(Flags.CLIENT_TRANSACTIONS);
-            handshake.removeCapabilityFlag(Flags.CLIENT_RESERVED);
-            handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
-            // Set the default result set creation to the server's character set            
-            channel.writeAndFlush(out);
-        } finally {
-            out.release();
-        }
-        
+        Handshake handshake = new Handshake();
+        handshake.protocolVersion = 0x0a;
+        handshake.serverVersion = MySQLProtocolServer.SERVER_VERSION;
+        handshake.connectionId = connIdGenerator.incrementAndGet();
+        handshake.challenge1 = getRandomString(8);
+        handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
+        handshake.characterSet = Charsets.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
+        handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
+        handshake.challenge2 = getRandomString(12);
+        handshake.authPluginDataLength = 21;
+        handshake.authPluginName = "mysql_native_password";
+        // Remove some flags from the reply
+        handshake.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
+        handshake.removeCapabilityFlag(Flags.CLIENT_IGNORE_SPACE);
+        //handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
+        handshake.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
+        handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
+        handshake.removeCapabilityFlag(Flags.CLIENT_TRANSACTIONS);
+        handshake.removeCapabilityFlag(Flags.CLIENT_RESERVED);
+        handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
+
+        MySQLSession temp = new MySQLSession();
+        temp.setHandshake(handshake);
+        channel.attr(TMP_SESSION_KEY).set(temp);
+        out.writeBytes(handshake.toPacket());
+        channel.writeAndFlush(out);
     }
 
     @Override
     public void authorize(Channel channel, ByteBuf buf) {
+        MySQLSession session = channel.attr(TMP_SESSION_KEY).getAndRemove();
         HandshakeResponse authReply = null;
         try {
             byte[] packet = new byte[buf.readableBytes()];
             buf.readBytes(packet);
             authReply = HandshakeResponse.loadFromPacket(packet);
-            if (!authReply.hasCapabilityFlag(Flags.CLIENT_PROTOCOL_41)) {
-                writeErrMessage(channel, ErrorCode.ER_DBACCESS_DENIED_ERROR,"We do not support Protocols under 4.1");
-                return;
-            }
-            OK ok = new OK();
-            ByteBuf out = channel.alloc().buffer();
-            buf.writeBytes(ok.toPacket());
-            channel.writeAndFlush(out);            
+            Connection connect = connectEngine(authReply);
+            session.setHandshakeResponse(authReply);
+            session.setEngineConnection(connect);
+            session.bind(channel);
+            success(channel);
         } catch (Exception e) {
-            writeErrMessage(channel, ErrorCode.ER_DBACCESS_DENIED_ERROR, "Access denied for user '" + authReply.username + "' to database '"
-                    + authReply.schema + "'");
+            error(channel, ErrorCode.ER_DBACCESS_DENIED_ERROR,
+                    "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'");
         } finally {
             buf.release();
-        }    
+        }
     }
-    
-    public static String getRandomString(int length) {   
-        char[] chars = new char[length];
-        Random random = new Random();   
-        for (int i = 0; i < length; i ++) {   
-            chars[i] = (char)random.nextInt(127);
-        }   
-        return String.valueOf(chars);
-    }  
 
-    
-    private static void writeErrMessage(Channel channel, int errno,
-            String msg) {
+    /**
+     * @param authReply
+     * @return
+     * @throws SQLException
+     */
+    private Connection connectEngine(HandshakeResponse authReply) throws SQLException {
+        Properties prop = new Properties();
+        prop.setProperty("user", authReply.username);
+        prop.setProperty("password", authReply.authResponse);
+        Connection connect = JdbcDriver.load().connect("jdbc:openddal", prop );
+        return connect;
+    }
+
+    public static String getRandomString(int length) {
+        char[] chars = new char[length];
+        Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            chars[i] = (char) random.nextInt(127);
+        }
+        return String.valueOf(chars);
+    }
+
+    /**
+     * @param channel
+     * @param buf
+     * @return
+     */
+    private void success(Channel channel) {
+        ByteBuf out = channel.alloc().buffer();
+        out.writeBytes(AUTH_OK);
+        channel.writeAndFlush(out);
+    }
+
+    private static void error(Channel channel, int errno, String msg) {
+        ByteBuf out = channel.alloc().buffer();
         ERR err = new ERR();
         err.errorCode = errno;
         err.errorMessage = msg;
-        ByteBuf buf = channel.alloc().buffer();
-        buf.writeBytes(err.toPacket());
-        channel.writeAndFlush(buf);
+        out.writeBytes(err.toPacket());
+        channel.writeAndFlush(out);
     }
 
 }
