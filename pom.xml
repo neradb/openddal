@@ -15,6 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jdk.version>1.6</jdk.version>
         <javadoc.skip>true</javadoc.skip>
+        <license.skip>true</license.skip>
 
         <spring.version>4.0.6.RELEASE</spring.version>
         <httpclient.version>4.3.2</httpclient.version>

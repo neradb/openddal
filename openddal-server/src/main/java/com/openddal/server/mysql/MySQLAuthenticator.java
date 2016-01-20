@@ -21,6 +21,10 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.openddal.engine.Constants;
 import com.openddal.jdbc.JdbcDriver;
 import com.openddal.server.Authenticator;
 import com.openddal.server.mysql.proto.ERR;
@@ -38,8 +42,10 @@ import io.netty.util.AttributeKey;
  *
  */
 public class MySQLAuthenticator implements Authenticator {
-    private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2,
-            0, 0, 0 };
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLAuthenticator.class);
+    private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0 };
+    
     private final AtomicLong connIdGenerator = new AtomicLong(0);
     private final AttributeKey<MySQLSession> TMP_SESSION_KEY = AttributeKey.valueOf("_AUTHTMP_SESSION_KEY");
 
@@ -47,7 +53,7 @@ public class MySQLAuthenticator implements Authenticator {
     public void onConnected(Channel channel) {
         ByteBuf out = channel.alloc().buffer();
         Handshake handshake = new Handshake();
-        handshake.protocolVersion = 0x0a;
+        handshake.protocolVersion = MySQLProtocolServer.PROTOCOL_VERSION;
         handshake.serverVersion = MySQLProtocolServer.SERVER_VERSION;
         handshake.connectionId = connIdGenerator.incrementAndGet();
         handshake.challenge1 = getRandomString(8);
@@ -60,13 +66,13 @@ public class MySQLAuthenticator implements Authenticator {
         // Remove some flags from the reply
         handshake.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
         handshake.removeCapabilityFlag(Flags.CLIENT_IGNORE_SPACE);
-        //handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
         handshake.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
         handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
         handshake.removeCapabilityFlag(Flags.CLIENT_TRANSACTIONS);
         handshake.removeCapabilityFlag(Flags.CLIENT_RESERVED);
-        handshake.removeCapabilityFlag(Flags.CLIENT_PROTOCOL_41);
+        handshake.removeCapabilityFlag(Flags.CLIENT_REMEMBER_OPTIONS);
 
+        // handshake = Handshake.loadFromPacket(packet);
         MySQLSession temp = new MySQLSession();
         temp.setHandshake(handshake);
         channel.attr(TMP_SESSION_KEY).set(temp);
@@ -88,8 +94,10 @@ public class MySQLAuthenticator implements Authenticator {
             session.bind(channel);
             success(channel);
         } catch (Exception e) {
-            error(channel, ErrorCode.ER_DBACCESS_DENIED_ERROR,
-                    "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'");
+            String msg = authReply == null ? e.getMessage()
+                    : "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
+            LOGGER.error("Authorize failed. " + msg, e);
+            error(channel, ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
         } finally {
             buf.release();
         }
@@ -104,7 +112,7 @@ public class MySQLAuthenticator implements Authenticator {
         Properties prop = new Properties();
         prop.setProperty("user", authReply.username);
         prop.setProperty("password", authReply.authResponse);
-        Connection connect = JdbcDriver.load().connect("jdbc:openddal", prop );
+        Connection connect = JdbcDriver.load().connect(Constants.START_URL, prop);
         return connect;
     }
 
@@ -124,6 +132,9 @@ public class MySQLAuthenticator implements Authenticator {
      */
     private void success(Channel channel) {
         ByteBuf out = channel.alloc().buffer();
+        OK ok = new OK();
+        ok.sequenceId = 2;
+        ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
         out.writeBytes(AUTH_OK);
         channel.writeAndFlush(out);
     }

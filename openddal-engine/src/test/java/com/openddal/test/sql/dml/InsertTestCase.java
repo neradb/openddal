@@ -55,7 +55,7 @@ public class InsertTestCase extends BaseTestCase {
                     statement.setObject(index++, object);
                 }
             }
-            int row = statement.executeUpdate();
+            statement.executeUpdate();
             conn.commit();
         } catch (SQLException e) {
             succee = false;

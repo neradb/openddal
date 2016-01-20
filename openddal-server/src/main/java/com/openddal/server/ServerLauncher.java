@@ -24,6 +24,7 @@ import com.openddal.server.postgresql.PgSQLProtocolServer;
  */
 public class ServerLauncher {
 
+    private static NettyServer runingServer;
 
     private static ServerArgs parseArgs(String[] args) {
         ServerArgs serverArgs = new ServerArgs();
@@ -131,11 +132,19 @@ public class ServerLauncher {
             } else {
                 server = new MySQLProtocolServer(serverArgs);
             }
+            server.init();
             server.listen();
+            runingServer = server;
             server.waitForClose();
         } catch (Exception e) {
             System.exit(-1);
+        } finally {
+            runingServer = null;
         }
+    }
+    
+    public static NettyServer getRuningServer() {
+        return runingServer;
     }
     
     

@@ -1,30 +1,50 @@
 package com.openddal.server.mysql.processor;
 
+import java.util.Map;
+
 import com.openddal.server.ProtocolTransport;
+import com.openddal.server.mysql.ErrorCode;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.processor.ProcessorFactory;
+import com.openddal.server.processor.ProtocolProcessException;
 import com.openddal.server.processor.ProtocolProcessor;
+import com.openddal.util.New;
 
 public class MySQLProcessorFactory implements ProcessorFactory {
+    
+    private final Map<Byte,ProtocolProcessor> processors = New.hashMap();
+    
+    
+    
+    
+    public MySQLProcessorFactory() {
+        processors.put(Flags.COM_INIT_DB, new MySQLInitDbProcessor());
+        processors.put(Flags.COM_QUERY, new MySQLQueryProcessor());
+        processors.put(Flags.COM_PING, new MySQLPingProcessor());
+        processors.put(Flags.COM_QUIT, new MySQLQuitProcessor());
+        processors.put(Flags.COM_PROCESS_KILL, new MySQLKillProcessor());
+        processors.put(Flags.COM_STMT_PREPARE, new MySQLPrepareProcessor());
+        processors.put(Flags.COM_STMT_EXECUTE, new MySQLExecuteProcessor());
+        processors.put(Flags.COM_STMT_CLOSE, new MySQLStmtCloseProcessor());
+    }
+
+
+
+
     @Override
-    public ProtocolProcessor getProcessor(ProtocolTransport trans) {
+    public ProtocolProcessor getProcessor(ProtocolTransport trans) throws ProtocolProcessException {
+        ProtocolProcessor result = null;
         byte type = trans.in.getByte(4);
         switch (type) {
         case Flags.COM_INIT_DB:
-            break;
         case Flags.COM_QUERY:
-            break;
         case Flags.COM_PING:
-            break;
         case Flags.COM_QUIT:
-            break;
         case Flags.COM_PROCESS_KILL:
-            break;
         case Flags.COM_STMT_PREPARE:
-            break;
         case Flags.COM_STMT_EXECUTE:
-            break;
         case Flags.COM_STMT_CLOSE:
+            result = processors.get(type);
             break;
 
         case Flags.COM_SLEEP:// deprecated
@@ -51,11 +71,14 @@ public class MySQLProcessorFactory implements ProcessorFactory {
         case Flags.COM_DAEMON: // deprecated
         case Flags.COM_BINLOG_DUMP_GTID:
         case Flags.COM_END:
+            throw new ProtocolProcessException(ErrorCode.ER_NOT_SUPPORTED_YET, "Command not supported yet");
         default:
-            // source.writeErrMessage(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown
-            // command");
+            throw new ProtocolProcessException(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
-        return null;
+        if(result == null) {
+            throw new ProtocolProcessException(ErrorCode.ER_UNKNOWN_STMT_HANDLER, "No processor for command");
+        }
+        return result;
 
     }
 

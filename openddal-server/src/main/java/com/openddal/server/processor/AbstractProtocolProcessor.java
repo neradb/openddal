@@ -47,7 +47,8 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
         if (accessLogger.isInfoEnabled()) {
             Request request = getRequest();
             Session session = getSession();
-            StringBuilder logMsg = new StringBuilder("request-start:{")
+            StringBuilder logMsg = new StringBuilder(256)
+                    .append("request-start:{")
                     .append("remote: ").append(request.getRemoteAddress()).append(", ")
                     .append("local ").append(request.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")
@@ -63,7 +64,8 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
         if (accessLogger.isInfoEnabled()) {
             Request request = getRequest();
             Session session = getSession();
-            StringBuilder logMsg = new StringBuilder("request-end:{")
+            StringBuilder logMsg = new StringBuilder(256)
+                    .append("request-end:{")
                     .append("remote: ").append(request.getRemoteAddress()).append(", ")
                     .append("local ").append(request.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")

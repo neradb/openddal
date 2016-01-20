@@ -60,7 +60,6 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
@@ -75,6 +74,8 @@
 					<failIfMissing>true</failIfMissing>
 					<aggregate>true</aggregate>
 					<strictCheck>true</strictCheck>
+					<skip>${license.skip}</skip>
+
 					<properties>
 						<!-- <year>2015</year> -->
 					</properties>

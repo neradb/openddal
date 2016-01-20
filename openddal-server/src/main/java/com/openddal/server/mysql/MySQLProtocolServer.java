@@ -25,7 +25,7 @@ public class MySQLProtocolServer extends NettyServer {
     
     public static final byte PROTOCOL_VERSION = 10;
 
-    public static final String SERVER_VERSION = SERVER_NAME + Constants.getFullVersion();
+    public static final String SERVER_VERSION = "5.6.27" + SERVER_NAME + "-" + Constants.getFullVersion();
 
     public MySQLProtocolServer(ServerArgs args) {
         super(args);

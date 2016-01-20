@@ -24,7 +24,10 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.engine.Engine;
+import com.openddal.engine.SysProperties;
 import com.openddal.server.processor.ProcessorFactory;
+import com.openddal.util.StringUtils;
 import com.openddal.util.Threads;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -41,7 +44,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 
 public abstract class NettyServer {
 
-    private static Logger logger = LoggerFactory.getLogger(NettyServer.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(NettyServer.class);
 
     /**
      * The default port to use for the server.
@@ -53,26 +56,56 @@ public abstract class NettyServer {
     private EventLoopGroup workerGroup;
     private ThreadPoolExecutor userExecutor;
     private ChannelFuture f;
+    private Engine ddalEngine;
 
     public NettyServer(ServerArgs args) {
         this.args = args;
+    }
+    
+    public Engine getDdalEngine() {
+        return ddalEngine;
+    }
+
+    /**
+     * Listen for incoming connections.
+     */
+    public void init() {
+
+        try {
+            if (!StringUtils.isNullOrEmpty(args.configFile)) {
+                SysProperties.setEngineConfigLocation(args.configFile);
+            }
+            LOGGER.info("{} server init ddal-engine from {}", getServerName(), 
+                    SysProperties.getEngineConfigLocation());
+            ddalEngine = Engine.getInstance();
+            LOGGER.info("{} server ddal-engine inited.", getServerName());
+        } catch (Exception e) {
+            LOGGER.error("Exception happen when init ddal-engine ", e);
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * Listen for incoming connections.
      */
     public void listen() {
-        logger.info("{} server is starting",getServerName());
+        LOGGER.info("{} server is starting", getServerName());
         args.validate();
         ServerBootstrap b = configServer();
         try {
             // start server
             f = b.bind(args.port).sync();
-            logger.info("{} server started and listening on {}", getServerName(), args.port);
+            LOGGER.info("{} server started and listening on {}", getServerName(), args.port);
             // register shutown hook
             Runtime.getRuntime().addShutdownHook(new ShutdownThread());
         } catch (Exception e) {
-            logger.error("Exception happen when start "+ getServerName() +" server", e);
+            LOGGER.error("Exception happen when start " + getServerName() + " server", e);
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
             throw new RuntimeException(e);
         }
     }
@@ -85,13 +118,12 @@ public abstract class NettyServer {
     }
 
     public void stop() {
-        System.out.println("xxxxxxxxx");
-        logger.info("{} server is stopping",getServerName());
+        LOGGER.info("{} server is stopping", getServerName());
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         int timeoutMills = args.shutdownTimeoutMills;
         Threads.shutdownGracefully(userExecutor, timeoutMills, timeoutMills, TimeUnit.SECONDS);
-        logger.info("{} server stoped", getServerName());
+        LOGGER.info("{} server stoped", getServerName());
     }
 
     private ServerBootstrap configServer() {
@@ -126,7 +158,8 @@ public abstract class NettyServer {
         b.childHandler(new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(createProtocolDecoder(), /*createProtocolEncoder(),*/ protocolHandler);
+                ch.pipeline().addLast(createProtocolDecoder(),
+                        /* createProtocolEncoder(), */ protocolHandler);
             }
         });
 
@@ -145,7 +178,7 @@ public abstract class NettyServer {
         userExecutor.allowCoreThreadTimeOut(true);
         return userExecutor;
     }
-    
+
     protected abstract String getServerName();
 
     protected abstract ChannelHandler createProtocolDecoder();

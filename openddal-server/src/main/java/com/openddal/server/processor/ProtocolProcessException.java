@@ -41,7 +41,7 @@ public class ProtocolProcessException extends Exception {
         } else if (e instanceof OutOfMemoryError) {
             return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
         } else {
-            return new ProtocolProcessException(ErrorCode.ERR_GENERAL_EXCEPION,"ERR_GENERAL_EXCEPION",e);
+            return new ProtocolProcessException(ErrorCode.ER_UNKNOWN_ERROR,"ERR_GENERAL_EXCEPION",e);
         }
     }
     

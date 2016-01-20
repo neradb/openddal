@@ -15,12 +15,14 @@
  */
 package com.openddal.test.sql.ddl;
 
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+
+import org.junit.Test;
+
+import com.openddal.engine.SysProperties;
+import com.openddal.test.BaseTestCase;
 
 /**
  * Created by jorgie.li on 2015/11/27.
@@ -36,7 +38,7 @@ public class CreateTableTestCase extends BaseTestCase {
     private Statement stmt;
 
     public CreateTableTestCase() {
-        super("test/sql/ddal-config.xml");
+        SysProperties.setEngineConfigLocation("test/sql/ddal-config.xml");
     }
 
     @Test

@@ -59,7 +59,7 @@ public class MySQLProtocolDecoder extends ByteToMessageDecoder {
             return;
         }
         // There's enough bytes in the buffer. Read it.
-        ByteBuf frame = in.resetReaderIndex().readSlice(frameLength).retain();
+        ByteBuf frame = in.resetReaderIndex().readSlice(frameLength + 4).retain();
         // Successfully decoded a frame. Add the decoded frame.
         out.add(frame);
     }

@@ -5,7 +5,7 @@ import com.openddal.server.Response;
 import com.openddal.server.processor.AbstractProtocolProcessor;
 import com.openddal.server.processor.ProtocolProcessException;
 
-public class MySQLQuitProcessor extends AbstractProtocolProcessor{
+public class MySQLPrepareProcessor extends AbstractProtocolProcessor {
 
     @Override
     protected void doProcess(Request request, Response response) throws ProtocolProcessException {

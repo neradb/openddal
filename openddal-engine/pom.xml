@@ -57,6 +57,7 @@
                     <failIfMissing>true</failIfMissing>
                     <aggregate>true</aggregate>
                     <strictCheck>true</strictCheck>
+                    <skip>${license.skip}</skip>
                     <properties>
                         <!-- <year>2015</year> -->
                     </properties>

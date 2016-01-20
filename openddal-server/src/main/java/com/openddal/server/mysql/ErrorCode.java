@@ -16,10 +16,6 @@
 package com.openddal.server.mysql;
 
 public interface ErrorCode {
-    
-    //
-    public static final int ERR_GENERAL_EXCEPION  = 3000;
-
 	// mysql error code
     public static final int ER_HASHCHK = 1000;
     public static final int ER_NISAMCHK = 1001;

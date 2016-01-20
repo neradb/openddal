@@ -20,9 +20,6 @@ import java.util.regex.Pattern;
 
 import com.openddal.server.util.ParseUtil;
 
-/**
- * @author mycat
- */
 public final class ServerParse {
 
 	public static final int OTHER = -1;
