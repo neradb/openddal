@@ -3,6 +3,7 @@
 *.iws
 target/
 /var
+/logs
 /*/var/
 pom.xml.versionsBackup
 test-output/

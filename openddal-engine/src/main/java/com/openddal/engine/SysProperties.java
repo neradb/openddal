@@ -533,7 +533,7 @@ public class SysProperties {
      * INTERNAL
      */
     public static String getEngineConfigLocation() {
-        return Utils.getProperty(ENGINE_CONFIG_LOCATION, "ddal-config.xml");
+        return Utils.getProperty(ENGINE_CONFIG_LOCATION, "ddal-engine.xml");
     }
 
     /**

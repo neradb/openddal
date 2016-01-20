@@ -336,7 +336,9 @@ public class Database {
     public synchronized Session createSession(User user) {
         Session session = new Session(this, user, ++nextSessionId);
         userSessions.add(session);
-        trace.info("create session #{0}", session.getId(), "engine");
+        if(trace.isDebugEnabled()) {
+            trace.debug("create session #{0}", session.getId(), "engine");
+        }
         return session;
     }
 

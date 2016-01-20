@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TraceWriterAdapter implements TraceWriter {
 
-    private final Logger logger = LoggerFactory.getLogger("openddal-engine");
+    private final Logger logger = LoggerFactory.getLogger("ddal-engine");
     private String name;
 
     @Override

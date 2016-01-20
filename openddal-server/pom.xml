@@ -20,6 +20,15 @@
 			<artifactId>slf4j-api</artifactId>
 		</dependency>
 		<dependency>
+			<groupId>org.codehaus.janino</groupId>
+			<artifactId>janino</artifactId>
+			<version>2.6.1</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>com.openddal</groupId>
 			<artifactId>openddal-engine</artifactId>
 			<version>${project.version}</version>

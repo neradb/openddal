@@ -107,7 +107,7 @@
 
 
     <tableRules>
-        <tableRule resource="/config/ddal-rule.xml"/>
+        <tableRule resource="ddal-engine-rule.xml"/>
     </tableRules>
 
 </ddal-config>
