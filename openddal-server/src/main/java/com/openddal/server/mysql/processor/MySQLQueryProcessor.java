@@ -8,6 +8,8 @@ import com.openddal.server.Response;
 import com.openddal.server.Session;
 import com.openddal.server.mysql.ErrorCode;
 import com.openddal.server.mysql.parser.ServerParse;
+import com.openddal.server.mysql.proto.Com_Query;
+import com.openddal.server.mysql.proto.Packet;
 import com.openddal.server.processor.AbstractProtocolProcessor;
 import com.openddal.server.processor.ProtocolProcessException;
 
@@ -21,7 +23,14 @@ public class MySQLQueryProcessor extends AbstractProtocolProcessor {
 
     @Override
     protected void doProcess(Request request, Response response) throws ProtocolProcessException {
-
+        try {
+            byte[] packet = Packet.read_packet(request.getInputStream());
+            long sequenceId = Packet.getSequenceId(packet);
+            String query = Com_Query.loadFromPacket(packet).query;
+            query(query);
+        } catch (Exception e) {
+            throw ProtocolProcessException.convert(e);
+        }
     }
 
     public void query(String sql) throws ProtocolProcessException {
