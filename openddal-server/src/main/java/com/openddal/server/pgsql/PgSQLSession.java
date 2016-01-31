@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.mysql;
+package com.openddal.server.pgsql;
 
 import java.sql.Connection;
 import java.util.Map;
 
 import com.openddal.server.Session;
+import com.openddal.server.mysql.MySQLCharsets;
 import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.util.JdbcUtils;
@@ -30,7 +31,7 @@ import io.netty.channel.Channel;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class MySQLSession implements Session {
+public class PgSQLSession implements Session {
 
     private Channel channel;
     private Handshake handshake;

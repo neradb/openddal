@@ -1,4 +1,4 @@
-package com.openddal.server.mysql;
+package com.openddal.server.pgsql;
 
 import java.io.OutputStream;
 import java.sql.ResultSet;
@@ -9,11 +9,11 @@ import com.openddal.server.mysql.proto.ERR;
 
 import io.netty.buffer.ByteBuf;
 
-public class MySQLResponse implements Response {
+public class PgSQLResponse implements Response {
     
     private final ProtocolTransport trans;
 
-    public MySQLResponse(ProtocolTransport trans) {
+    public PgSQLResponse(ProtocolTransport trans) {
         this.trans = trans;
     }
 

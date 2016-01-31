@@ -16,6 +16,7 @@
 package com.openddal.server;
 
 import java.io.OutputStream;
+import java.sql.ResultSet;
 
 import io.netty.buffer.ByteBuf;
 
@@ -25,6 +26,8 @@ import io.netty.buffer.ByteBuf;
  *
  */
 public interface Response {
+        
+    void sendResultSet(ResultSet resultSet);
 
     void sendError(int sc, String msg);
 

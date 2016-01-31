@@ -52,7 +52,6 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
                     .append("remote: ").append(request.getRemoteAddress()).append(", ")
                     .append("local ").append(request.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")
-                    .append("processor:").append(getClass().getName()).append(", ") 
                     .append("processTime:").append(processTime).append("")
                     .append("}");
             accessLogger.info(logMsg.toString());
@@ -69,7 +68,6 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
                     .append("remote: ").append(request.getRemoteAddress()).append(", ")
                     .append("local ").append(request.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")
-                    .append("processor:").append(getClass().getName()).append(", ") 
                     .append("costTime:").append(costTime).append("ms, ")
                     .append("status:").append(e == null ? "success" : "failure, ");
             if(e != null) {

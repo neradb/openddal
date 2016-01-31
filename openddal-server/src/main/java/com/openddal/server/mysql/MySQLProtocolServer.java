@@ -6,7 +6,6 @@ import com.openddal.server.NettyServer;
 import com.openddal.server.RequestFactory;
 import com.openddal.server.ResponseFactory;
 import com.openddal.server.ServerArgs;
-import com.openddal.server.mysql.processor.MySQLProcessorFactory;
 import com.openddal.server.processor.ProcessorFactory;
 
 import io.netty.channel.ChannelHandler;

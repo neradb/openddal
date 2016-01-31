@@ -17,7 +17,7 @@ package com.openddal.server.processor;
 
 import com.openddal.jdbc.JdbcSQLException;
 import com.openddal.message.DbException;
-import com.openddal.server.mysql.ErrorCode;
+import com.openddal.server.mysql.MySQLErrorCode;
 
 /**
  * 
@@ -39,9 +39,9 @@ public class ProtocolProcessException extends Exception {
             JdbcSQLException sqle = (JdbcSQLException) e;
             return new ProtocolProcessException(sqle.getErrorCode(),sqle.getMessage(),e);
         } else if (e instanceof OutOfMemoryError) {
-            return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
+            return new ProtocolProcessException(MySQLErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
         } else {
-            return new ProtocolProcessException(ErrorCode.ER_UNKNOWN_ERROR,"ERR_GENERAL_EXCEPION",e);
+            return new ProtocolProcessException(MySQLErrorCode.ER_UNKNOWN_ERROR,"ERR_GENERAL_EXCEPION",e);
         }
     }
     
