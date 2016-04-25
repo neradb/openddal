@@ -15,19 +15,16 @@
  */
 package com.openddal.server.processor;
 
-import java.io.IOException;
-import java.sql.SQLException;
-
 import com.openddal.jdbc.JdbcSQLException;
 import com.openddal.message.DbException;
-import com.openddal.server.mysql.ErrorCode;
+import com.openddal.server.mysql.MySQLErrorCode;
 
 /**
  * 
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class ProtocolProcessException extends SQLException {
+public class ProtocolProcessException extends Exception {
 
     private static final long serialVersionUID = 1L;
     
@@ -37,25 +34,19 @@ public class ProtocolProcessException extends SQLException {
             return (ProtocolProcessException) e;
         } else if (e instanceof DbException) {
              DbException dbe = (DbException) e;
-            return new ProtocolProcessException(dbe.getErrorCode(),e.toString(),e);
-        } else if (e instanceof IOException) {
-            return get(ErrorCode.ER_NET_READ_ERROR, e.toString(),e);
+            return new ProtocolProcessException(dbe.getErrorCode(),dbe.getMessage(),e);
         } else if (e instanceof JdbcSQLException) {
             JdbcSQLException sqle = (JdbcSQLException) e;
-            return new ProtocolProcessException(sqle.getErrorCode(),e.toString(),e);
+            return new ProtocolProcessException(sqle.getErrorCode(),sqle.getMessage(),e);
         } else if (e instanceof OutOfMemoryError) {
-            return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY,e.toString(),e);
+            return new ProtocolProcessException(MySQLErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
         } else {
-            return new ProtocolProcessException(ErrorCode.ER_UNKNOWN_ERROR,e.toString(),e);
+            return new ProtocolProcessException(MySQLErrorCode.ER_UNKNOWN_ERROR,"ERR_GENERAL_EXCEPION",e);
         }
     }
     
     public static ProtocolProcessException get(int errorCode, String message) {
         return new ProtocolProcessException(errorCode, message);
-    }
-    
-    public static ProtocolProcessException get(int errorCode, String message, Throwable cause) {
-        return new ProtocolProcessException(errorCode, message, cause);
     }
 
     protected int errorCode;

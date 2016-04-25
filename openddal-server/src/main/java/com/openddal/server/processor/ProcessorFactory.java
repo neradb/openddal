@@ -23,6 +23,6 @@ import com.openddal.server.ProtocolTransport;
  */
 public interface ProcessorFactory {
 
-    public ProtocolProcessor getProcessor(ProtocolTransport trans) throws ProtocolProcessException;
+    public ProtocolProcessor getProcessor(ProtocolTransport trans);
     
 }

@@ -41,5 +41,7 @@ public interface Session {
     String getCharset();
 
     Connection getEngineConnection();
+    
+    void close();
 
 }

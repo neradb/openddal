@@ -1,4 +1,4 @@
-package com.openddal.server.postgresql;
+package com.openddal.server.pgsql;
 
 import com.openddal.server.Authenticator;
 import com.openddal.server.NettyServer;

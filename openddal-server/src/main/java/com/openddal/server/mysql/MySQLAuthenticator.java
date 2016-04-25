@@ -44,7 +44,6 @@ import io.netty.util.AttributeKey;
 public class MySQLAuthenticator implements Authenticator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLAuthenticator.class);
-    private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0 };
     
     private final AtomicLong connIdGenerator = new AtomicLong(0);
     private final AttributeKey<MySQLSession> TMP_SESSION_KEY = AttributeKey.valueOf("_AUTHTMP_SESSION_KEY");
@@ -58,7 +57,7 @@ public class MySQLAuthenticator implements Authenticator {
         handshake.connectionId = connIdGenerator.incrementAndGet();
         handshake.challenge1 = getRandomString(8);
         handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
-        handshake.characterSet = Charsets.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
+        handshake.characterSet = MySQLCharsets.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
         handshake.challenge2 = getRandomString(12);
         handshake.authPluginDataLength = 21;
@@ -97,7 +96,7 @@ public class MySQLAuthenticator implements Authenticator {
             String msg = authReply == null ? e.getMessage()
                     : "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
             LOGGER.error("Authorize failed. " + msg, e);
-            error(channel, ErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
+            error(channel, MySQLErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
         } finally {
             buf.release();
         }
@@ -135,9 +134,10 @@ public class MySQLAuthenticator implements Authenticator {
         OK ok = new OK();
         ok.sequenceId = 2;
         ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
-        out.writeBytes(AUTH_OK);
+        out.writeBytes(ok.toPacket());
         channel.writeAndFlush(out);
     }
+    
 
     private static void error(Channel channel, int errno, String msg) {
         ByteBuf out = channel.alloc().buffer();
