@@ -17,27 +17,28 @@
 // $Id$
 package com.openddal.dbobject.table;
 
-import com.openddal.command.expression.Expression;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+
 import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.DbObject;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
-import com.openddal.dbobject.schema.SchemaObjectBase;
+import com.openddal.dbobject.schema.SchemaObject;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.message.Trace;
-import com.openddal.result.*;
+import com.openddal.result.Row;
+import com.openddal.result.SearchRow;
+import com.openddal.result.SimpleRow;
+import com.openddal.result.SimpleRowValue;
+import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * This is the base class for most tables. A table contains a list of columns
@@ -45,7 +46,7 @@ import java.util.HashSet;
  *
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public abstract class Table extends SchemaObjectBase {
+public abstract class Table extends SchemaObject {
 
     /**
      * The table type name for system tables.
@@ -71,7 +72,7 @@ public abstract class Table extends SchemaObjectBase {
 
     public Table(Schema schema, int id, String name) {
         columnMap = schema.getDatabase().newStringMap();
-        initSchemaObjectBase(schema, id, name, Trace.TABLE);
+        initSchemaObjectBase(schema, id, name);
         // compareMode = schema.getDatabase().getCompareMode();
     }
 
@@ -199,25 +200,6 @@ public abstract class Table extends SchemaObjectBase {
         dependencies.add(this);
     }
 
-    @Override
-    public ArrayList<DbObject> getChildren() {
-        ArrayList<DbObject> children = New.arrayList();
-        ArrayList<Index> indexes = getIndexes();
-        if (indexes != null) {
-            children.addAll(indexes);
-        }
-        if (sequences != null) {
-            children.addAll(sequences);
-        }
-        ArrayList<Right> rights = database.getAllRights();
-        for (Right right : rights) {
-            if (right.getGrantedTable() == this) {
-                children.add(right);
-            }
-        }
-        return children;
-    }
-
     /**
      * Rename a column of this table.
      *
@@ -237,65 +219,6 @@ public abstract class Table extends SchemaObjectBase {
         columnMap.remove(column.getName());
         column.rename(newName);
         columnMap.put(newName, column);
-    }
-
-    @Override
-    public void removeChildrenAndResources(Session session) {
-        for (Right right : database.getAllRights()) {
-            if (right.getGrantedTable() == this) {
-                database.removeDatabaseObject(session, right);
-            }
-        }
-        // must delete sequences later (in case there is a power failure
-        // before removing the table object)
-        while (sequences != null && sequences.size() > 0) {
-            Sequence sequence = sequences.get(0);
-            sequences.remove(0);
-            if (!isTemporary()) {
-                // only remove if no other table depends on this sequence
-                // this is possible when calling ALTER TABLE ALTER COLUMN
-                if (database.getDependentTable(sequence, this) == null) {
-                    database.removeSchemaObject(session, sequence);
-                }
-            }
-        }
-    }
-
-    /**
-     * Check that this column is not referenced by a multi-column constraint or
-     * multi-column index. If it is, an exception is thrown. Single-column
-     * references and indexes are dropped.
-     *
-     * @param session the session
-     * @param col     the column
-     * @throws DbException if the column is referenced by multi-column
-     *                     constraints or indexes
-     */
-    public void dropSingleColumnConstraintsAndIndexes(Session session,
-                                                      Column col) {
-        ArrayList<Index> indexesToDrop = New.arrayList();
-        ArrayList<Index> indexes = getIndexes();
-        if (indexes != null) {
-            for (int i = 0, size = indexes.size(); i < size; i++) {
-                Index index = indexes.get(i);
-                if (index.getColumnIndex(col) < 0) {
-                    continue;
-                }
-                if (index.getColumns().length == 1) {
-                    indexesToDrop.add(index);
-                } else {
-                    throw DbException.get(ErrorCode.COLUMN_IS_REFERENCED_1,
-                            index.getSQL());
-                }
-            }
-        }
-        for (Index i : indexesToDrop) {
-            // the index may already have been dropped when dropping the
-            // constraint
-            if (getIndexes().contains(i)) {
-                session.getDatabase().removeSchemaObject(session, i);
-            }
-        }
     }
 
     public Row getTemplateRow() {
@@ -404,19 +327,6 @@ public abstract class Table extends SchemaObjectBase {
     public PlanItem getBestPlanItem(Session session, int[] masks,
                                     TableFilter filter, SortOrder sortOrder) {
         PlanItem item = new PlanItem();
-        item.setIndex(getScanIndex(session));
-        item.cost = item.getIndex().getCost(session, null, null, null);
-        ArrayList<Index> indexes = getIndexes();
-        if (indexes != null && masks != null) {
-            for (int i = 1, size = indexes.size(); i < size; i++) {
-                Index index = indexes.get(i);
-                double cost = index.getCost(session, masks, filter, sortOrder);
-                if (cost < item.cost) {
-                    item.cost = cost;
-                    item.setIndex(index);
-                }
-            }
-        }
         return item;
     }
 
@@ -445,31 +355,6 @@ public abstract class Table extends SchemaObjectBase {
         }
         throw DbException.get(ErrorCode.INDEX_NOT_FOUND_1,
                 Constants.PREFIX_PRIMARY_KEY);
-    }
-
-    /**
-     * Validate all values in this row, convert the values if required, and
-     * update the sequence values if required. This call will also set the
-     * default values if required and set the computed column if there are any.
-     *
-     * @param session the session
-     * @param row     the row
-     */
-    public void validateConvertUpdateSequence(Session session, Row row) {
-        for (int i = 0; i < columns.length; i++) {
-            Value value = row.getValue(i);
-            Column column = columns[i];
-            Value v2;
-            if (column.getComputed()) {
-                // force updating the value
-                value = null;
-                v2 = column.computeValue(session, row);
-            }
-            v2 = column.validateConvertUpdateSequence(session, value);
-            if (v2 != value) {
-                row.setValue(i, v2);
-            }
-        }
     }
 
     /**
@@ -531,24 +416,6 @@ public abstract class Table extends SchemaObjectBase {
             }
         }
         return null;
-    }
-
-    /**
-     * Get or generate a default value for the given column.
-     *
-     * @param session the session
-     * @param column  the column
-     * @return the value
-     */
-    public Value getDefaultValue(Session session, Column column) {
-        Expression defaultExpr = column.getDefaultExpression();
-        Value v;
-        if (defaultExpr == null) {
-            v = column.validateConvertUpdateSequence(session, null);
-        } else {
-            v = defaultExpr.getValue(session);
-        }
-        return column.convert(v);
     }
 
 }

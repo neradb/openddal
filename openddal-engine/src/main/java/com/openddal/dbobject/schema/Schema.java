@@ -15,10 +15,12 @@
  */
 package com.openddal.dbobject.schema;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+
 import com.openddal.command.ddl.CreateTableData;
 import com.openddal.dbobject.DbObject;
-import com.openddal.dbobject.DbObjectBase;
-import com.openddal.dbobject.FunctionAlias;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Table;
@@ -27,25 +29,18 @@ import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.message.Trace;
 import com.openddal.route.rule.TableNode;
 import com.openddal.util.New;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * A schema as created by the SQL statement CREATE SCHEMA
  */
-public class Schema extends DbObjectBase {
+public class Schema extends DbObject {
 
     private final boolean system;
     private final HashMap<String, Table> tablesAndViews;
     private final HashMap<String, Index> indexes;
     private final HashMap<String, Sequence> sequences;
-    private final HashMap<String, Constant> constants;
-    private final HashMap<String, FunctionAlias> functions;
     /**
      * The set of returned unique names that are not yet stored. It is used to
      * avoid returning the same unique name twice when multiple threads
@@ -69,9 +64,7 @@ public class Schema extends DbObjectBase {
         tablesAndViews = database.newStringMap();
         indexes = database.newStringMap();
         sequences = database.newStringMap();
-        constants = database.newStringMap();
-        functions = database.newStringMap();
-        initDbObjectBase(database, id, schemaName, Trace.SCHEMA);
+        initDbObjectBase(database, id, schemaName);
         this.owner = owner;
         this.system = system;
     }
@@ -88,48 +81,6 @@ public class Schema extends DbObjectBase {
     @Override
     public int getType() {
         return DbObject.SCHEMA;
-    }
-
-    @Override
-    public void removeChildrenAndResources(Session session) {
-        // There can be dependencies between tables e.g. using computed columns,
-        // so we might need to loop over them multiple times.
-        boolean runLoopAgain = false;
-        do {
-            runLoopAgain = false;
-            if (tablesAndViews != null) {
-                // Loop over a copy because the map is modified underneath us.
-                for (Table obj : New.arrayList(tablesAndViews.values())) {
-                    // Check for null because multiple tables might be deleted
-                    // in one go underneath us.
-                    if (obj.getName() != null) {
-                        if (database.getDependentTable(obj, obj) == null) {
-                            database.removeSchemaObject(session, obj);
-                        } else {
-                            runLoopAgain = true;
-                        }
-                    }
-                }
-            }
-        } while (runLoopAgain);
-        while (indexes != null && indexes.size() > 0) {
-            Index obj = (Index) indexes.values().toArray()[0];
-            database.removeSchemaObject(session, obj);
-        }
-        while (sequences != null && sequences.size() > 0) {
-            Sequence obj = (Sequence) sequences.values().toArray()[0];
-            database.removeSchemaObject(session, obj);
-        }
-        while (constants != null && constants.size() > 0) {
-            Constant obj = (Constant) constants.values().toArray()[0];
-            database.removeSchemaObject(session, obj);
-        }
-        while (functions != null && functions.size() > 0) {
-            FunctionAlias obj = (FunctionAlias) functions.values().toArray()[0];
-            database.removeSchemaObject(session, obj);
-        }
-        owner = null;
-        invalidate();
     }
 
     @Override
@@ -158,12 +109,6 @@ public class Schema extends DbObjectBase {
                 break;
             case DbObject.INDEX:
                 result = indexes;
-                break;
-            case DbObject.CONSTANT:
-                result = constants;
-                break;
-            case DbObject.FUNCTION_ALIAS:
-                result = functions;
                 break;
             default:
                 throw DbException.throwInternalError("type=" + type);
@@ -257,28 +202,6 @@ public class Schema extends DbObjectBase {
      */
     public Sequence findSequence(String sequenceName) {
         return sequences.get(sequenceName);
-    }
-
-    /**
-     * Try to find a user defined constant with this name. This method returns
-     * null if no object with this name exists.
-     *
-     * @param constantName the object name
-     * @return the object or null
-     */
-    public Constant findConstant(String constantName) {
-        return constants.get(constantName);
-    }
-
-    /**
-     * Try to find a user defined function with this name. This method returns
-     * null if no object with this name exists.
-     *
-     * @param functionAlias the object name
-     * @return the object or null
-     */
-    public FunctionAlias findFunction(String functionAlias) {
-        return functions.get(functionAlias);
     }
 
     /**
@@ -376,21 +299,6 @@ public class Schema extends DbObjectBase {
     }
 
     /**
-     * Get the user defined constant with the given name.
-     *
-     * @param constantName the constant name
-     * @return the constant
-     * @throws DbException if no such object exists
-     */
-    public Constant getConstant(String constantName) {
-        Constant constant = constants.get(constantName);
-        if (constant == null) {
-            throw DbException.get(ErrorCode.CONSTANT_NOT_FOUND_1, constantName);
-        }
-        return constant;
-    }
-
-    /**
      * Get the sequence with the given name.
      *
      * @param sequenceName the sequence name
@@ -415,10 +323,6 @@ public class Schema extends DbObjectBase {
         all.addAll(getMap(DbObject.TABLE_OR_VIEW).values());
         all.addAll(getMap(DbObject.SEQUENCE).values());
         all.addAll(getMap(DbObject.INDEX).values());
-        all.addAll(getMap(DbObject.TRIGGER).values());
-        all.addAll(getMap(DbObject.CONSTRAINT).values());
-        all.addAll(getMap(DbObject.CONSTANT).values());
-        all.addAll(getMap(DbObject.FUNCTION_ALIAS).values());
         return all;
     }
 

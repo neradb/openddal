@@ -15,9 +15,11 @@
  */
 package com.openddal.excutor.dml;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.openddal.command.dml.Delete;
 import com.openddal.command.expression.Expression;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.result.SearchRow;
@@ -26,9 +28,6 @@ import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -47,7 +46,6 @@ public class DeleteExecutor extends PreparedRoutingExecutor<Delete> {
         TableFilter tableFilter = prepared.getTableFilter();
         TableMate table = castTableMate(tableFilter.getTable());
         table.check();
-        session.getUser().checkRight(table, Right.DELETE);
         return updateRow(table, null, tableFilter.getIndexConditions());
     }
 

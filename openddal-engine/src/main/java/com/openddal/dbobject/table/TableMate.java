@@ -17,9 +17,22 @@
 // $Id$
 package com.openddal.dbobject.table;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.sql.DataSource;
+
 import com.openddal.command.ddl.CreateTableData;
 import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.IndexMate;
 import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Constants;
@@ -40,13 +53,6 @@ import com.openddal.value.DataType;
 import com.openddal.value.ValueDate;
 import com.openddal.value.ValueTime;
 import com.openddal.value.ValueTimestamp;
-
-import javax.sql.DataSource;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -77,7 +83,7 @@ public class TableMate extends Table {
         Column[] cols = new Column[data.columns.size()];
         data.columns.toArray(cols);
         setColumns(cols);
-        scanIndex = new IndexMate(this, data.id, null, IndexColumn.wrap(cols), IndexType.createScan());
+        scanIndex = new Index(this, data.id, null, IndexColumn.wrap(cols), IndexType.createScan());
         indexes.add(scanIndex);
     }
 
@@ -320,7 +326,7 @@ public class TableMate extends Table {
     private Index addIndex(String name, ArrayList<Column> list, IndexType indexType) {
         Column[] cols = new Column[list.size()];
         list.toArray(cols);
-        Index index = new IndexMate(this, 0, name, IndexColumn.wrap(cols), indexType);
+        Index index = new Index(this, 0, name, IndexColumn.wrap(cols), indexType);
         indexes.add(index);
         return index;
     }
@@ -339,17 +345,17 @@ public class TableMate extends Table {
         String tableName = matadataNode.getCompositeObjectName();
         String shardName = matadataNode.getShardName();
         try {
-            trace.debug("Try to load {0} metadata from table {1}.{2}", getName(), shardName, tableName);
+            //trace.debug("Try to load {0} metadata from table {1}.{2}", getName(), shardName, tableName);
             readMataData(session, matadataNode);
-            trace.debug("Load the {0} metadata success.", getName());
+            //trace.debug("Load the {0} metadata success.", getName());
             initException = null;
         } catch (DbException e) {
-            trace.debug("Fail to load {0} metadata from table {1}.{2}. error: {3}", getName(), shardName, tableName,
-                    e.getCause().getMessage());
+            //trace.debug("Fail to load {0} metadata from table {1}.{2}. error: {3}", getName(), shardName, tableName,
+            //        e.getCause().getMessage());
             initException = e;
             Column[] cols = {};
             setColumns(cols);
-            scanIndex = new IndexMate(this, 0, null, IndexColumn.wrap(cols), IndexType.createNonUnique());
+            scanIndex = new Index(this, 0, null, IndexColumn.wrap(cols), IndexType.createNonUnique());
             indexes.add(scanIndex);
         }
     }
@@ -470,7 +476,7 @@ public class TableMate extends Table {
         setColumns(cols);
         // create scan index
         int id = getId();
-        scanIndex = new IndexMate(this, id, "$scanIndex", IndexColumn.wrap(cols), IndexType.createNonUnique());
+        scanIndex = new Index(this, id, "$scanIndex", IndexColumn.wrap(cols), IndexType.createNonUnique());
         indexes.add(scanIndex);
 
         // load primary keys

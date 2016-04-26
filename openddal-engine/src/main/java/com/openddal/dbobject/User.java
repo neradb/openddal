@@ -16,27 +16,21 @@
 package com.openddal.dbobject;
 
 import com.openddal.dbobject.schema.Schema;
-import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Database;
-import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.message.Trace;
-import com.openddal.util.New;
-import com.openddal.util.StringUtils;
-
-import java.util.ArrayList;
 
 /**
  * Represents a user object.
  */
-public class User extends RightOwner {
+public class User extends DbObject {
 
     private boolean admin;
     private String password;
 
     public User(Database database, int id, String userName) {
-        super(database, id, userName, Trace.USER);
+        initDbObjectBase(database, id, userName);
+
     }
 
     public boolean isAdmin() {
@@ -46,52 +40,7 @@ public class User extends RightOwner {
     public void setAdmin(boolean admin) {
         this.admin = admin;
     }
-
-
-    /**
-     * Checks that this user has the given rights for this database object.
-     *
-     * @param table     the database object
-     * @param rightMask the rights required
-     * @throws DbException if this user does not have the required rights
-     */
-    public void checkRight(Table table, int rightMask) {
-        if (!hasRight(table, rightMask)) {
-            throw DbException.get(ErrorCode.NOT_ENOUGH_RIGHTS_FOR_1, table.getSQL());
-        }
-    }
-
-    /**
-     * See if this user has the given rights for this database object.
-     *
-     * @param table     the database object, or null for schema-only check
-     * @param rightMask the rights required
-     * @return true if the user has the rights
-     */
-    public boolean hasRight(Table table, int rightMask) {
-        return true;
-    }
-
-    /**
-     * Get the CREATE SQL statement for this object.
-     *
-     * @param password true if the password (actually the salt and hash) should
-     *                 be returned
-     * @return the SQL statement
-     */
-    public String getCreateSQL(boolean password) {
-        StringBuilder buff = new StringBuilder("CREATE USER IF NOT EXISTS ");
-        buff.append(getSQL());
-        if (comment != null) {
-            buff.append(" COMMENT ").append(StringUtils.quoteStringSQL(comment));
-        }
-        buff.append(" PASSWORD ''");
-        if (admin) {
-            buff.append(" ADMIN");
-        }
-        return buff.toString();
-    }
-
+    
     /**
      * Check the password of this user.
      *
@@ -114,48 +63,11 @@ public class User extends RightOwner {
         }
     }
 
-    /**
-     * Check if this user has schema admin rights. An exception is thrown if he
-     * does not have them.
-     *
-     * @throws DbException if this user is not a schema admin
-     */
-    public void checkSchemaAdmin() {
-        if (!hasRight(null, Right.ALTER_ANY_SCHEMA)) {
-            throw DbException.get(ErrorCode.ADMIN_RIGHTS_REQUIRED);
-        }
-    }
-
     @Override
     public int getType() {
         return USER;
     }
-
-    @Override
-    public ArrayList<DbObject> getChildren() {
-        ArrayList<DbObject> children = New.arrayList();
-        for (Right right : database.getAllRights()) {
-            if (right.getGrantee() == this) {
-                children.add(right);
-            }
-        }
-        for (Schema schema : database.getAllSchemas()) {
-            if (schema.getOwner() == this) {
-                children.add(schema);
-            }
-        }
-        return children;
-    }
-
-    @Override
-    public void removeChildrenAndResources(Session session) {
-        for (Right right : database.getAllRights()) {
-            if (right.getGrantee() == this) {
-                database.removeDatabaseObject(session, right);
-            }
-        }
-        invalidate();
-    }
+    
 
     @Override
     public void checkRename() {

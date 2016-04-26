@@ -15,19 +15,111 @@
  */
 package com.openddal.command;
 
-import com.openddal.command.ddl.*;
-import com.openddal.command.dml.*;
-import com.openddal.command.expression.*;
-import com.openddal.dbobject.DbObject;
-import com.openddal.dbobject.FunctionAlias;
-import com.openddal.dbobject.Right;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.HashSet;
+
+import com.openddal.command.ddl.AlterIndexRename;
+import com.openddal.command.ddl.AlterSchemaRename;
+import com.openddal.command.ddl.AlterTableAddConstraint;
+import com.openddal.command.ddl.AlterTableAlterColumn;
+import com.openddal.command.ddl.AlterTableDropConstraint;
+import com.openddal.command.ddl.AlterTableRename;
+import com.openddal.command.ddl.AlterTableRenameColumn;
+import com.openddal.command.ddl.AlterUser;
+import com.openddal.command.ddl.AlterView;
+import com.openddal.command.ddl.Analyze;
+import com.openddal.command.ddl.CreateAggregate;
+import com.openddal.command.ddl.CreateConstant;
+import com.openddal.command.ddl.CreateFunctionAlias;
+import com.openddal.command.ddl.CreateIndex;
+import com.openddal.command.ddl.CreateRole;
+import com.openddal.command.ddl.CreateSchema;
+import com.openddal.command.ddl.CreateSequence;
+import com.openddal.command.ddl.CreateTable;
+import com.openddal.command.ddl.CreateTableData;
+import com.openddal.command.ddl.CreateUser;
+import com.openddal.command.ddl.CreateUserDataType;
+import com.openddal.command.ddl.CreateView;
+import com.openddal.command.ddl.DeallocateProcedure;
+import com.openddal.command.ddl.DefineCommand;
+import com.openddal.command.ddl.DropAggregate;
+import com.openddal.command.ddl.DropConstant;
+import com.openddal.command.ddl.DropDatabase;
+import com.openddal.command.ddl.DropFunctionAlias;
+import com.openddal.command.ddl.DropIndex;
+import com.openddal.command.ddl.DropRole;
+import com.openddal.command.ddl.DropSchema;
+import com.openddal.command.ddl.DropSequence;
+import com.openddal.command.ddl.DropTable;
+import com.openddal.command.ddl.DropTrigger;
+import com.openddal.command.ddl.DropUser;
+import com.openddal.command.ddl.DropUserDataType;
+import com.openddal.command.ddl.DropView;
+import com.openddal.command.ddl.PrepareProcedure;
+import com.openddal.command.ddl.TruncateTable;
+import com.openddal.command.dml.AlterSequence;
+import com.openddal.command.dml.AlterTableSet;
+import com.openddal.command.dml.BackupCommand;
+import com.openddal.command.dml.Call;
+import com.openddal.command.dml.Delete;
+import com.openddal.command.dml.ExecuteProcedure;
+import com.openddal.command.dml.Explain;
+import com.openddal.command.dml.Insert;
+import com.openddal.command.dml.Merge;
+import com.openddal.command.dml.NoOperation;
+import com.openddal.command.dml.Query;
+import com.openddal.command.dml.Replace;
+import com.openddal.command.dml.Select;
+import com.openddal.command.dml.SelectOrderBy;
+import com.openddal.command.dml.SelectUnion;
+import com.openddal.command.dml.Set;
+import com.openddal.command.dml.SetTypes;
+import com.openddal.command.dml.TransactionCommand;
+import com.openddal.command.dml.Update;
+import com.openddal.command.expression.Aggregate;
+import com.openddal.command.expression.Alias;
+import com.openddal.command.expression.CompareLike;
+import com.openddal.command.expression.Comparison;
+import com.openddal.command.expression.ConditionAndOr;
+import com.openddal.command.expression.ConditionExists;
+import com.openddal.command.expression.ConditionIn;
+import com.openddal.command.expression.ConditionInSelect;
+import com.openddal.command.expression.ConditionNot;
+import com.openddal.command.expression.Expression;
+import com.openddal.command.expression.ExpressionColumn;
+import com.openddal.command.expression.ExpressionList;
+import com.openddal.command.expression.Function;
+import com.openddal.command.expression.FunctionCall;
+import com.openddal.command.expression.Operation;
+import com.openddal.command.expression.Parameter;
+import com.openddal.command.expression.Rownum;
+import com.openddal.command.expression.SequenceValue;
+import com.openddal.command.expression.Subquery;
+import com.openddal.command.expression.TableFunction;
+import com.openddal.command.expression.ValueExpression;
+import com.openddal.command.expression.Variable;
+import com.openddal.command.expression.Wildcard;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.Sequence;
-import com.openddal.dbobject.table.*;
+import com.openddal.dbobject.table.Column;
+import com.openddal.dbobject.table.FunctionTable;
+import com.openddal.dbobject.table.IndexColumn;
+import com.openddal.dbobject.table.RangeTable;
+import com.openddal.dbobject.table.Table;
+import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableFilter.TableFilterVisitor;
-import com.openddal.engine.*;
+import com.openddal.dbobject.table.TableView;
+import com.openddal.engine.Constants;
+import com.openddal.engine.Database;
+import com.openddal.engine.DbSettings;
+import com.openddal.engine.Procedure;
+import com.openddal.engine.Session;
+import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.SortOrder;
@@ -35,13 +127,19 @@ import com.openddal.util.MathUtils;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
-import com.openddal.value.*;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.text.Collator;
-import java.util.ArrayList;
-import java.util.HashSet;
+import com.openddal.value.CompareMode;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueBoolean;
+import com.openddal.value.ValueBytes;
+import com.openddal.value.ValueDate;
+import com.openddal.value.ValueDecimal;
+import com.openddal.value.ValueInt;
+import com.openddal.value.ValueLong;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueString;
+import com.openddal.value.ValueTime;
+import com.openddal.value.ValueTimestamp;
 
 /**
  * The parser is used to convert a SQL statement string to an command object.
@@ -430,8 +528,6 @@ public class Parser {
                         c = parseCall();
                     } else if (readIf("CHECKPOINT")) {
                         c = parseCheckpoint();
-                    } else if (readIf("COMMENT")) {
-                        c = parseComment();
                     }
                     break;
                 case 'd':
@@ -459,12 +555,6 @@ public class Parser {
                 case 'F':
                     if (isToken("FROM")) {
                         c = parseSelect();
-                    }
-                    break;
-                case 'g':
-                case 'G':
-                    if (readIf("GRANT")) {
-                        c = parseGrantRevoke(CommandInterface.GRANT);
                     }
                     break;
                 case 'h':
@@ -495,8 +585,6 @@ public class Parser {
                 case 'R':
                     if (readIf("ROLLBACK")) {
                         c = parseRollback();
-                    } else if (readIf("REVOKE")) {
-                        c = parseGrantRevoke(CommandInterface.REVOKE);
                     } else if (readIf("RELEASE")) {
                         c = parseReleaseSavepoint();
                     } else if (readIf("REPLACE")) {
@@ -1294,74 +1382,6 @@ public class Parser {
             ifExists = true;
         }
         return ifExists;
-    }
-
-    private Prepared parseComment() {
-        int type = 0;
-        read("ON");
-        boolean column = false;
-        if (readIf("TABLE") || readIf("VIEW")) {
-            type = DbObject.TABLE_OR_VIEW;
-        } else if (readIf("COLUMN")) {
-            column = true;
-            type = DbObject.TABLE_OR_VIEW;
-        } else if (readIf("CONSTANT")) {
-            type = DbObject.CONSTANT;
-        } else if (readIf("CONSTRAINT")) {
-            type = DbObject.CONSTRAINT;
-        } else if (readIf("ALIAS")) {
-            type = DbObject.FUNCTION_ALIAS;
-        } else if (readIf("INDEX")) {
-            type = DbObject.INDEX;
-        } else if (readIf("ROLE")) {
-            type = DbObject.ROLE;
-        } else if (readIf("SCHEMA")) {
-            type = DbObject.SCHEMA;
-        } else if (readIf("SEQUENCE")) {
-            type = DbObject.SEQUENCE;
-        } else if (readIf("TRIGGER")) {
-            type = DbObject.TRIGGER;
-        } else if (readIf("USER")) {
-            type = DbObject.USER;
-        } else if (readIf("DOMAIN")) {
-            type = DbObject.USER_DATATYPE;
-        } else {
-            throw getSyntaxError();
-        }
-        SetComment command = new SetComment(session);
-        String objectName;
-        if (column) {
-            // can't use readIdentifierWithSchema() because
-            // it would not read schema.table.column correctly
-            // if the db name is equal to the schema name
-            ArrayList<String> list = New.arrayList();
-            do {
-                list.add(readUniqueIdentifier());
-            } while (readIf("."));
-            schemaName = session.getCurrentSchemaName();
-            if (list.size() == 4) {
-                list.remove(0);
-            }
-            if (list.size() == 3) {
-                schemaName = list.get(0);
-                list.remove(0);
-            }
-            if (list.size() != 2) {
-                throw DbException.getSyntaxError(sqlCommand, parseIndex,
-                        "table.column");
-            }
-            objectName = list.get(0);
-            command.setColumn(true);
-            command.setColumnName(list.get(1));
-        } else {
-            objectName = readIdentifierWithSchema();
-        }
-        command.setSchemaName(schemaName);
-        command.setObjectName(objectName);
-        command.setObjectType(type);
-        read("IS");
-        command.setCommentExpression(readExpression());
-        return command;
     }
 
     private Prepared parseDrop() {
@@ -2343,31 +2363,6 @@ public class Parser {
         return orderList;
     }
 
-    private JavaFunction readJavaFunction(Schema schema, String functionName) {
-        FunctionAlias functionAlias = null;
-        if (schema != null) {
-            functionAlias = schema.findFunction(functionName);
-        } else {
-            functionAlias = findFunctionAlias(session.getCurrentSchemaName(),
-                    functionName);
-        }
-        if (functionAlias == null) {
-            throw DbException.get(ErrorCode.FUNCTION_NOT_FOUND_1, functionName);
-        }
-        Expression[] args;
-        ArrayList<Expression> argList = New.arrayList();
-        int numArgs = 0;
-        while (!readIf(")")) {
-            if (numArgs++ > 0) {
-                read(",");
-            }
-            argList.add(readExpression());
-        }
-        args = new Expression[numArgs];
-        argList.toArray(args);
-        JavaFunction func = new JavaFunction(functionAlias, args);
-        return func;
-    }
 
     private int getAggregateType(String name) {
         if (!identifiersToUpper) {
@@ -2378,16 +2373,14 @@ public class Parser {
     }
 
     private Expression readFunction(Schema schema, String name) {
-        if (schema != null) {
-            return readJavaFunction(schema, name);
-        }
         int agg = getAggregateType(name);
         if (agg >= 0) {
             return readAggregate(agg);
         }
         Function function = Function.getFunction(database, name);
         if (function == null) {
-            return readJavaFunction(null, name);
+            //return readJavaFunction(null, name);
+            throw getSyntaxError();
         }
         switch (function.getFunctionType()) {
             case Function.CAST: {
@@ -2889,14 +2882,7 @@ public class Parser {
                 read(".");
             }
             if (readIf("REGCLASS")) {
-                FunctionAlias f = findFunctionAlias(Constants.SCHEMA_MAIN,
-                        "PG_GET_OID");
-                if (f == null) {
-                    throw getSyntaxError();
-                }
-                Expression[] args = {r};
-                JavaFunction func = new JavaFunction(f, args);
-                r = func;
+                throw getSyntaxError();
             } else {
                 Column col = parseColumnWithType(null);
                 Function function = Function.getFunction(database, "CAST");
@@ -4036,70 +4022,6 @@ public class Parser {
         }
     }
 
-    /**
-     * @return true if we expect to see a TABLE clause
-     */
-    private boolean addRoleOrRight(GrantRevoke command) {
-        if (readIf("SELECT")) {
-            command.addRight(Right.SELECT);
-            return true;
-        } else if (readIf("DELETE")) {
-            command.addRight(Right.DELETE);
-            return true;
-        } else if (readIf("INSERT")) {
-            command.addRight(Right.INSERT);
-            return true;
-        } else if (readIf("UPDATE")) {
-            command.addRight(Right.UPDATE);
-            return true;
-        } else if (readIf("ALL")) {
-            command.addRight(Right.ALL);
-            return true;
-        } else if (readIf("ALTER")) {
-            read("ANY");
-            read("SCHEMA");
-            command.addRight(Right.ALTER_ANY_SCHEMA);
-            command.addTable(null);
-            return false;
-        } else if (readIf("CONNECT")) {
-            // ignore this right
-            return true;
-        } else if (readIf("RESOURCE")) {
-            // ignore this right
-            return true;
-        } else {
-            command.addRoleName(readUniqueIdentifier());
-            return false;
-        }
-    }
-
-    private GrantRevoke parseGrantRevoke(int operationType) {
-        GrantRevoke command = new GrantRevoke(session);
-        command.setOperationType(operationType);
-        boolean tableClauseExpected = addRoleOrRight(command);
-        while (readIf(",")) {
-            addRoleOrRight(command);
-            if (command.isRightMode() && command.isRoleMode()) {
-                throw DbException
-                        .get(ErrorCode.ROLES_AND_RIGHT_CANNOT_BE_MIXED);
-            }
-        }
-        if (tableClauseExpected) {
-            if (readIf("ON")) {
-                do {
-                    Table table = readTableOrView();
-                    command.addTable(table);
-                } while (readIf(","));
-            }
-        }
-        if (operationType == CommandInterface.GRANT) {
-            read("TO");
-        } else {
-            read("FROM");
-        }
-        command.setGranteeName(readUniqueIdentifier());
-        return command;
-    }
 
     private Select parseValues() {
         Select command = new Select(session);
@@ -4927,24 +4849,6 @@ public class Parser {
             }
         }
         throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
-    }
-
-    private FunctionAlias findFunctionAlias(String schema, String aliasName) {
-        FunctionAlias functionAlias = database.getSchema(schema).findFunction(
-                aliasName);
-        if (functionAlias != null) {
-            return functionAlias;
-        }
-        String[] schemaNames = session.getSchemaSearchPath();
-        if (schemaNames != null) {
-            for (String n : schemaNames) {
-                functionAlias = database.getSchema(n).findFunction(aliasName);
-                if (functionAlias != null) {
-                    return functionAlias;
-                }
-            }
-        }
-        return null;
     }
 
     private Sequence findSequence(String schema, String sequenceName) {

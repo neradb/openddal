@@ -15,21 +15,24 @@
  */
 package com.openddal.dbobject.table;
 
+import java.sql.ResultSetMetaData;
+
 import com.openddal.command.Parser;
-import com.openddal.command.expression.*;
-import com.openddal.dbobject.schema.Schema;
+import com.openddal.command.expression.ConditionAndOr;
+import com.openddal.command.expression.Expression;
+import com.openddal.command.expression.ExpressionVisitor;
+import com.openddal.command.expression.ValueExpression;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.engine.Constants;
-import com.openddal.engine.Mode;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.Row;
 import com.openddal.util.MathUtils;
 import com.openddal.util.StringUtils;
-import com.openddal.value.*;
-
-import java.sql.ResultSetMetaData;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueNull;
 
 /**
  * This class represents a column in a table.
@@ -247,143 +250,6 @@ public class Column {
 
     public int getScale() {
         return scale;
-    }
-
-    /**
-     * Validate the value, convert it if required, and update the sequence value
-     * if required. If the value is null, the default value (NULL if no default
-     * is set) is returned. Check constraints are validated as well.
-     *
-     * @param session the session
-     * @param value   the value or null
-     * @return the new or converted value
-     */
-    public Value validateConvertUpdateSequence(Session session, Value value) {
-        if (value == null) {
-            if (defaultExpression == null) {
-                value = ValueNull.INSTANCE;
-            } else {
-                synchronized (this) {
-                    value = defaultExpression.getValue(session).convertTo(type);
-                }
-                if (primaryKey) {
-                    session.setLastIdentity(value);
-                }
-            }
-        }
-        Mode mode = session.getDatabase().getMode();
-        if (value == ValueNull.INSTANCE) {
-            if (convertNullToDefault) {
-                synchronized (this) {
-                    value = defaultExpression.getValue(session).convertTo(type);
-                }
-            }
-            if (value == ValueNull.INSTANCE && !nullable) {
-                if (mode.convertInsertNullToZero) {
-                    DataType dt = DataType.getDataType(type);
-                    if (dt.decimal) {
-                        value = ValueInt.get(0).convertTo(type);
-                    } else if (dt.type == Value.TIMESTAMP) {
-                        value = ValueTimestamp.fromMillis(session.getTransactionStart());
-                    } else if (dt.type == Value.TIME) {
-                        value = ValueTime.fromNanos(0);
-                    } else if (dt.type == Value.DATE) {
-                        value = ValueDate.fromMillis(session.getTransactionStart());
-                    } else {
-                        value = ValueString.get("").convertTo(type);
-                    }
-                } else {
-                    throw DbException.get(ErrorCode.NULL_NOT_ALLOWED, name);
-                }
-            }
-        }
-        if (checkConstraint != null) {
-            resolver.setValue(value);
-            Value v;
-            synchronized (this) {
-                v = checkConstraint.getValue(session);
-            }
-            // Both TRUE and NULL are ok
-            if (Boolean.FALSE.equals(v.getBoolean())) {
-                throw DbException.get(
-                        ErrorCode.CHECK_CONSTRAINT_VIOLATED_1,
-                        checkConstraint.getSQL());
-            }
-        }
-        value = value.convertScale(mode.convertOnlyToSmallerScale, scale);
-        if (precision > 0) {
-            if (!value.checkPrecision(precision)) {
-                String s = value.getTraceSQL();
-                if (s.length() > 127) {
-                    s = s.substring(0, 128) + "...";
-                }
-                throw DbException.get(ErrorCode.VALUE_TOO_LONG_2,
-                        getCreateSQL(), s + " (" + value.getPrecision() + ")");
-            }
-        }
-        updateSequenceIfRequired(session, value);
-        return value;
-    }
-
-    private void updateSequenceIfRequired(Session session, Value value) {
-        if (sequence != null) {
-            long current = sequence.getCurrentValue();
-            long inc = sequence.getIncrement();
-            long now = value.getLong();
-            boolean update = false;
-            if (inc > 0 && now > current) {
-                update = true;
-            } else if (inc < 0 && now < current) {
-                update = true;
-            }
-            if (update) {
-                sequence.modify(now + inc, null, null, null);
-                session.setLastIdentity(ValueLong.get(now));
-                sequence.flush(session);
-            }
-        }
-    }
-
-    /**
-     * Convert the auto-increment flag to a sequence that is linked with this
-     * table.
-     *
-     * @param session   the session
-     * @param schema    the schema where the sequence should be generated
-     * @param id        the object id
-     * @param temporary true if the sequence is temporary and does not need to
-     *                  be stored
-     */
-    public void convertAutoIncrementToSequence(Session session, Schema schema,
-                                               int id, boolean temporary) {
-        if (!autoIncrement) {
-            DbException.throwInternalError();
-        }
-        if ("IDENTITY".equals(originalSQL)) {
-            originalSQL = "BIGINT";
-        } else if ("SERIAL".equals(originalSQL)) {
-            originalSQL = "INT";
-        }
-        String sequenceName;
-        while (true) {
-            ValueUuid uuid = ValueUuid.getNewRandom();
-            String s = uuid.getString();
-            s = s.replace('-', '_').toUpperCase();
-            sequenceName = "SYSTEM_SEQUENCE_" + s;
-            if (schema.findSequence(sequenceName) == null) {
-                break;
-            }
-        }
-        Sequence seq = new Sequence(schema, id, sequenceName, start, increment);
-        if (temporary) {
-            seq.setTemporary(true);
-        } else {
-            session.getDatabase().addSchemaObject(seq);
-        }
-        setAutoIncrement(false, 0, 0);
-        SequenceValue seqValue = new SequenceValue(seq);
-        setDefaultExpression(session, seqValue);
-        setSequence(seq);
     }
 
     /**

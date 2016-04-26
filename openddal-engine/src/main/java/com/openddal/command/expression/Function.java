@@ -15,6 +15,21 @@
  */
 package com.openddal.command.expression;
 
+import static com.openddal.util.ToChar.toChar;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
+import java.util.regex.PatternSyntaxException;
+
 import com.openddal.command.Command;
 import com.openddal.command.Parser;
 import com.openddal.dbobject.schema.Schema;
@@ -29,18 +44,28 @@ import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.Csv;
-import com.openddal.util.*;
-import com.openddal.value.*;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.regex.PatternSyntaxException;
-
-import static com.openddal.util.ToChar.toChar;
+import com.openddal.util.DateTimeUtils;
+import com.openddal.util.JdbcUtils;
+import com.openddal.util.MathUtils;
+import com.openddal.util.New;
+import com.openddal.util.StatementBuilder;
+import com.openddal.util.StringUtils;
+import com.openddal.util.Utils;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueArray;
+import com.openddal.value.ValueBoolean;
+import com.openddal.value.ValueBytes;
+import com.openddal.value.ValueDate;
+import com.openddal.value.ValueDouble;
+import com.openddal.value.ValueInt;
+import com.openddal.value.ValueLong;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueResultSet;
+import com.openddal.value.ValueString;
+import com.openddal.value.ValueTime;
+import com.openddal.value.ValueTimestamp;
+import com.openddal.value.ValueUuid;
 
 /**
  * This class implements most built-in functions of this database.
@@ -78,7 +103,7 @@ public class Function extends Expression implements FunctionCall {
 
     public static final int DATABASE = 150, USER = 151, CURRENT_USER = 152,
             IDENTITY = 153, SCOPE_IDENTITY = 154, AUTOCOMMIT = 155,
-            READONLY = 156, DATABASE_PATH = 157, LOCK_TIMEOUT = 158;
+            READONLY = 156, DATABASE_PATH = 157;
 
     public static final int IFNULL = 200, CASEWHEN = 201, CONVERT = 202,
             CAST = 203, COALESCE = 204, NULLIF = 205, CASE = 206,
@@ -355,8 +380,6 @@ public class Function extends Expression implements FunctionCall {
                 0, Value.BOOLEAN);
         addFunction("DATABASE_PATH", DATABASE_PATH,
                 0, Value.STRING);
-        addFunctionNotDeterministic("LOCK_TIMEOUT", LOCK_TIMEOUT,
-                0, Value.INT);
         addFunctionWithNull("IFNULL", IFNULL,
                 2, Value.NULL);
         addFunctionWithNull("ISNULL", IFNULL,
@@ -1265,9 +1288,6 @@ public class Function extends Expression implements FunctionCall {
                 break;
             case AUTOCOMMIT:
                 result = ValueBoolean.get(session.getAutoCommit());
-                break;
-            case LOCK_TIMEOUT:
-                result = ValueInt.get(session.getLockTimeout());
                 break;
             case CAST:
             case CONVERT: {

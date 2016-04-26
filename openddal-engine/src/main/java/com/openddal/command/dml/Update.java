@@ -15,12 +15,13 @@
  */
 package com.openddal.command.dml;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.command.Prepared;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.Parameter;
-import com.openddal.command.expression.ValueExpression;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.PlanItem;
 import com.openddal.dbobject.table.Table;
@@ -36,9 +37,6 @@ import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * This class represents the statement
@@ -89,8 +87,6 @@ public class Update extends Prepared {
         RowList rows = new RowList(session);
         try {
             Table table = tableFilter.getTable();
-            session.getUser().checkRight(table, Right.UPDATE);
-            //table.lock(session, true, false);
             int columnCount = table.getColumns().length;
             // get the old rows, compute the new rows
             setCurrentRowNumber(0);
@@ -117,16 +113,12 @@ public class Update extends Prepared {
                         Value newValue;
                         if (newExpr == null) {
                             newValue = oldRow.getValue(i);
-                        } else if (newExpr == ValueExpression.getDefault()) {
-                            Column column = table.getColumn(i);
-                            newValue = table.getDefaultValue(session, column);
                         } else {
                             Column column = table.getColumn(i);
                             newValue = column.convert(newExpr.getValue(session));
                         }
                         newRow.setValue(i, newValue);
                     }
-                    table.validateConvertUpdateSequence(session, newRow);
                     rows.add(oldRow);
                     rows.add(newRow);
                     count++;

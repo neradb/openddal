@@ -18,9 +18,10 @@
 
 package com.openddal.excutor.ddl;
 
+import java.util.Map;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAddConstraint;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
@@ -28,8 +29,6 @@ import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.TableNode;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
-
-import java.util.Map;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -64,20 +63,16 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
     public int executeUpdate() {
         String tableName = prepared.getTableName();
         TableMate table = getTableMate(tableName);
-        session.getUser().checkRight(table, Right.ALL);
         TableNode[] tableNodes = table.getPartitionNode();
         int type = prepared.getType();
         switch (type) {
             case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
-                String refTableName = prepared.getRefTableName();
-                TableMate refTable = getTableMate(refTableName);
                 TableNode[] refTableNode = table.getPartitionNode();
                 Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNode);
                 if (symmetryRelation == null) {
                     throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                             "The original table and reference table should be symmetrical.");
                 }
-                session.getUser().checkRight(refTable, Right.ALL);
             }
             case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY:
             case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE:

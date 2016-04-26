@@ -15,12 +15,21 @@
  */
 package com.openddal.engine;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import javax.sql.DataSource;
+
 import com.openddal.command.Command;
 import com.openddal.command.CommandInterface;
 import com.openddal.command.Parser;
 import com.openddal.command.Prepared;
-import com.openddal.command.dml.SetTypes;
-import com.openddal.dbobject.Setting;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
@@ -40,11 +49,6 @@ import com.openddal.value.Value;
 import com.openddal.value.ValueLong;
 import com.openddal.value.ValueNull;
 import com.openddal.value.ValueString;
-
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.*;
 
 /**
  * A session represents an embedded database connection. When using the server
@@ -74,7 +78,6 @@ public class Session implements SessionInterface {
     private final Map<String, Connection> connectionHolder = New.concurrentHashMap();
     private boolean autoCommit = true;
     private Random random;
-    private int lockTimeout;
     private Value lastIdentity = ValueLong.get(0);
     private Value lastScopeIdentity = ValueLong.get(0);
     private int firstUncommittedLog = Session.LOG_WRITTEN;
@@ -117,8 +120,6 @@ public class Session implements SessionInterface {
         this.queryCacheSize = database.getSettings().queryCacheSize;
         this.user = user;
         this.id = id;
-        Setting setting = database.findSetting(SetTypes.getTypeName(SetTypes.DEFAULT_LOCK_TIMEOUT));
-        this.lockTimeout = setting == null ? Constants.INITIAL_LOCK_TIMEOUT : setting.getIntValue();
         this.currentSchemaName = Constants.SCHEMA_MAIN;
     }
 
@@ -229,9 +230,6 @@ public class Session implements SessionInterface {
     public void removeLocalTempTable(Table table) {
         modificationId++;
         localTempTables.remove(table.getName());
-        synchronized (database) {
-            table.removeChildrenAndResources(this);
-        }
     }
 
     /**
@@ -271,20 +269,6 @@ public class Session implements SessionInterface {
         localTempTableIndexes.put(index.getName(), index);
     }
 
-    /**
-     * Drop and remove the given local temporary index from this session.
-     *
-     * @param index the index
-     */
-    public void removeLocalTempTableIndex(Index index) {
-        if (localTempTableIndexes != null) {
-            localTempTableIndexes.remove(index.getName());
-            synchronized (database) {
-                index.removeChildrenAndResources(this);
-            }
-        }
-    }
-
     public boolean getAutoCommit() {
         return autoCommit;
     }
@@ -295,14 +279,6 @@ public class Session implements SessionInterface {
 
     public User getUser() {
         return user;
-    }
-
-    public int getLockTimeout() {
-        return lockTimeout;
-    }
-
-    public void setLockTimeout(int lockTimeout) {
-        this.lockTimeout = lockTimeout;
     }
 
     @Override
@@ -546,7 +522,6 @@ public class Session implements SessionInterface {
                 for (Table table : New.arrayList(localTempTables.values())) {
                     modificationId++;
                     localTempTables.remove(table.getName());
-                    table.removeChildrenAndResources(this);
                     if (closeSession) {
                         // need to commit, otherwise recovery might
                         // ignore the table removal

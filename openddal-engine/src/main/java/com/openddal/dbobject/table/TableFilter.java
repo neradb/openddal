@@ -15,13 +15,14 @@
  */
 package com.openddal.dbobject.table;
 
+import java.util.ArrayList;
+
 import com.openddal.command.Parser;
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.ConditionAndOr;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.index.IndexCursor;
@@ -30,15 +31,12 @@ import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
-import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 import com.openddal.value.ValueLong;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
 
 /**
  * A table filter represents a table that is used in a query. There is one such
@@ -117,9 +115,6 @@ public class TableFilter implements ColumnResolver {
         this.alias = alias;
         this.select = select;
         this.cursor = new IndexCursor(this);
-        if (!rightsChecked) {
-            session.getUser().checkRight(table, Right.SELECT);
-        }
         hashCode = session.nextObjectId();
     }
 
@@ -155,36 +150,7 @@ public class TableFilter implements ColumnResolver {
      * @return the best plan item
      */
     public PlanItem getBestPlanItem(Session s, int level) {
-        PlanItem item;
-        if (indexConditions.size() == 0) {
-            item = new PlanItem();
-            item.setIndex(table.getScanIndex(s));
-            item.cost = item.getIndex().getCost(s, null, null, null);
-        } else {
-            int len = table.getColumns().length;
-            int[] masks = new int[len];
-            for (IndexCondition condition : indexConditions) {
-                if (condition.isEvaluatable()) {
-                    if (condition.isAlwaysFalse()) {
-                        masks = null;
-                        break;
-                    }
-                    int id = condition.getColumn().getColumnId();
-                    if (id >= 0) {
-                        masks[id] |= condition.getMask(indexConditions);
-                    }
-                }
-            }
-            SortOrder sortOrder = null;
-            if (select != null) {
-                sortOrder = select.getSortOrder();
-            }
-            item = table.getBestPlanItem(s, masks, this, sortOrder);
-            // The more index conditions, the earlier the table.
-            // This is to ensure joins without indexes run quickly:
-            // x (x.a=10); y (x.b=y.b) - see issue 113
-            item.cost -= item.cost * indexConditions.size() / 100 / level;
-        }
+        PlanItem item = new PlanItem();
         if (nestedJoin != null) {
             setEvaluatable(nestedJoin);
             item.setNestedJoinPlan(nestedJoin.getBestPlanItem(s, level));

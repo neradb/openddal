@@ -20,7 +20,6 @@ package com.openddal.excutor.ddl;
 
 import com.openddal.command.ddl.AlterTableAddConstraint;
 import com.openddal.command.ddl.DropTable;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
@@ -66,7 +65,6 @@ public class DropTableExecutor extends DefineCommandExecutor<DropTable> {
                 throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
             }
         }
-        session.getUser().checkRight(table, Right.ALL);
         next = prepared.getNext();
         if (next != null) {
             prepareDrop(next);

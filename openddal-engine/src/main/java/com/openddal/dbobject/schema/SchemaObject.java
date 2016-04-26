@@ -20,21 +20,23 @@ import com.openddal.dbobject.DbObject;
 /**
  * Any database object that is stored in a schema.
  */
-public interface SchemaObject extends DbObject {
+public abstract class SchemaObject extends DbObject {
 
-    /**
-     * Get the schema in which this object is defined
-     *
-     * @return the schema
-     */
-    Schema getSchema();
+    private Schema schema;
 
-    /**
-     * Check whether this is a hidden object that doesn't appear in the meta
-     * data and in the script, and is not dropped on DROP ALL OBJECTS.
-     *
-     * @return true if it is hidden
-     */
-    boolean isHidden();
+    protected void initSchemaObjectBase(Schema newSchema, int id, String name) {
+        initDbObjectBase(newSchema.getDatabase(), id, name);
+        this.schema = newSchema;
+    }
+
+    public Schema getSchema() {
+        return schema;
+    }
+
+    @Override
+    public String getSQL() {
+        return schema.getSQL() + "." + super.getSQL();
+    }
+
 
 }

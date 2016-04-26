@@ -15,9 +15,12 @@
  */
 package com.openddal.excutor.dml;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
@@ -29,10 +32,6 @@ import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -54,7 +53,6 @@ public class UpdateExecutor extends PreparedRoutingExecutor<Update> {
         List<Column> columns = prepared.getColumns();
         Map<Column, Expression> valueMap = prepared.getExpressionMap();
         table.check();
-        session.getUser().checkRight(table, Right.UPDATE);
 
         Row updateRow = table.getTemplateRow();
         for (int i = 0, size = columns.size(); i < size; i++) {

@@ -15,180 +15,104 @@
  */
 package com.openddal.dbobject;
 
+import com.openddal.command.Parser;
 import com.openddal.engine.Database;
-import com.openddal.engine.Session;
-
-import java.util.ArrayList;
 
 /**
  * A database object such as a table, an index, or a user.
  */
-public interface DbObject {
+public abstract class DbObject {
 
     /**
      * The object is of the type table or view.
      */
-    int TABLE_OR_VIEW = 0;
+    public static final int TABLE_OR_VIEW = 0;
 
     /**
      * This object is an index.
      */
-    int INDEX = 1;
+    public static final int INDEX = 1;
 
     /**
      * This object is a user.
      */
-    int USER = 2;
+    public static final int USER = 2;
 
     /**
      * This object is a sequence.
      */
-    int SEQUENCE = 3;
-
-    /**
-     * This object is a trigger.
-     */
-    int TRIGGER = 4;
-
-    /**
-     * This object is a constraint (check constraint, unique constraint, or
-     * referential constraint).
-     */
-    int CONSTRAINT = 5;
-
-    /**
-     * This object is a setting.
-     */
-    int SETTING = 6;
-
-    /**
-     * This object is a role.
-     */
-    int ROLE = 7;
-
-    /**
-     * This object is a right.
-     */
-    int RIGHT = 8;
-
-    /**
-     * This object is an alias for a Java function.
-     */
-    int FUNCTION_ALIAS = 9;
+    public static final int SEQUENCE = 3;
 
     /**
      * This object is a schema.
      */
-    int SCHEMA = 10;
-
+    public static final int SCHEMA = 4;
+    
     /**
-     * This object is a constant.
+     * The database.
      */
-    int CONSTANT = 11;
+    protected Database database;
+
+    private int id;
+    private String objectName;
+    private boolean temporary;
 
     /**
-     * This object is a user data type (domain).
-     */
-    int USER_DATATYPE = 12;
-
-    /**
-     * This object is a comment.
-     */
-    int COMMENT = 13;
-
-    /**
-     * This object is a user-defined aggregate function.
-     */
-    int AGGREGATE = 14;
-
-    /**
-     * Get the SQL name of this object (may be quoted).
+     * Initialize some attributes of this object.
      *
-     * @return the SQL name
+     * @param db          the database
+     * @param objectId    the object id
+     * @param name        the name
+     * @param traceModule the trace module name
      */
-    String getSQL();
+    protected void initDbObjectBase(Database db, int objectId, String name) {
+        this.database = db;
+        this.id = objectId;
+        this.objectName = name;
+    }
 
-    /**
-     * Get the list of dependent children (for tables, this includes indexes and
-     * so on).
-     *
-     * @return the list of children
-     */
-    ArrayList<DbObject> getChildren();
+    protected void setObjectName(String name) {
+        objectName = name;
+    }
 
-    /**
-     * Get the database.
-     *
-     * @return the database
-     */
-    Database getDatabase();
+    public String getSQL() {
+        return Parser.quoteIdentifier(objectName);
+    }
 
-    /**
-     * Get the unique object id.
-     *
-     * @return the object id
-     */
-    int getId();
+    public Database getDatabase() {
+        return database;
+    }
 
-    /**
-     * Get the name.
-     *
-     * @return the name
-     */
-    String getName();
+    public int getId() {
+        return id;
+    }
 
-    /**
-     * Get the object type.
-     *
-     * @return the object type
-     */
-    int getType();
+    public String getName() {
+        return objectName;
+    }
+    
+    public boolean isTemporary() {
+        return temporary;
+    }
 
-    /**
-     * Delete all dependent children objects and resources of this object.
-     *
-     * @param session the session
-     */
-    void removeChildrenAndResources(Session session);
+    public void setTemporary(boolean temporary) {
+        this.temporary = temporary;
+    }
+    
+    public abstract int getType();
+    
+    public abstract void checkRename();
+    
 
-    /**
-     * Check if renaming is allowed. Does nothing when allowed.
-     */
-    void checkRename();
+    public void rename(String newName) {
+        checkRename();
+        objectName = newName;
+    }
 
-    /**
-     * Rename the object.
-     *
-     * @param newName the new name
-     */
-    void rename(String newName);
-
-    /**
-     * Check if this object is temporary (for example, a temporary table).
-     *
-     * @return true if is temporary
-     */
-    boolean isTemporary();
-
-    /**
-     * Tell this object that it is temporary or not.
-     *
-     * @param temporary the new value
-     */
-    void setTemporary(boolean temporary);
-
-    /**
-     * Get the current comment of this object.
-     *
-     * @return the comment, or null if not set
-     */
-    String getComment();
-
-    /**
-     * Change the comment of this object.
-     *
-     * @param comment the new comment, or null for no comment
-     */
-    void setComment(String comment);
-
+    
+    @Override
+    public String toString() {
+        return "DbObject [database=" + database + ", id=" + id + ", objectName=" + objectName + ", type=" + getType() + "]";
+    }    
+    
 }

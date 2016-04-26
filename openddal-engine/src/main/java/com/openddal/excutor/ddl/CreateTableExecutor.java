@@ -18,6 +18,9 @@
 
 package com.openddal.excutor.ddl;
 
+import java.util.ArrayList;
+import java.util.Map;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAddConstraint;
 import com.openddal.command.ddl.CreateIndex;
@@ -37,9 +40,6 @@ import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.DataType;
-
-import java.util.ArrayList;
-import java.util.Map;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -78,10 +78,6 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
 
         ArrayList<Sequence> sequences = New.arrayList();
         for (Column c : tableMate.getColumns()) {
-            if (c.isAutoIncrement()) {
-                c.convertAutoIncrementToSequence(session, database.getSchema(session.getCurrentSchemaName()),
-                        tableMate.getId(), prepared.isTemporary());
-            }
             Sequence seq = c.getSequence();
             if (seq != null) {
                 sequences.add(seq);

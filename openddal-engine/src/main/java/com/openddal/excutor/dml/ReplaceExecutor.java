@@ -15,12 +15,14 @@
  */
 package com.openddal.excutor.dml;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Query;
 import com.openddal.command.dml.Replace;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.Parameter;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
@@ -31,9 +33,6 @@ import com.openddal.result.SearchRow;
 import com.openddal.route.rule.TableNode;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -55,8 +54,6 @@ public class ReplaceExecutor extends PreparedRoutingExecutor<Replace> {
         table.check();
 
         int count;
-        session.getUser().checkRight(table, Right.INSERT);
-        session.getUser().checkRight(table, Right.UPDATE);
         prepared.setCurrentRowNumber(0);
         if (list.size() > 0) {
             count = 0;
@@ -114,7 +111,6 @@ public class ReplaceExecutor extends PreparedRoutingExecutor<Replace> {
         int count = update(row);
         if (count == 0) {
             try {
-                table.validateConvertUpdateSequence(session, row);
                 updateRow(table, row);
             } catch (DbException e) {
                 throw e;

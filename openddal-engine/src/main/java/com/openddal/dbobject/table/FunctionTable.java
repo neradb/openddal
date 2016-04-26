@@ -19,7 +19,7 @@ import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.FunctionCall;
 import com.openddal.command.expression.TableFunction;
 import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.IndexMate;
+import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Session;
@@ -103,7 +103,7 @@ public class FunctionTable extends Table {
 
     @Override
     public Index getScanIndex(Session session) {
-        return new IndexMate(this, 0, null, IndexColumn.wrap(columns), IndexType.createScan());
+        return new Index(this, 0, null, IndexColumn.wrap(columns), IndexType.createScan());
     }
 
     @Override

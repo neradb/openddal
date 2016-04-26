@@ -15,11 +15,13 @@
  */
 package com.openddal.excutor.dml;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Insert;
 import com.openddal.command.dml.Query;
 import com.openddal.command.expression.Expression;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
@@ -31,9 +33,6 @@ import com.openddal.route.rule.TableNode;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -56,7 +55,6 @@ public class InsertExecutor extends PreparedRoutingExecutor<Insert> implements R
     public int executeUpdate() {
         TableMate table = castTableMate(prepared.getTable());
         table.check();
-        session.getUser().checkRight(table, Right.INSERT);
         prepared.setCurrentRowNumber(0);
         rowNumber = 0;
         affectRows = 0;
@@ -85,7 +83,6 @@ public class InsertExecutor extends PreparedRoutingExecutor<Insert> implements R
                     }
                 }
                 rowNumber++;
-                table.validateConvertUpdateSequence(session, newRow);
                 addNewRow(newRow);
 
             }
@@ -123,7 +120,6 @@ public class InsertExecutor extends PreparedRoutingExecutor<Insert> implements R
                 throw prepared.setRow(ex, rowNumber, Prepared.getSQL(values));
             }
         }
-        table.validateConvertUpdateSequence(session, newRow);
         addNewRow(newRow);
     }
 

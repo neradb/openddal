@@ -16,7 +16,6 @@
 package com.openddal.excutor.ddl;
 
 import com.openddal.command.ddl.TruncateTable;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.route.rule.TableNode;
 
@@ -37,7 +36,6 @@ public class TruncateTableExecutor extends DefineCommandExecutor<TruncateTable> 
     public int executeUpdate() {
         TableMate table = castTableMate(prepared.getTable());
         session.commit(true);
-        session.getUser().checkRight(table, Right.DELETE);
         TableNode[] nodes = table.getPartitionNode();
         execute(nodes);
         return 0;

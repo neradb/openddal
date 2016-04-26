@@ -15,12 +15,13 @@
  */
 package com.openddal.command.expression;
 
+import java.util.HashMap;
+import java.util.List;
+
 import com.openddal.command.Parser;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.SelectListColumnResolver;
 import com.openddal.dbobject.index.IndexCondition;
-import com.openddal.dbobject.schema.Constant;
-import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.Table;
@@ -31,9 +32,6 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.value.Value;
 import com.openddal.value.ValueBoolean;
-
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * A expression that represents a column of a table or view.
@@ -140,14 +138,6 @@ public class ExpressionColumn extends Expression {
     @Override
     public Expression optimize(Session session) {
         if (columnResolver == null) {
-            Schema schema = session.getDatabase().findSchema(
-                    tableAlias == null ? session.getCurrentSchemaName() : tableAlias);
-            if (schema != null) {
-                Constant constant = schema.findConstant(columnName);
-                if (constant != null) {
-                    return constant.getValue();
-                }
-            }
             String name = columnName;
             if (tableAlias != null) {
                 name = tableAlias + "." + name;

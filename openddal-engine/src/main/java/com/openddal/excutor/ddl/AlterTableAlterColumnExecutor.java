@@ -18,9 +18,10 @@
 
 package com.openddal.excutor.ddl;
 
+import java.util.ArrayList;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAlterColumn;
-import com.openddal.dbobject.Right;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
@@ -28,8 +29,6 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.TableNode;
 import com.openddal.util.StatementBuilder;
-
-import java.util.ArrayList;
 
 /**
  * This executor execute the statements
@@ -58,7 +57,6 @@ public class AlterTableAlterColumnExecutor extends DefineCommandExecutor<AlterTa
             DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, parseTable.getSQL());
         }
         TableMate table = (TableMate) parseTable;
-        session.getUser().checkRight(table, Right.ALL);
         TableNode[] tableNodes = table.getPartitionNode();
         Column oldColumn = prepared.getOldColumn();
         int type = prepared.getType();

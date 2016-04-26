@@ -15,19 +15,18 @@
  */
 package com.openddal.dbobject.schema;
 
+import java.math.BigInteger;
+
 import com.openddal.dbobject.DbObject;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.message.Trace;
-
-import java.math.BigInteger;
 
 /**
  * A sequence is created using the statement
  * CREATE SEQUENCE
  */
-public class Sequence extends SchemaObjectBase {
+public class Sequence extends SchemaObject {
 
     /**
      * The default cache size for sequences.
@@ -76,7 +75,7 @@ public class Sequence extends SchemaObjectBase {
     public Sequence(Schema schema, int id, String name, Long startValue,
                     Long increment, Long cacheSize, Long minValue, Long maxValue,
                     boolean cycle, boolean belongsToTable) {
-        initSchemaObjectBase(schema, id, name, Trace.SEQUENCE);
+        initSchemaObjectBase(schema, id, name);
         this.increment = increment != null ?
                 increment : 1;
         this.minValue = minValue != null ?
@@ -281,11 +280,6 @@ public class Sequence extends SchemaObjectBase {
     @Override
     public int getType() {
         return DbObject.SEQUENCE;
-    }
-
-    @Override
-    public void removeChildrenAndResources(Session session) {
-        invalidate();
     }
 
     @Override

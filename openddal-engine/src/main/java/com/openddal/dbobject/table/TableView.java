@@ -15,13 +15,20 @@
  */
 package com.openddal.dbobject.table;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Query;
-import com.openddal.command.expression.*;
+import com.openddal.command.expression.Alias;
+import com.openddal.command.expression.Expression;
+import com.openddal.command.expression.ExpressionColumn;
+import com.openddal.command.expression.ExpressionVisitor;
+import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.IndexMate;
+import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Constants;
@@ -33,9 +40,6 @@ import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
-
-import java.util.ArrayList;
-import java.util.HashSet;
 
 /**
  * A view is a virtual table that is defined by a query.
@@ -222,9 +226,6 @@ public class TableView extends Table {
         }
         buff.append("VIEW ");
         buff.append(quotedName);
-        if (comment != null) {
-            buff.append(" COMMENT ").append(StringUtils.quoteStringSQL(comment));
-        }
         if (columns != null && columns.length > 0) {
             buff.append('(');
             for (Column c : columns) {
@@ -264,13 +265,6 @@ public class TableView extends Table {
     }
 
     @Override
-    public void removeChildrenAndResources(Session session) {
-        super.removeChildrenAndResources(session);
-        querySQL = null;
-        invalidate();
-    }
-
-    @Override
     public String getSQL() {
         if (isTemporary()) {
             return "(\n" + StringUtils.indent(querySQL) + ")";
@@ -289,7 +283,7 @@ public class TableView extends Table {
             throw DbException.get(ErrorCode.VIEW_IS_INVALID_2,
                     createException, getSQL(), msg);
         }
-        return new IndexMate(this, 0, null, IndexColumn.wrap(columns), IndexType.createScan());
+        return new Index(this, 0, null, IndexColumn.wrap(columns), IndexType.createScan());
     }
 
     @Override

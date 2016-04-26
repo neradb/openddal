@@ -26,13 +26,8 @@ import com.openddal.command.dml.SetTypes;
 import com.openddal.config.Configuration;
 import com.openddal.config.SchemaConfig;
 import com.openddal.config.TableConfig;
-import com.openddal.dbobject.Comment;
 import com.openddal.dbobject.DbObject;
-import com.openddal.dbobject.Right;
-import com.openddal.dbobject.Role;
-import com.openddal.dbobject.Setting;
 import com.openddal.dbobject.User;
-import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.SchemaObject;
 import com.openddal.dbobject.table.MetaTable;
@@ -62,12 +57,8 @@ public class Database {
 
     public static final String SYSTEM_USER_NAME = "MASTER";
 
-    private final HashMap<String, Role> roles = New.hashMap();
     private final HashMap<String, User> users = New.hashMap();
-    private final HashMap<String, Setting> settings = New.hashMap();
     private final HashMap<String, Schema> schemas = New.hashMap();
-    private final HashMap<String, Right> rights = New.hashMap();
-    private final HashMap<String, Comment> comments = New.hashMap();
 
     private final Set<Session> userSessions = Collections.synchronizedSet(new HashSet<Session>());
 
@@ -120,9 +111,6 @@ public class Database {
         Schema infoSchema = new Schema(this, -1, "INFORMATION_SCHEMA", systemUser, true);
         schemas.put(mainSchema.getName(), mainSchema);
         schemas.put(infoSchema.getName(), infoSchema);
-
-        Role publicRole = new Role(this, 0, Constants.PUBLIC_ROLE_NAME, true);
-        roles.put(Constants.PUBLIC_ROLE_NAME, publicRole);
 
         Session sysSession = createSession(systemUser);
         try {
@@ -209,20 +197,8 @@ public class Database {
             case DbObject.USER:
                 result = users;
                 break;
-            case DbObject.SETTING:
-                result = settings;
-                break;
-            case DbObject.ROLE:
-                result = roles;
-                break;
-            case DbObject.RIGHT:
-                result = rights;
-                break;
             case DbObject.SCHEMA:
                 result = schemas;
-                break;
-            case DbObject.COMMENT:
-                result = comments;
                 break;
             default:
                 throw DbException.throwInternalError("type=" + type);
@@ -255,31 +231,6 @@ public class Database {
     }
 
     /**
-     * Get the comment for the given database object if one exists, or null if
-     * not.
-     *
-     * @param object the database object
-     * @return the comment or null
-     */
-    public Comment findComment(DbObject object) {
-        if (object.getType() == DbObject.COMMENT) {
-            return null;
-        }
-        String key = Comment.getKey(object);
-        return comments.get(key);
-    }
-
-    /**
-     * Get the role if it exists, or null if not.
-     *
-     * @param roleName the name of the role
-     * @return the role or null
-     */
-    public Role findRole(String roleName) {
-        return roles.get(roleName);
-    }
-
-    /**
      * Get the schema if it exists, or null if not.
      *
      * @param schemaName the name of the schema
@@ -288,16 +239,6 @@ public class Database {
     public Schema findSchema(String schemaName) {
         Schema schema = schemas.get(schemaName);
         return schema;
-    }
-
-    /**
-     * Get the setting if it exists, or null if not.
-     *
-     * @param name the name of the setting
-     * @return the setting or null
-     */
-    public Setting findSetting(String name) {
-        return settings.get(name);
     }
 
     /**
@@ -398,24 +339,12 @@ public class Database {
         return i;
     }
 
-    public ArrayList<Comment> getAllComments() {
-        return New.arrayList(comments.values());
-    }
-
     public int getAllowLiterals() {
         return allowLiterals;
     }
 
     public void setAllowLiterals(int value) {
         this.allowLiterals = value;
-    }
-
-    public ArrayList<Right> getAllRights() {
-        return New.arrayList(rights.values());
-    }
-
-    public ArrayList<Role> getAllRoles() {
-        return New.arrayList(roles.values());
     }
 
     /**
@@ -476,10 +405,6 @@ public class Database {
 
     public ArrayList<Schema> getAllSchemas() {
         return New.arrayList(schemas.values());
-    }
-
-    public ArrayList<Setting> getAllSettings() {
-        return New.arrayList(settings.values());
     }
 
     public ArrayList<User> getAllUsers() {
@@ -572,46 +497,7 @@ public class Database {
         if (SysProperties.CHECK && !map.containsKey(objName)) {
             DbException.throwInternalError("not found: " + objName);
         }
-        Comment comment = findComment(obj);
-        if (comment != null) {
-            removeDatabaseObject(session, comment);
-        }
-        obj.removeChildrenAndResources(session);
         map.remove(objName);
-    }
-
-    /**
-     * Get the first table that depends on this object.
-     *
-     * @param obj    the object to find
-     * @param except the table to exclude (or null)
-     * @return the first dependent table, or null
-     */
-    public Table getDependentTable(SchemaObject obj, Table except) {
-        switch (obj.getType()) {
-            case DbObject.COMMENT:
-            case DbObject.CONSTRAINT:
-            case DbObject.INDEX:
-            case DbObject.RIGHT:
-            case DbObject.TRIGGER:
-            case DbObject.USER:
-                return null;
-            default:
-        }
-        HashSet<DbObject> set = New.hashSet();
-        for (Table t : getAllTablesAndViews()) {
-            if (except == t) {
-                continue;
-            } else if (Table.VIEW.equals(t.getTableType())) {
-                continue;
-            }
-            set.clear();
-            t.addDependencies(set);
-            if (set.contains(obj)) {
-                return t;
-            }
-        }
-        return null;
     }
 
     /**
@@ -628,17 +514,6 @@ public class Database {
                 session.removeLocalTempTable(table);
                 return;
             }
-        } else if (type == DbObject.INDEX) {
-            Index index = (Index) obj;
-            Table table = index.getTable();
-            if (table.isTemporary() && !table.isGlobalTemporary()) {
-                session.removeLocalTempTableIndex(index);
-                return;
-            }
-        }
-        Comment comment = findComment(obj);
-        if (comment != null) {
-            removeDatabaseObject(session, comment);
         }
         obj.getSchema().remove(obj);
     }
