@@ -39,25 +39,7 @@ import com.openddal.util.Utils;
  * System.setProperty(&quot;h2.baseDir&quot;, &quot;/temp&quot;);
  * </pre>
  */
-public class SysProperties {
-
-    /**
-     * INTERNAL
-     */
-    public static final String H2_SCRIPT_DIRECTORY = "h2.scriptDirectory";
-
-    /**
-     * INTERNAL
-     */
-    public static final String H2_BROWSER = "h2.browser";
-
-    /**
-     * System property <code>file.encoding</code> (default: Cp1252).<br />
-     * It is usually set by the system and is the default encoding used for the
-     * RunScript and CSV tool.
-     */
-    public static final String FILE_ENCODING =
-            Utils.getProperty("file.encoding", "Cp1252");
+public class SysProperties { 
 
     /**
      * System property <code>file.separator</code> (default: /).<br />
@@ -95,30 +77,6 @@ public class SysProperties {
     public static final String ALLOWED_CLASSES =
             Utils.getProperty("h2.allowedClasses", "*");
 
-    /**
-     * System property <code>h2.browser</code> (default: null).<br />
-     * The preferred browser to use. If not set, the default browser is used.
-     * For Windows, to use the Internet Explorer, set this property to
-     * 'explorer'. For Mac OS, if the default browser is not Safari and you want
-     * to use Safari, use:
-     * <code>java -Dh2.browser="open,-a,Safari,%url" ...</code>.
-     */
-    public static final String BROWSER =
-            Utils.getProperty(H2_BROWSER, null);
-
-    /**
-     * System property <code>h2.enableAnonymousTLS</code> (default: true).<br />
-     * When using TLS connection, the anonymous cipher suites should be enabled.
-     */
-    public static final boolean ENABLE_ANONYMOUS_TLS =
-            Utils.getProperty("h2.enableAnonymousTLS", true);
-
-    /**
-     * System property <code>h2.bindAddress</code> (default: null).<br />
-     * The bind address to use.
-     */
-    public static final String BIND_ADDRESS =
-            Utils.getProperty("h2.bindAddress", null);
 
     /**
      * System property <code>h2.check</code> (default: true).<br />
@@ -127,20 +85,6 @@ public class SysProperties {
     //## CHECK ##
     public static final boolean CHECK =
             Utils.getProperty("h2.check", true);
-    /*/
-    public static final boolean CHECK = false;
-    //*/
-
-    /**
-     * System property <code>h2.check2</code> (default: true).<br />
-     * Additional assertions in the database engine.
-     */
-    //## CHECK ##
-    public static final boolean CHECK2 =
-            Utils.getProperty("h2.check2", false);
-    /*/
-    public static final boolean CHECK2 = false;
-    //*/
 
     /**
      * System property <code>h2.clientTraceDirectory</code> (default:
@@ -157,76 +101,14 @@ public class SysProperties {
      * been set for the database.
      */
     public static final int COLLATOR_CACHE_SIZE =
-            Utils.getProperty("h2.collatorCacheSize", 32000);
-
-    /**
-     * System property <code>h2.consoleTableIndexes</code>
-     * (default: 100).<br />
-     * Up to this many tables, the column type and indexes are listed.
-     */
-    public static final int CONSOLE_MAX_TABLES_LIST_INDEXES =
-            Utils.getProperty("h2.consoleTableIndexes", 100);
-
-    /**
-     * System property <code>h2.consoleTableColumns</code>
-     * (default: 500).<br />
-     * Up to this many tables, the column names are listed.
-     */
-    public static final int CONSOLE_MAX_TABLES_LIST_COLUMNS =
-            Utils.getProperty("h2.consoleTableColumns", 300);
-
-    /**
-     * System property <code>h2.consoleProcedureColumns</code>
-     * (default: 500).<br />
-     * Up to this many procedures, the column names are listed.
-     */
-    public static final int CONSOLE_MAX_PROCEDURES_LIST_COLUMNS =
-            Utils.getProperty("h2.consoleProcedureColumns", 300);
-
-    /**
-     * System property <code>h2.consoleStream</code> (default: true).<br />
-     * H2 Console: stream query results.
-     */
-    public static final boolean CONSOLE_STREAM =
-            Utils.getProperty("h2.consoleStream", true);
-
-    /**
-     * System property <code>h2.consoleTimeout</code> (default: 1800000).<br />
-     * H2 Console: session timeout in milliseconds. The default is 30 minutes.
-     */
-    public static final int CONSOLE_TIMEOUT =
-            Utils.getProperty("h2.consoleTimeout", 30 * 60 * 1000);
-
+            Utils.getProperty("h2.collatorCacheSize", 32000); 
     /**
      * System property <code>h2.dataSourceTraceLevel</code> (default: 1).<br />
      * The trace level of the data source implementation. Default is 1 for
      * error.
      */
     public static final int DATASOURCE_TRACE_LEVEL =
-            Utils.getProperty("h2.dataSourceTraceLevel", 1);
-
-    /**
-     * System property <code>h2.delayWrongPasswordMin</code>
-     * (default: 250).<br />
-     * The minimum delay in milliseconds before an exception is thrown for using
-     * the wrong user name or password. This slows down brute force attacks. The
-     * delay is reset to this value after a successful login. Unsuccessful
-     * logins will double the time until DELAY_WRONG_PASSWORD_MAX.
-     * To disable the delay, set this system property to 0.
-     */
-    public static final int DELAY_WRONG_PASSWORD_MIN =
-            Utils.getProperty("h2.delayWrongPasswordMin", 250);
-
-    /**
-     * System property <code>h2.delayWrongPasswordMax</code>
-     * (default: 4000).<br />
-     * The maximum delay in milliseconds before an exception is thrown for using
-     * the wrong user name or password. This slows down brute force attacks. The
-     * delay is reset after a successful login. The value 0 means there is no
-     * maximum delay.
-     */
-    public static final int DELAY_WRONG_PASSWORD_MAX =
-            Utils.getProperty("h2.delayWrongPasswordMax", 4000);
+            Utils.getProperty("h2.dataSourceTraceLevel", 1);  
 
     /**
      * System property <code>h2.javaSystemCompiler</code> (default: true).<br />
@@ -541,18 +423,6 @@ public class SysProperties {
      */
     public static void setEngineConfigLocation(String file) {
         System.setProperty(ENGINE_CONFIG_LOCATION, file);
-    }
-
-    /**
-     * System property <code>h2.scriptDirectory</code> (default: empty
-     * string).<br />
-     * Relative or absolute directory where the script files are stored to or
-     * read from.
-     *
-     * @return the current value
-     */
-    public static String getScriptDirectory() {
-        return Utils.getProperty(H2_SCRIPT_DIRECTORY, "");
     }
 
     /**
