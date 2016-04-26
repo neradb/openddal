@@ -67,7 +67,7 @@ public class Threads {
     
     
     private static final class CustomThreadFactory implements ThreadFactory {
-        private static final AtomicInteger index = new AtomicInteger(1);
+        private final AtomicInteger index = new AtomicInteger(1);
         private final String prefix;
         private final boolean daemon;
         private final ThreadGroup group;
