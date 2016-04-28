@@ -51,5 +51,4 @@ public class MultiNodeTableRule extends TableRule {
         }
 
     }
-
 }

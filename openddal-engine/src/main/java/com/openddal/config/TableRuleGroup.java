@@ -6,6 +6,7 @@ import java.util.List;
 
 public class TableRuleGroup extends ShardedTableRule implements Serializable {
 
+    
     public TableRuleGroup() {
         super(null);
     }

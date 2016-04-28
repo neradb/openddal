@@ -25,6 +25,7 @@ public class ShardedTableRule extends MultiNodeTableRule implements Serializable
     private TableRuleGroup owner;
     
     
+
     public ShardedTableRule(String name) {
         super(name);
     }
