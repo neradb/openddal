@@ -20,7 +20,7 @@ import com.openddal.command.expression.Parameter;
 import com.openddal.excutor.CommonPreparedExecutor;
 import com.openddal.excutor.JdbcWorker;
 import com.openddal.message.DbException;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.value.Value;
 
@@ -37,16 +37,16 @@ public abstract class DefineCommandExecutor<T extends DefineCommand> extends Com
         super(prepared);
     }
 
-    protected static Map<TableNode, TableNode> getSymmetryRelation(TableNode[] n1, TableNode[] n2) {
+    protected static Map<ObjectNode, ObjectNode> getSymmetryRelation(ObjectNode[] n1, ObjectNode[] n2) {
         if (n1.length != n2.length) {
             return null;
         }
-        Map<TableNode, TableNode> tableNode = New.hashMap();
-        for (TableNode tn1 : n1) {
+        Map<ObjectNode, ObjectNode> tableNode = New.hashMap();
+        for (ObjectNode tn1 : n1) {
             String sName = tn1.getShardName();
             String suffix = tn1.getSuffix();
-            TableNode matched = null;
-            for (TableNode tn2 : n2) {
+            ObjectNode matched = null;
+            for (ObjectNode tn2 : n2) {
                 if (!sName.equals(tn2.getShardName())) {
                     continue;
                 }
@@ -71,10 +71,10 @@ public abstract class DefineCommandExecutor<T extends DefineCommand> extends Com
      *
      * @param nodes
      */
-    public void execute(TableNode[] nodes) {
+    public void execute(ObjectNode[] nodes) {
         session.checkCanceled();
         List<JdbcWorker<Integer>> workers = New.arrayList(nodes.length);
-        for (TableNode node : nodes) {
+        for (ObjectNode node : nodes) {
             String sql = doTranslate(node);
             List<Parameter> items = getPrepared().getParameters();
             List<Value> params = New.arrayList(items.size());
@@ -106,7 +106,7 @@ public abstract class DefineCommandExecutor<T extends DefineCommand> extends Com
         }
     }
 
-    protected abstract String doTranslate(TableNode node);
+    protected abstract String doTranslate(ObjectNode node);
 
 
 }

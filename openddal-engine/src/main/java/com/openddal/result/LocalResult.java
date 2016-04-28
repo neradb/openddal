@@ -15,6 +15,10 @@
  */
 package com.openddal.result;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
 import com.openddal.command.expression.Expression;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
@@ -23,10 +27,6 @@ import com.openddal.util.ValueHashMap;
 import com.openddal.value.DataType;
 import com.openddal.value.Value;
 import com.openddal.value.ValueArray;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
 
 /**
  * A local result set contains all row data of a result set.
@@ -37,7 +37,6 @@ import java.util.ArrayList;
 public class LocalResult implements ResultInterface, ResultTarget {
 
     private int maxMemoryRows;
-    private Session session;
     private int visibleColumnCount;
     private Expression[] expressions;
     private int rowId, rowCount;
@@ -69,7 +68,6 @@ public class LocalResult implements ResultInterface, ResultTarget {
      */
     public LocalResult(Session session, Expression[] expressions,
                        int visibleColumnCount) {
-        this.session = session;
         if (session == null) {
             this.maxMemoryRows = Integer.MAX_VALUE;
         } else {
@@ -134,7 +132,6 @@ public class LocalResult implements ResultInterface, ResultTarget {
         }
         LocalResult copy = new LocalResult();
         copy.maxMemoryRows = this.maxMemoryRows;
-        copy.session = targetSession;
         copy.visibleColumnCount = this.visibleColumnCount;
         copy.expressions = this.expressions;
         copy.rowId = -1;

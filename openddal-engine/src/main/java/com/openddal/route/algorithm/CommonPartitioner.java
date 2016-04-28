@@ -16,7 +16,7 @@
 package com.openddal.route.algorithm;
 
 import com.openddal.route.rule.RuleEvaluateException;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.value.CompareMode;
@@ -34,7 +34,7 @@ public abstract class CommonPartitioner implements Partitioner {
 
     private int defaultNodeIndex = -1;
 
-    private List<TableNode> tableNodes;
+    private List<ObjectNode> tableNodes;
 
     protected static int[] toIntArray(String string) {
         string = string.replaceAll("\\s", "");
@@ -63,11 +63,11 @@ public abstract class CommonPartitioner implements Partitioner {
     /**
      * @return the tableNodes
      */
-    public List<TableNode> getTableNodes() {
+    public List<ObjectNode> getTableNodes() {
         return tableNodes;
     }
 
-    public void initialize(List<TableNode> tableNodes) {
+    public void initialize(List<ObjectNode> tableNodes) {
         this.tableNodes = tableNodes;
     }
 

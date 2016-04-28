@@ -19,7 +19,7 @@
 package com.openddal.excutor.ddl;
 
 import com.openddal.command.ddl.DropIndex;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -40,7 +40,7 @@ public class CreateIndexExecutor extends DefineCommandExecutor<DropIndex> {
     }
 
     @Override
-    protected String doTranslate(TableNode tableNode) {
+    protected String doTranslate(ObjectNode tableNode) {
         return null;
     }
 

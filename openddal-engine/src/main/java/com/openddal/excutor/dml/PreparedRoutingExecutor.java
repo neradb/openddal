@@ -26,7 +26,7 @@ import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.route.RoutingHandler;
 import com.openddal.route.rule.RoutingResult;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
@@ -76,8 +76,8 @@ public abstract class PreparedRoutingExecutor<T extends Prepared> extends Common
         session.checkCanceled();
         for (Row row : rows) {
             RoutingResult result = routingHandler.doRoute(table, row);
-            TableNode[] selectNodes = result.getSelectNodes();
-            for (TableNode node : selectNodes) {
+            ObjectNode[] selectNodes = result.getSelectNodes();
+            for (ObjectNode node : selectNodes) {
                 StatementBuilder sqlBuff = new StatementBuilder();
                 List<Value> params = doTranslate(node, row, sqlBuff);
                 BatchKey batchKey = new BatchKey(node.getShardName(), sqlBuff.toString());
@@ -132,7 +132,7 @@ public abstract class PreparedRoutingExecutor<T extends Prepared> extends Common
         }
     }
 
-    protected abstract List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff);
+    protected abstract List<Value> doTranslate(ObjectNode node, SearchRow row, StatementBuilder buff);
 
     /**
      * @param result
@@ -141,8 +141,8 @@ public abstract class PreparedRoutingExecutor<T extends Prepared> extends Common
      */
     private int invokeUpdateRow(RoutingResult result, Row row) {
         List<JdbcWorker<Integer>> workers = New.arrayList(result.tableNodeCount());
-        TableNode[] selectNodes = result.getSelectNodes();
-        for (TableNode node : selectNodes) {
+        ObjectNode[] selectNodes = result.getSelectNodes();
+        for (ObjectNode node : selectNodes) {
             StatementBuilder sqlBuff = new StatementBuilder();
             List<Value> params = doTranslate(node, row, sqlBuff);
             workers.add(createUpdateWorker(node.getShardName(), sqlBuff.toString(), params));

@@ -117,7 +117,7 @@ public class RoutingHandlerImpl implements RoutingHandler {
 
     }
 
-    private RoutingResult fixedRoutingResult(TableNode... tableNode) {
+    private RoutingResult fixedRoutingResult(ObjectNode... tableNode) {
         RoutingResult result = RoutingResult.fixedResult(tableNode);
         return result;
     }

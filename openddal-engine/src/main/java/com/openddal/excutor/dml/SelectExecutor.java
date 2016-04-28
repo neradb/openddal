@@ -15,10 +15,15 @@
  */
 package com.openddal.excutor.dml;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
-import com.openddal.config.TableConfig;
+import com.openddal.config.ShardedTableRule;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
@@ -27,8 +32,12 @@ import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.result.*;
-import com.openddal.route.rule.TableNode;
+import com.openddal.result.LocalResult;
+import com.openddal.result.ResultInterface;
+import com.openddal.result.ResultTarget;
+import com.openddal.result.SearchRow;
+import com.openddal.result.SortOrder;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
@@ -36,11 +45,6 @@ import com.openddal.util.ValueHashMap;
 import com.openddal.value.Value;
 import com.openddal.value.ValueArray;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -182,27 +186,27 @@ public class SelectExecutor extends PreparedRoutingExecutor<Select> {
         Index index = filter.getIndex();
         int scanLevel = table.getScanLevel();
         switch (scanLevel) {
-            case TableConfig.SCANLEVEL_UNLIMITED:
+            case ShardedTableRule.SCANLEVEL_UNLIMITED:
                 break;
-            case TableConfig.SCANLEVEL_FILTER:
+            case ShardedTableRule.SCANLEVEL_FILTER:
                 if (filter.getFilterCondition() == null) {
                     throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE,
                             table.getSQL(), "filter", "filter");
                 }
                 break;
-            case TableConfig.SCANLEVEL_ANYINDEX:
+            case ShardedTableRule.SCANLEVEL_ANYINDEX:
                 if (index.getIndexType().isScan()) {
                     throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE,
                             table.getSQL(), "anyIndex", "index");
                 }
                 break;
-            case TableConfig.SCANLEVEL_UNIQUEINDEX:
+            case ShardedTableRule.SCANLEVEL_UNIQUEINDEX:
                 if (!index.getIndexType().isUnique()) {
                     throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE,
                             table.getSQL(), "uniqueIndex", "unique index");
                 }
                 break;
-            case TableConfig.SCANLEVEL_SHARDINGKEY:
+            case ShardedTableRule.SCANLEVEL_SHARDINGKEY:
                 if (!index.getIndexType().isShardingKey()) {
                     throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE,
                             table.getSQL(), "shardingKey", "sharding key");
@@ -215,7 +219,7 @@ public class SelectExecutor extends PreparedRoutingExecutor<Select> {
 
 
     @Override
-    protected List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff) {
+    protected List<Value> doTranslate(ObjectNode node, SearchRow row, StatementBuilder buff) {
         return null;
     }
 

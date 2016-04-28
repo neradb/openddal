@@ -28,7 +28,6 @@ import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Constants;

@@ -21,7 +21,6 @@ import java.sql.Statement;
 
 import org.junit.Test;
 
-import com.openddal.engine.SysProperties;
 import com.openddal.test.BaseTestCase;
 
 /**
@@ -38,7 +37,7 @@ public class CreateTableTestCase extends BaseTestCase {
     private Statement stmt;
 
     public CreateTableTestCase() {
-        SysProperties.setEngineConfigLocation("test/sql/ddal-config.xml");
+        System.setProperty("ddal.engineConfigLocation", "ddal-engine.xml");
     }
 
     @Test

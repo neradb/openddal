@@ -15,17 +15,17 @@
  */
 package com.openddal.jdbc;
 
-import com.openddal.command.dml.SetTypes;
-import com.openddal.config.DataSourceProvider;
-import com.openddal.message.DbException;
-import com.openddal.util.StringUtils;
-
-import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Logger;
+
+import javax.sql.DataSource;
+
+import com.openddal.config.DataSourceProvider;
+import com.openddal.message.DbException;
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -301,7 +301,6 @@ public class JdbcDataSource implements DataSource {
             return;
         }
         properties = new Properties();
-        properties.put(SetTypes.getTypeName(SetTypes.MODE), this.dbType);
         if (this.dataSourceProvider != null) {
             properties.put("dataSourceProvider", this.dataSourceProvider);
         }

@@ -18,18 +18,22 @@
 
 package com.openddal.route.rule;
 
-import com.openddal.util.StringUtils;
-
 import java.io.Serializable;
+
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class TableNode implements Serializable {
+public class ObjectNode implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    private final String catalog;
+
     private final String shardName;
+
+    private final String schema;
 
     private final String objectName;
 
@@ -39,12 +43,18 @@ public class TableNode implements Serializable {
      * @param shardName
      * @param objectName
      */
-    public TableNode(String shardName, String objectName) {
+    public ObjectNode(String shardName, String objectName) {
         this(shardName, objectName, null);
     }
 
-    public TableNode(String shardName, String objectName, String suffix) {
+    public ObjectNode(String shardName, String objectName, String suffix) {
+        this(shardName, null, null, objectName, suffix);
+    }
+
+    public ObjectNode(String shardName, String catalog, String schema, String objectName, String suffix) {
         this.shardName = shardName;
+        this.catalog = catalog;
+        this.schema = schema;
         this.objectName = objectName;
         this.suffix = suffix;
     }
@@ -70,6 +80,19 @@ public class TableNode implements Serializable {
         return suffix;
     }
 
+    /**
+     * @return the catalog
+     */
+    public String getCatalog() {
+        return catalog;
+    }
+
+    /**
+     * @return the schema
+     */
+    public String getSchema() {
+        return schema;
+    }
 
     public String getCompositeObjectName() {
         StringBuilder fullName = new StringBuilder();
@@ -80,23 +103,18 @@ public class TableNode implements Serializable {
         return fullName.toString();
     }
 
-
-    /* (non-Javadoc)
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + ((catalog == null) ? 0 : catalog.hashCode());
+        result = prime * result + ((objectName == null) ? 0 : objectName.hashCode());
+        result = prime * result + ((schema == null) ? 0 : schema.hashCode());
         result = prime * result + ((shardName == null) ? 0 : shardName.hashCode());
         result = prime * result + ((suffix == null) ? 0 : suffix.hashCode());
-        result = prime * result + ((objectName == null) ? 0 : objectName.hashCode());
         return result;
     }
 
-    /* (non-Javadoc)
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
@@ -105,7 +123,22 @@ public class TableNode implements Serializable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        TableNode other = (TableNode) obj;
+        ObjectNode other = (ObjectNode) obj;
+        if (catalog == null) {
+            if (other.catalog != null)
+                return false;
+        } else if (!catalog.equals(other.catalog))
+            return false;
+        if (objectName == null) {
+            if (other.objectName != null)
+                return false;
+        } else if (!objectName.equals(other.objectName))
+            return false;
+        if (schema == null) {
+            if (other.schema != null)
+                return false;
+        } else if (!schema.equals(other.schema))
+            return false;
         if (shardName == null) {
             if (other.shardName != null)
                 return false;
@@ -116,18 +149,11 @@ public class TableNode implements Serializable {
                 return false;
         } else if (!suffix.equals(other.suffix))
             return false;
-        if (objectName == null) {
-            if (other.objectName != null)
-                return false;
-        } else if (!objectName.equals(other.objectName))
-            return false;
         return true;
     }
 
-    @Override
     public String toString() {
-        return getShardName() + "." + getCompositeObjectName();
+        return getCompositeObjectName();
     }
-
 
 }

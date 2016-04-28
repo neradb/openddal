@@ -2,112 +2,125 @@
 <!DOCTYPE ddal-config PUBLIC "-//openddal.com//DTD ddal-config//EN" "http://openddal.com/dtd/ddal-config.dtd">
 <ddal-config>
 
-    <schema name="myApp" shard="shard0">
+	<schema name="ddal_schema">
 
-        <tableGroup router="customer_group" validation="false">
-            <table name="customers"/>
-            <table name="address"/>
-        </tableGroup>
+		<tableGroup router="order_group">
+			<tables>
+				<table name="orders" />
+				<table name="order_items" />
+				<table name="order_status" />
+			</tables>
+			<nodes>
+				<node shard="shard0" suffix="_01,_02,_03,_04" />
+				<node shard="shard1" suffix="_01,_02,_03,_04" />
+				<node shard="shard2" suffix="_01,_02,_03,_04" />
+				<node shard="shard3" suffix="_01,_02,_03,_04" />
+			</nodes>
+			<tableRule>
+				<columns>order_id</columns>
+				<algorithm>order_partitioner</algorithm>
+			</tableRule>
 
-        <tableGroup router="order_group" validation="false">
-            <table name="orders"/>
-            <table name="order_items"/>
-            <table name="order_status"/>
-        </tableGroup>
+		</tableGroup>
 
-        <table name="product" validation="false"/>
-        <table name="product_category" validation="false"/>
+		<tableGroup validation="false">
+			<tables>
+				<table name="customers" ruleColumns="id" />
+				<table name="address" ruleColumns="customers_id" />
+			</tables>
+			<nodes>
+				<node shard="shard0" suffix="_01,_02" />
+				<node shard="shard1" suffix="_01,_02" />
+				<node shard="shard2" suffix="_01,_02" />
+				<node shard="shard3" suffix="_01,_02" />
+			</nodes>
+			<tableRule>
+				<columns>${table.ruleColumns}</columns>
+				<algorithm>order_partitioner</algorithm>
+			</tableRule>
+		</tableGroup>
 
-    </schema>
+		<table name="product">
+			<nodes>
+				<node shard="shard0,shard1,shard2,shard3" />
+			</nodes>
+		</table>
 
-    <cluster>
-        <shard name="shard0">
-            <member ref="db1m"/>
-        </shard>
-        <shard name="shard1">
-            <member ref="db2m"/>
-        </shard>
-        <shard name="shard2">
-            <member ref="db3m"/>
-        </shard>
-        <shard name="shard3">
-            <member ref="db4m"/>
-        </shard>
-    </cluster>
+		<table name="product_category">
+			<nodes>
+				<node shard="shard0,shard1,shard2,shard3" />
+			</nodes>
+		</table>
 
+	</schema>
 
-    <dataNodes>
-        <datasource id="db1m" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
-            <property name="url"
-                      value="jdbc:mysql://10.199.249.251:3306/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true"/>
-            <property name="username" value="root"/>
-            <property name="password" value="admin"/>
-            <property name="maxWait" value="0"/>
-            <property name="poolPreparedStatements" value="true"/>
-        </datasource>
-        <datasource id="db2m" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
-            <property name="url"
-                      value="jdbc:mysql://10.199.249.251:3306/ddal_db2?connectTimeout=1000&amp;rewriteBatchedStatements=true"/>
-            <property name="username" value="root"/>
-            <property name="password" value="admin"/>
-            <property name="maxWait" value="0"/>
-            <property name="poolPreparedStatements" value="true"/>
-        </datasource>
-        <datasource id="db3m" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
-            <property name="url"
-                      value="jdbc:mysql://10.199.249.251:3306/ddal_db3?connectTimeout=1000&amp;rewriteBatchedStatements=true"/>
-            <property name="username" value="root"/>
-            <property name="password" value="admin"/>
-            <property name="maxWait" value="0"/>
-            <property name="poolPreparedStatements" value="true"/>
-        </datasource>
-        <datasource id="db4m" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver"/>
-            <property name="url"
-                      value="jdbc:mysql://10.199.249.251:3306/ddal_db4?connectTimeout=1000&amp;rewriteBatchedStatements=true"/>
-            <property name="username" value="root"/>
-            <property name="password" value="admin"/>
-            <property name="maxWait" value="0"/>
-            <property name="poolPreparedStatements" value="true"/>
-        </datasource>
-        <!--
-        <datasource id="db1s" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver" />
-            <property name="url" value="jdbc:mysql://10.199.249.251:3306/ddal_db1" />
-            <property name="username" value="root" />
-            <property name="password" value="admin" />
-            <property name="maxWait" value="1"/>
-        </datasource>
-        <datasource id="db2s" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver" />
-            <property name="url" value="jdbc:mysql://10.19.90.77:3306/ddal_db2" />
-            <property name="username" value="root" />
-            <property name="password" value="admin" />
-            <property name="maxWait" value="1"/>
-        </datasource>
-        <datasource id="db3s" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver" />
-            <property name="url" value="jdbc:mysql://10.19.90.77:3306/ddal_db3" />
-            <property name="username" value="root" />
-            <property name="password" value="admin" />
-            <property name="maxWait" value="1"/>
-        </datasource>
-        <datasource id="db4s" class="org.apache.commons.dbcp.BasicDataSource">
-            <property name="driverClassName" value="com.mysql.jdbc.Driver" />
-            <property name="url" value="jdbc:mysql://10.19.90.77:3306/ddal_db4" />
-            <property name="username" value="root" />
-            <property name="password" value="admin" />
-            <property name="maxWait" value="1"/>
-        </datasource>
-        -->
-    </dataNodes>
+	<cluster>
+		<shard name="shard0">
+			<member ref="db1m" />
+		</shard>
+		<shard name="shard1">
+			<member ref="db2m" />
+		</shard>
+		<shard name="shard2">
+			<member ref="db3m" />
+		</shard>
+		<shard name="shard3">
+			<member ref="db4m" />
+		</shard>
+	</cluster>
 
 
-    <tableRules>
-        <tableRule resource="/config/ddal-rule.xml"/>
-    </tableRules>
+	<dataNodes>
+		<datasource id="db1m" class="org.apache.commons.dbcp.BasicDataSource">
+			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+			<property name="url"
+				value="jdbc:mysql://10.199.249.251:3306/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true" />
+			<property name="username" value="root" />
+			<property name="password" value="admin" />
+			<property name="maxWait" value="0" />
+			<property name="poolPreparedStatements" value="true" />
+		</datasource>
+		<datasource id="db2m" class="org.apache.commons.dbcp.BasicDataSource">
+			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+			<property name="url"
+				value="jdbc:mysql://10.199.249.251:3306/ddal_db2?connectTimeout=1000&amp;rewriteBatchedStatements=true" />
+			<property name="username" value="root" />
+			<property name="password" value="admin" />
+			<property name="maxWait" value="0" />
+			<property name="poolPreparedStatements" value="true" />
+		</datasource>
+		<datasource id="db3m" class="org.apache.commons.dbcp.BasicDataSource">
+			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+			<property name="url"
+				value="jdbc:mysql://10.199.249.251:3306/ddal_db3?connectTimeout=1000&amp;rewriteBatchedStatements=true" />
+			<property name="username" value="root" />
+			<property name="password" value="admin" />
+			<property name="maxWait" value="0" />
+			<property name="poolPreparedStatements" value="true" />
+		</datasource>
+		<datasource id="db4m" class="org.apache.commons.dbcp.BasicDataSource">
+			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+			<property name="url"
+				value="jdbc:mysql://10.199.249.251:3306/ddal_db4?connectTimeout=1000&amp;rewriteBatchedStatements=true" />
+			<property name="username" value="root" />
+			<property name="password" value="admin" />
+			<property name="maxWait" value="0" />
+			<property name="poolPreparedStatements" value="true" />
+		</datasource>
+	</dataNodes>
+
+
+	<partitioners>
+		<partitioner name="customer_partitioner"
+			class="com.openddal.route.algorithm.HashBucketPartitioner">
+			<property name="partitionCount" value="8" />
+			<property name="partitionLength" value="128" />
+		</partitioner>
+		<partitioner name="customer_partitioner"
+			class="com.openddal.route.algorithm.HashBucketPartitioner">
+			<property name="partitionCount" value="8" />
+			<property name="partitionLength" value="128" />
+		</partitioner>
+	</partitioner>
 
 </ddal-config>

@@ -29,7 +29,7 @@ import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 
 /**
@@ -48,7 +48,7 @@ public class Schema extends DbObject {
      */
     private final HashSet<String> temporaryUniqueNames = New.hashSet();
     private User owner;
-    private TableNode matedataNode;
+    private ObjectNode matedataNode;
 
     /**
      * Create a new schema object.
@@ -391,14 +391,14 @@ public class Schema extends DbObject {
     /**
      * @return the matedataNode
      */
-    public TableNode getMatedataNode() {
+    public ObjectNode getMatedataNode() {
         return matedataNode;
     }
 
     /**
      * @param matedataNode the matedataNode to set
      */
-    public void setMatedataNode(TableNode matedataNode) {
+    public void setMatedataNode(ObjectNode matedataNode) {
         this.matedataNode = matedataNode;
     }
 

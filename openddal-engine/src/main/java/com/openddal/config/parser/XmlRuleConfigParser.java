@@ -18,16 +18,6 @@
 
 package com.openddal.config.parser;
 
-import com.openddal.config.AlgorithmConfig;
-import com.openddal.config.Configuration;
-import com.openddal.route.algorithm.Partitioner;
-import com.openddal.route.rule.TableNode;
-import com.openddal.route.rule.TableRouter;
-import com.openddal.util.New;
-import com.openddal.util.StringUtils;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -36,6 +26,16 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import com.openddal.config.Configuration;
+import com.openddal.route.algorithm.Partitioner;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.TableRouter;
+import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 
 public class XmlRuleConfigParser {
 
@@ -124,7 +124,7 @@ public class XmlRuleConfigParser {
     }
 
     private void parsePartition(TableRouter tableRouter, List<XNode> list) {
-        List<TableNode> tableNodes = New.arrayList();
+        List<ObjectNode> tableNodes = New.arrayList();
         for (XNode xNode : list) {
             String shard = xNode.getStringAttribute("shard");
             String suffix = xNode.getStringAttribute("suffix");
@@ -138,7 +138,7 @@ public class XmlRuleConfigParser {
             List<String> suffixes = collectItems(suffix);
             if (suffixes.isEmpty()) {
                 for (String shardItem : shards) {
-                    TableNode node = new TableNode(shardItem, null, null);
+                    ObjectNode node = new ObjectNode(shardItem, null, null);
                     if (tableNodes.contains(node)) {
                         throw new ParsingException("Duplicate " + node + " defined in "
                                 + tableRouter.getId() + "'s partition");
@@ -148,7 +148,7 @@ public class XmlRuleConfigParser {
             } else {
                 for (String shardItem : shards) {
                     for (String suffixItem : suffixes) {
-                        TableNode node = new TableNode(shardItem, null, suffixItem);
+                        ObjectNode node = new ObjectNode(shardItem, null, suffixItem);
                         if (tableNodes.contains(node)) {
                             throw new ParsingException("Duplicate " + node + " defined in "
                                     + tableRouter.getId() + "'s partition");

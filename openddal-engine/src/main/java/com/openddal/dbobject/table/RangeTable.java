@@ -15,16 +15,15 @@
  */
 package com.openddal.dbobject.table;
 
+import java.util.ArrayList;
+
 import com.openddal.command.expression.Expression;
-import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.value.Value;
-
-import java.util.ArrayList;
 
 /**
  * The table SYSTEM_RANGE is a virtual table that generates incrementing numbers

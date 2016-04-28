@@ -35,7 +35,7 @@ import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
@@ -97,9 +97,9 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
                     String refTableName = stmt.getRefTableName();
                     TableMate refTable = getTableMate(refTableName);
                     if (refTable != null && refTable.getPartitionNode().length > 1) {
-                        TableNode[] tableNodes = tableMate.getPartitionNode();
-                        TableNode[] refTableNodes = refTable.getPartitionNode();
-                        Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNodes);
+                        ObjectNode[] tableNodes = tableMate.getPartitionNode();
+                        ObjectNode[] refTableNodes = refTable.getPartitionNode();
+                        Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNodes);
                         if (symmetryRelation == null) {
                             throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                                     "Create foreign key for table,the original table and the reference table should be symmetrical.");
@@ -107,7 +107,7 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
                     }
                 }
             }
-            TableNode[] nodes = tableMate.getPartitionNode();
+            ObjectNode[] nodes = tableMate.getPartitionNode();
             execute(nodes);
             if (query != null) {
                 Insert insert = new Insert(session);
@@ -153,7 +153,7 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
     }
 
     @Override
-    protected String doTranslate(TableNode tableNode) {
+    protected String doTranslate(ObjectNode tableNode) {
         StatementBuilder buff = new StatementBuilder("CREATE ");
         if (prepared.isTemporary()) {
             buff.append("TEMPORARY ");
@@ -214,12 +214,12 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
                     TableMate table = getTableMate(stmt.getTableName());
                     TableMate refTable = getTableMate(refTableName);
                     if (refTable != null) {
-                        TableNode[] partitionNode = refTable.getPartitionNode();
+                        ObjectNode[] partitionNode = refTable.getPartitionNode();
                         if (partitionNode.length > 1) {
-                            TableNode[] tableNodes = table.getPartitionNode();
-                            TableNode[] refTableNodes = partitionNode;
-                            Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNodes);
-                            TableNode relation = symmetryRelation.get(tableNode);
+                            ObjectNode[] tableNodes = table.getPartitionNode();
+                            ObjectNode[] refTableNodes = partitionNode;
+                            Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNodes);
+                            ObjectNode relation = symmetryRelation.get(tableNode);
                             if (relation == null) {
                                 throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                                         "The original table and reference table should be symmetrical.");

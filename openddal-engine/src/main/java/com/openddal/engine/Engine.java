@@ -39,7 +39,7 @@ public class Engine implements SessionFactory {
 
     public synchronized static Engine getInstance() {
         if (INSTANCE == null) {
-            String configLocation = SysProperties.getEngineConfigLocation();
+            String configLocation = SysProperties.ENGINE_CONFIG_LOCATION;
             INSTANCE = configuration(configLocation);
         }
         return INSTANCE;

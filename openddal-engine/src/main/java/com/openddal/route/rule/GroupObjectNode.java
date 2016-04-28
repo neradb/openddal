@@ -22,7 +22,7 @@ package com.openddal.route.rule;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class GroupTableNode extends TableNode {
+public class GroupObjectNode extends ObjectNode {
 
     private static final long serialVersionUID = 1L;
 
@@ -30,7 +30,7 @@ public class GroupTableNode extends TableNode {
 
     private final String[] suffixes;
 
-    public GroupTableNode(String shardName, String[] tableNames, String[] suffixes) {
+    public GroupObjectNode(String shardName, String[] tableNames, String[] suffixes) {
         super(shardName, null, null);
         this.tableNames = tableNames;
         this.suffixes = suffixes;

@@ -16,7 +16,7 @@
 package com.openddal.route.algorithm;
 
 import com.openddal.route.rule.RuleEvaluateException;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
 import com.openddal.value.ValueTimestamp;
@@ -56,7 +56,7 @@ public class RangePartitioner extends CommonPartitioner {
     }
 
     @Override
-    public void initialize(List<TableNode> tableNodes) {
+    public void initialize(List<ObjectNode> tableNodes) {
         super.initialize(tableNodes);
         if ((chunk & chunk - 1) != 0) {
             throw new IllegalArgumentException("Chunk must be 2^n,such as 256,512,1024...");

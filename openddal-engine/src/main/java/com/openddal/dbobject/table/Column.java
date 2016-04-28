@@ -75,8 +75,6 @@ public class Column {
     private String checkConstraintSQL;
     private String originalSQL;
     private boolean autoIncrement;
-    private long start;
-    private long increment;
     private boolean convertNullToDefault;
     private Sequence sequence;
     private boolean isComputed;
@@ -353,8 +351,6 @@ public class Column {
      */
     public void setAutoIncrement(boolean autoInc, long start, long increment) {
         this.autoIncrement = autoInc;
-        this.start = start;
-        this.increment = increment;
         this.nullable = false;
         if (autoInc) {
             convertNullToDefault = true;
@@ -531,47 +527,6 @@ public class Column {
     @Override
     public String toString() {
         return name;
-    }
-
-    /**
-     * Check whether the new column is of the same type and not more restricted
-     * than this column.
-     *
-     * @param newColumn the new (target) column
-     * @return true if the new column is compatible
-     */
-    public boolean isWideningConversion(Column newColumn) {
-        if (type != newColumn.type) {
-            return false;
-        }
-        if (precision > newColumn.precision) {
-            return false;
-        }
-        if (scale != newColumn.scale) {
-            return false;
-        }
-        if (nullable && !newColumn.nullable) {
-            return false;
-        }
-        if (convertNullToDefault != newColumn.convertNullToDefault) {
-            return false;
-        }
-        if (primaryKey != newColumn.primaryKey) {
-            return false;
-        }
-        if (autoIncrement || newColumn.autoIncrement) {
-            return false;
-        }
-        if (checkConstraint != null || newColumn.checkConstraint != null) {
-            return false;
-        }
-        if (convertNullToDefault || newColumn.convertNullToDefault) {
-            return false;
-        }
-        if (defaultExpression != null || newColumn.defaultExpression != null) {
-            return false;
-        }
-        return !(isComputed || newColumn.isComputed);
     }
 
     /**

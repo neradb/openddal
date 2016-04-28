@@ -29,7 +29,7 @@ import com.openddal.result.ResultInterface;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
@@ -152,7 +152,7 @@ public class InsertExecutor extends PreparedRoutingExecutor<Insert> implements R
     }
 
     @Override
-    protected List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff) {
+    protected List<Value> doTranslate(ObjectNode node, SearchRow row, StatementBuilder buff) {
         String forTable = node.getCompositeObjectName();
         TableMate table = castTableMate(prepared.getTable());
         Column[] columns = table.getColumns();

@@ -15,7 +15,7 @@
  */
 package com.openddal.route.algorithm;
 
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.value.Value;
 
 import java.util.List;
@@ -30,7 +30,7 @@ public interface Partitioner {
      *
      * @param tableNodes
      */
-    void initialize(List<TableNode> tableNodes);
+    void initialize(List<ObjectNode> tableNodes);
 
     /**
      * represent the sql condition: column=xx

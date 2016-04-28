@@ -32,6 +32,9 @@ import java.util.List;
 import javax.sql.DataSource;
 
 import com.openddal.command.ddl.CreateTableData;
+import com.openddal.config.MultiNodeTableRule;
+import com.openddal.config.ShardedTableRule;
+import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
@@ -41,8 +44,8 @@ import com.openddal.excutor.Optional;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.SortOrder;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
-import com.openddal.route.rule.TableNode;
 import com.openddal.route.rule.TableRouter;
 import com.openddal.shards.DataSourceRepository;
 import com.openddal.util.JdbcUtils;
@@ -61,14 +64,9 @@ public class TableMate extends Table {
 
     private static final int MAX_RETRY = 2;
 
-    private final boolean globalTemporary;
     private final ArrayList<Index> indexes = New.arrayList();
-    private Index scanIndex;
-
-    private TableRouter tableRouter;
     private Column[] ruleColumns;
-    private TableNode[] shards;
-    private int scanLevel;
+    private TableRule tableRule;
 
     private DbException initException;
     private boolean storesLowerCase;
@@ -78,18 +76,14 @@ public class TableMate extends Table {
 
     public TableMate(CreateTableData data) {
         super(data.schema, data.id, data.tableName);
-        this.globalTemporary = data.globalTemporary;
         setTemporary(data.temporary);
         Column[] cols = new Column[data.columns.size()];
         data.columns.toArray(cols);
         setColumns(cols);
-        scanIndex = new Index(this, data.id, null, IndexColumn.wrap(cols), IndexType.createScan());
-        indexes.add(scanIndex);
     }
 
     public TableMate(Schema schema, int id, String name) {
         super(schema, id, name);
-        this.globalTemporary = false;
     }
 
     private static long convertPrecision(int sqlType, long precision) {
@@ -130,12 +124,12 @@ public class TableMate extends Table {
         return scale;
     }
 
-    private static boolean isShardMatch(TableNode[] nodes1, TableNode[] nodes2) {
-        TableNode[] group1 = RoutingResult.fixedResult(nodes1).group();
-        TableNode[] group2 = RoutingResult.fixedResult(nodes2).group();
-        for (TableNode tableNode1 : group1) {
+    private static boolean isShardMatch(ObjectNode[] nodes1, ObjectNode[] nodes2) {
+        ObjectNode[] group1 = RoutingResult.fixedResult(nodes1).group();
+        ObjectNode[] group2 = RoutingResult.fixedResult(nodes2).group();
+        for (ObjectNode tableNode1 : group1) {
             boolean isMatched = false;
-            for (TableNode tableNode2 : group2) {
+            for (ObjectNode tableNode2 : group2) {
                 if (tableNode1.getShardName().equals(tableNode2.getShardName())) {
                     isMatched = true;
                     break;
@@ -149,52 +143,10 @@ public class TableMate extends Table {
     }
 
     /**
-     * @return the tableRouter
-     */
-    public TableRouter getTableRouter() {
-        return tableRouter;
-    }
-
-    /**
-     * @param tableRouter the tableRouter to set
-     */
-    public void setTableRouter(TableRouter tableRouter) {
-        this.tableRouter = tableRouter;
-    }
-
-    /**
      * @return the shardingColumns
      */
     public Column[] getRuleColumns() {
         return ruleColumns;
-    }
-
-    /**
-     * @return the scanLevel
-     */
-    public int getScanLevel() {
-        return scanLevel;
-    }
-
-    /**
-     * @param scanLevel the scanLevel to set
-     */
-    public void setScanLevel(int scanLevel) {
-        this.scanLevel = scanLevel;
-    }
-
-    /**
-     * @return the shards
-     */
-    public TableNode[] getShards() {
-        return shards;
-    }
-
-    /**
-     * @param shards the shards to set
-     */
-    public void setShards(TableNode[] shards) {
-        this.shards = shards;
     }
 
     /**
@@ -203,17 +155,17 @@ public class TableMate extends Table {
      * @return
      */
     public boolean isReplication() {
-        return shards != null && shards.length > 1;
+        return tableRule.getClass() == MultiNodeTableRule.class;
     }
 
     /**
      * @return
      * @see TableRouter#getPartition()
      */
-    public TableNode[] getPartitionNode() {
+    public ObjectNode[] getPartitionNode() {
         if (tableRouter != null) {
-            List<TableNode> partition = tableRouter.getPartition();
-            return partition.toArray(new TableNode[partition.size()]);
+            List<ObjectNode> partition = tableRouter.getPartition();
+            return partition.toArray(new ObjectNode[partition.size()]);
         }
         return shards;
 
@@ -223,8 +175,9 @@ public class TableMate extends Table {
      * validation the rule columns is in the table columns
      */
     private void validationRuleColumn(Column[] columns) {
-        if (tableRouter != null) {
-            List<String> ruleColNames = tableRouter.getRuleColumns();
+        if (tableRule instanceof ShardedTableRule) {
+            ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
+            List<String> ruleColNames = shardedTableRule.getRuleColumns();
             ruleColumns = new Column[ruleColNames.size()];
             for (int i = 0; i < ruleColNames.size(); i++) {
                 String ruleCol = ruleColNames.get(i);
@@ -266,11 +219,6 @@ public class TableMate extends Table {
     }
 
     @Override
-    public boolean isGlobalTemporary() {
-        return globalTemporary;
-    }
-
-    @Override
     public String getTableType() {
         return TABLE;
     }
@@ -296,16 +244,6 @@ public class TableMate extends Table {
     }
 
     @Override
-    public boolean canGetRowCount() {
-        return false;
-    }
-
-    @Override
-    public long getRowCount(Session session) {
-        return 0;
-    }
-
-    @Override
     public long getRowCountApproximation() {
         if (tableRouter != null) {
             return tableRouter.getPartition().size() * Constants.COST_ROW_OFFSET;
@@ -316,11 +254,6 @@ public class TableMate extends Table {
     @Override
     public void checkRename() {
 
-    }
-
-    @Override
-    public Index getScanIndex(Session session) {
-        return scanIndex;
     }
 
     private Index addIndex(String name, ArrayList<Column> list, IndexType indexType) {
@@ -337,11 +270,11 @@ public class TableMate extends Table {
     }
 
     public void loadMataData(Session session) {
-        TableNode[] nodes = getPartitionNode();
+        ObjectNode[] nodes = getPartitionNode();
         if (nodes == null || nodes.length < 1) {
             throw new IllegalStateException();
         }
-        TableNode matadataNode = nodes[0];
+        ObjectNode matadataNode = nodes[0];
         String tableName = matadataNode.getCompositeObjectName();
         String shardName = matadataNode.getShardName();
         try {
@@ -355,15 +288,13 @@ public class TableMate extends Table {
             initException = e;
             Column[] cols = {};
             setColumns(cols);
-            scanIndex = new Index(this, 0, null, IndexColumn.wrap(cols), IndexType.createNonUnique());
-            indexes.add(scanIndex);
         }
     }
 
     /**
      * @param session
      */
-    public void readMataData(Session session, TableNode matadataNode) {
+    public void readMataData(Session session, ObjectNode matadataNode) {
         for (int retry = 0; ; retry++) {
             try {
                 Connection conn = null;
@@ -475,9 +406,6 @@ public class TableMate extends Table {
         validationRuleColumn(cols);
         setColumns(cols);
         // create scan index
-        int id = getId();
-        scanIndex = new Index(this, id, "$scanIndex", IndexColumn.wrap(cols), IndexType.createNonUnique());
-        indexes.add(scanIndex);
 
         // load primary keys
         try {

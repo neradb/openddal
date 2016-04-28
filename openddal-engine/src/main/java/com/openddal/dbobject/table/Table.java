@@ -107,14 +107,6 @@ public abstract class Table extends SchemaObject {
     public abstract String getTableType();
 
     /**
-     * Get the scan index to iterate through all rows.
-     *
-     * @param session the session
-     * @return the index
-     */
-    public abstract Index getScanIndex(Session session);
-
-    /**
      * Get any unique index for this table if one exists.
      *
      * @return a unique index
@@ -134,21 +126,6 @@ public abstract class Table extends SchemaObject {
      * @return true if it is
      */
     public abstract boolean isDeterministic();
-
-    /**
-     * Check if the row count can be retrieved quickly.
-     *
-     * @return true if it can
-     */
-    public abstract boolean canGetRowCount();
-
-    /**
-     * Get the row count for this table.
-     *
-     * @param session the session
-     * @return the row count
-     */
-    public abstract long getRowCount(Session session);
 
     /**
      * Get the approximated row count for this table.
@@ -390,10 +367,6 @@ public abstract class Table extends SchemaObject {
      */
     public void addSequence(Sequence sequence) {
         sequences = add(sequences, sequence);
-    }
-
-    public boolean isGlobalTemporary() {
-        return false;
     }
 
     /**

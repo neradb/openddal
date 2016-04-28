@@ -30,7 +30,7 @@ public class TableRouter implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private String id;
-    private List<TableNode> partition;
+    private List<ObjectNode> partition;
     private String algorithm;
     private List<String> ruleColumns;
     private Partitioner partitioner;
@@ -73,14 +73,14 @@ public class TableRouter implements Serializable {
     /**
      * @return the partition
      */
-    public List<TableNode> getPartition() {
+    public List<ObjectNode> getPartition() {
         return partition;
     }
 
     /**
      * @param partition the partition to set
      */
-    public void setPartition(List<TableNode> partition) {
+    public void setPartition(List<ObjectNode> partition) {
         this.partition = partition;
     }
 

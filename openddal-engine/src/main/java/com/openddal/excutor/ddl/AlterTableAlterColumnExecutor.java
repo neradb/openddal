@@ -27,7 +27,7 @@ import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.StatementBuilder;
 
 /**
@@ -57,7 +57,7 @@ public class AlterTableAlterColumnExecutor extends DefineCommandExecutor<AlterTa
             DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, parseTable.getSQL());
         }
         TableMate table = (TableMate) parseTable;
-        TableNode[] tableNodes = table.getPartitionNode();
+        ObjectNode[] tableNodes = table.getPartitionNode();
         Column oldColumn = prepared.getOldColumn();
         int type = prepared.getType();
         switch (type) {
@@ -90,7 +90,7 @@ public class AlterTableAlterColumnExecutor extends DefineCommandExecutor<AlterTa
 
 
     @Override
-    protected String doTranslate(TableNode node) {
+    protected String doTranslate(ObjectNode node) {
         Column oldColumn = prepared.getOldColumn();
         String forTable = node.getCompositeObjectName();
         int type = prepared.getType();
