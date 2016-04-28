@@ -85,8 +85,7 @@ public class Session implements SessionInterface {
     private HashMap<String, Savepoint> savepoints;
     private HashMap<String, Table> localTempTables;
     private HashMap<String, Index> localTempTableIndexes;
-    private int throttle;
-    private long lastThrottle;
+
     private Command currentCommand;
     private boolean allowLiterals;
     private String currentSchemaName;
@@ -546,7 +545,7 @@ public class Session implements SessionInterface {
         }
         String traceModuleName = Trace.JDBC + "[" + id + "]";
         if (closed) {
-            return new TraceSystem(null).getTrace(traceModuleName);
+            return new TraceSystem().getTrace(traceModuleName);
         }
         trace = database.getTrace(traceModuleName);
         return trace;
@@ -665,32 +664,6 @@ public class Session implements SessionInterface {
         return closed;
     }
 
-    public void setThrottle(int throttle) {
-        this.throttle = throttle;
-    }
-
-    /**
-     * Wait for some time if this session is throttled (slowed down).
-     */
-    public void throttle() {
-        if (currentCommandStart == 0) {
-            currentCommandStart = System.currentTimeMillis();
-        }
-        if (throttle == 0) {
-            return;
-        }
-        long time = System.currentTimeMillis();
-        if (lastThrottle + Constants.THROTTLE_DELAY > time) {
-            return;
-        }
-        lastThrottle = time + throttle;
-        try {
-            Thread.sleep(throttle);
-        } catch (Exception e) {
-            // ignore InterruptedException
-        }
-    }
-
     /**
      * Check if the current transaction is canceled by calling
      * Statement.cancel() or because a session timeout was set and expired.
@@ -698,7 +671,6 @@ public class Session implements SessionInterface {
      * @throws DbException if the transaction is canceled
      */
     public void checkCanceled() {
-        throttle();
         if (cancelAt == 0) {
             return;
         }

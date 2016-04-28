@@ -15,12 +15,15 @@
  */
 package com.openddal.dbobject.table;
 
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.FunctionCall;
 import com.openddal.command.expression.TableFunction;
 import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
@@ -31,11 +34,6 @@ import com.openddal.value.DataType;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
 import com.openddal.value.ValueResultSet;
-
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.ArrayList;
 
 /**
  * A table backed by a system or user-defined function that returns a result
@@ -102,23 +100,8 @@ public class FunctionTable extends Table {
     }
 
     @Override
-    public Index getScanIndex(Session session) {
-        return new Index(this, 0, null, IndexColumn.wrap(columns), IndexType.createScan());
-    }
-
-    @Override
     public ArrayList<Index> getIndexes() {
         return null;
-    }
-
-    @Override
-    public boolean canGetRowCount() {
-        return rowCount != Long.MAX_VALUE;
-    }
-
-    @Override
-    public long getRowCount(Session session) {
-        return rowCount;
     }
 
     @Override

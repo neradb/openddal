@@ -30,10 +30,8 @@ import com.openddal.command.ddl.AlterTableRename;
 import com.openddal.command.ddl.AlterTableRenameColumn;
 import com.openddal.command.ddl.AlterUser;
 import com.openddal.command.ddl.AlterView;
-import com.openddal.command.ddl.Analyze;
 import com.openddal.command.ddl.CreateAggregate;
 import com.openddal.command.ddl.CreateConstant;
-import com.openddal.command.ddl.CreateFunctionAlias;
 import com.openddal.command.ddl.CreateIndex;
 import com.openddal.command.ddl.CreateRole;
 import com.openddal.command.ddl.CreateSchema;
@@ -506,8 +504,6 @@ public class Parser {
                 case 'A':
                     if (readIf("ALTER")) {
                         c = parseAlter();
-                    } else if (readIf("ANALYZE")) {
-                        c = parseAnalyze();
                     }
                     break;
                 case 'b':
@@ -690,14 +686,6 @@ public class Parser {
         BackupCommand command = new BackupCommand(session);
         read("TO");
         command.setFileName(readExpression());
-        return command;
-    }
-
-    private Prepared parseAnalyze() {
-        Analyze command = new Analyze(session);
-        if (readIf("SAMPLE_SIZE")) {
-            command.setTop(readPositiveInt());
-        }
         return command;
     }
 
@@ -3918,8 +3906,6 @@ public class Parser {
         boolean force = readIf("FORCE");
         if (readIf("VIEW")) {
             return parseCreateView(force, orReplace);
-        } else if (readIf("ALIAS")) {
-            return parseCreateFunctionAlias(force);
         } else if (readIf("SEQUENCE")) {
             return parseCreateSequence();
         } else if (readIf("USER")) {
@@ -4276,31 +4262,6 @@ public class Parser {
         return command;
     }
 
-    private CreateFunctionAlias parseCreateFunctionAlias(boolean force) {
-        boolean ifNotExists = readIfNoExists();
-        String aliasName = readIdentifierWithSchema();
-        if (isKeyword(aliasName) ||
-                Function.getFunction(database, aliasName) != null ||
-                getAggregateType(aliasName) >= 0) {
-            throw DbException.get(ErrorCode.FUNCTION_ALIAS_ALREADY_EXISTS_1,
-                    aliasName);
-        }
-        CreateFunctionAlias command = new CreateFunctionAlias(session,
-                getSchema());
-        command.setForce(force);
-        command.setAliasName(aliasName);
-        command.setIfNotExists(ifNotExists);
-        command.setDeterministic(readIf("DETERMINISTIC"));
-        command.setBufferResultSetToLocalTemp(!readIf("NOBUFFER"));
-        if (readIf("AS")) {
-            command.setSource(readString());
-        } else {
-            read("FOR");
-            command.setJavaClassMethod(readUniqueIdentifier());
-        }
-        return command;
-    }
-
     private Query parseWith() {
         readIf("RECURSIVE");
         String tempViewName = readIdentifierWithSchema();
@@ -4558,64 +4519,17 @@ public class Parser {
     }
 
     private Prepared parseSet() {
-        if (readIf("@")) {
-            Set command = new Set(session, SetTypes.VARIABLE);
-            command.setString(readAliasIdentifier());
-            readIfEqualOrTo();
-            command.setExpression(readExpression());
-            return command;
-        } else if (readIf("AUTOCOMMIT")) {
+        if (readIf("AUTOCOMMIT")) {
             readIfEqualOrTo();
             boolean value = readBooleanSetting();
             int setting = value ? CommandInterface.SET_AUTOCOMMIT_TRUE
                     : CommandInterface.SET_AUTOCOMMIT_FALSE;
             return new TransactionCommand(session, setting);
-        } else if (readIf("MVCC")) {
-            readIfEqualOrTo();
-            boolean value = readBooleanSetting();
-            Set command = new Set(session, SetTypes.MVCC);
-            command.setInt(value ? 1 : 0);
-            return command;
-        } else if (readIf("EXCLUSIVE")) {
-            readIfEqualOrTo();
-            Set command = new Set(session, SetTypes.EXCLUSIVE);
-            command.setExpression(readExpression());
-            return command;
         } else if (readIf("IGNORECASE")) {
             readIfEqualOrTo();
             boolean value = readBooleanSetting();
             Set command = new Set(session, SetTypes.IGNORECASE);
             command.setInt(value ? 1 : 0);
-            return command;
-        } else if (readIf("PASSWORD")) {
-            readIfEqualOrTo();
-            AlterUser command = new AlterUser(session);
-            command.setType(CommandInterface.ALTER_USER_SET_PASSWORD);
-            command.setUser(session.getUser());
-            command.setPassword(readExpression());
-            return command;
-        } else if (readIf("SALT")) {
-            readIfEqualOrTo();
-            AlterUser command = new AlterUser(session);
-            command.setType(CommandInterface.ALTER_USER_SET_PASSWORD);
-            command.setUser(session.getUser());
-            command.setSalt(readExpression());
-            read("HASH");
-            command.setHash(readExpression());
-            return command;
-        } else if (readIf("MODE")) {
-            readIfEqualOrTo();
-            Set command = new Set(session, SetTypes.MODE);
-            command.setString(readAliasIdentifier());
-            return command;
-        } else if (readIf("COMPRESS_LOB")) {
-            readIfEqualOrTo();
-            Set command = new Set(session, SetTypes.COMPRESS_LOB);
-            if (currentTokenType == VALUE) {
-                command.setString(readString());
-            } else {
-                command.setString(readUniqueIdentifier());
-            }
             return command;
         } else if (readIf("DATABASE")) {
             readIfEqualOrTo();
@@ -4627,16 +4541,6 @@ public class Parser {
         } else if (readIf("BINARY_COLLATION")) {
             readIfEqualOrTo();
             return parseSetBinaryCollation();
-        } else if (readIf("CLUSTER")) {
-            readIfEqualOrTo();
-            Set command = new Set(session, SetTypes.CLUSTER);
-            command.setString(readString());
-            return command;
-        } else if (readIf("DATABASE_EVENT_LISTENER")) {
-            readIfEqualOrTo();
-            Set command = new Set(session, SetTypes.DATABASE_EVENT_LISTENER);
-            command.setString(readString());
-            return command;
         } else if (readIf("ALLOW_LITERALS")) {
             readIfEqualOrTo();
             Set command = new Set(session, SetTypes.ALLOW_LITERALS);
@@ -4731,35 +4635,10 @@ public class Parser {
                 }
             }
             return new NoOperation(session);
-        } else if (readIf("SEARCH_PATH") ||
-                readIf(SetTypes.getTypeName(SetTypes.SCHEMA_SEARCH_PATH))) {
-            readIfEqualOrTo();
-            Set command = new Set(session, SetTypes.SCHEMA_SEARCH_PATH);
-            ArrayList<String> list = New.arrayList();
-            list.add(readAliasIdentifier());
-            while (readIf(",")) {
-                list.add(readAliasIdentifier());
-            }
-            String[] schemaNames = new String[list.size()];
-            list.toArray(schemaNames);
-            command.setStringArray(schemaNames);
-            return command;
-        } else if (readIf("JAVA_OBJECT_SERIALIZER")) {
-            readIfEqualOrTo();
-            return parseSetJavaObjectSerializer();
         } else if (readIf("TRANSACTION")) {
             readIfEqualOrTo();
             return parseTransactionCommand();
         } else {
-            if (isToken("LOGSIZE")) {
-                // HSQLDB compatibility
-                currentToken = SetTypes.getTypeName(SetTypes.MAX_LOG_SIZE);
-            }
-            if (isToken("FOREIGN_KEY_CHECKS")) {
-                // MySQL compatibility
-                currentToken = SetTypes
-                        .getTypeName(SetTypes.REFERENTIAL_INTEGRITY);
-            }
             int type = SetTypes.getType(currentToken);
             if (type < 0) {
                 throw getSyntaxError();
@@ -4815,13 +4694,6 @@ public class Parser {
             return command;
         }
         throw DbException.getInvalidValueException("BINARY_COLLATION", name);
-    }
-
-    private Set parseSetJavaObjectSerializer() {
-        Set command = new Set(session, SetTypes.JAVA_OBJECT_SERIALIZER);
-        String name = readString();
-        command.setString(name);
-        return command;
     }
 
     private Table readTableOrView() {

@@ -15,10 +15,24 @@
  */
 package com.openddal.command.dml;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+
 import com.openddal.command.CommandInterface;
-import com.openddal.command.expression.*;
+import com.openddal.command.expression.Comparison;
+import com.openddal.command.expression.ConditionAndOr;
+import com.openddal.command.expression.Expression;
+import com.openddal.command.expression.ExpressionColumn;
+import com.openddal.command.expression.ExpressionVisitor;
+import com.openddal.command.expression.Parameter;
+import com.openddal.command.expression.Wildcard;
 import com.openddal.dbobject.index.IndexCondition;
-import com.openddal.dbobject.table.*;
+import com.openddal.dbobject.table.Column;
+import com.openddal.dbobject.table.ColumnResolver;
+import com.openddal.dbobject.table.Table;
+import com.openddal.dbobject.table.TableFilter;
+import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
@@ -33,10 +47,6 @@ import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 
 /**
  * This class represents a simple SELECT statement.
@@ -714,18 +724,6 @@ public class Select extends Query {
     @Override
     public boolean isEverything(ExpressionVisitor visitor) {
         switch (visitor.getType()) {
-            case ExpressionVisitor.DETERMINISTIC: {
-                if (isForUpdate) {
-                    return false;
-                }
-                for (int i = 0, size = filters.size(); i < size; i++) {
-                    TableFilter f = filters.get(i);
-                    if (!f.getTable().isDeterministic()) {
-                        return false;
-                    }
-                }
-                break;
-            }
             case ExpressionVisitor.EVALUATABLE: {
                 if (!session.getDatabase().getSettings().optimizeEvaluatableSubqueries) {
                     return false;

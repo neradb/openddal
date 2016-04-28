@@ -32,11 +32,11 @@ public class RoutingResult implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private List<TableNode> all;
+    private List<ObjectNode> all;
 
-    private List<TableNode> selected;
+    private List<ObjectNode> selected;
 
-    RoutingResult(List<TableNode> all, List<TableNode> selected) {
+    RoutingResult(List<ObjectNode> all, List<ObjectNode> selected) {
         if (all == null || selected == null) {
             throw new IllegalArgumentException();
         }
@@ -48,22 +48,22 @@ public class RoutingResult implements Serializable {
     }
 
     public static RoutingResult emptyResult() {
-        List<TableNode> nodes = New.arrayList(0);
+        List<ObjectNode> nodes = New.arrayList(0);
         return new RoutingResult(nodes, nodes);
     }
 
-    public static RoutingResult fixedResult(TableNode tableNode) {
-        List<TableNode> nodes = New.arrayList(1);
+    public static RoutingResult fixedResult(ObjectNode tableNode) {
+        List<ObjectNode> nodes = New.arrayList(1);
         nodes.add(tableNode);
         return new RoutingResult(nodes, nodes);
     }
 
-    public static RoutingResult fixedResult(List<TableNode> nodes) {
+    public static RoutingResult fixedResult(List<ObjectNode> nodes) {
         return new RoutingResult(nodes, nodes);
     }
 
-    public static RoutingResult fixedResult(TableNode[] tableNode) {
-        List<TableNode> nodes = Arrays.asList(tableNode);
+    public static RoutingResult fixedResult(ObjectNode[] tableNode) {
+        List<ObjectNode> nodes = Arrays.asList(tableNode);
         return new RoutingResult(nodes, nodes);
     }
 
@@ -71,15 +71,15 @@ public class RoutingResult implements Serializable {
         return selected.size() > 1;
     }
 
-    public TableNode getSingleResult() {
+    public ObjectNode getSingleResult() {
         if (isMultipleNode()) {
             throw new IllegalStateException("The RoutingResult has multiple table node.");
         }
         return selected.get(0);
     }
 
-    public TableNode[] getSelectNodes() {
-        return selected.toArray(new TableNode[selected.size()]);
+    public ObjectNode[] getSelectNodes() {
+        return selected.toArray(new ObjectNode[selected.size()]);
     }
 
     public boolean isFullNode() {
@@ -90,15 +90,15 @@ public class RoutingResult implements Serializable {
         return selected.size();
     }
 
-    public TableNode[] group() {
-        List<TableNode> result;
+    public ObjectNode[] group() {
+        List<ObjectNode> result;
         if (isMultipleNode()) {
             Set<String> shards = shardNames();
             result = New.arrayList(shards.size());
             for (String shardName : shardNames()) {
                 List<String> tables = New.arrayList();
                 List<String> suffixes = New.arrayList();
-                for (TableNode tableNode : selected) {
+                for (ObjectNode tableNode : selected) {
                     String nodeName = tableNode.getShardName();
                     String tableName = tableNode.getObjectName();
                     String suffix = tableNode.getSuffix();
@@ -107,25 +107,25 @@ public class RoutingResult implements Serializable {
                         suffixes.add(suffix);
                     }
                 }
-                TableNode tableNode;
+                ObjectNode tableNode;
                 if (tables.size() > 1) {
                     String[] t = tables.toArray(new String[tables.size()]);
                     String[] s = suffixes.toArray(new String[suffixes.size()]);
-                    tableNode = new GroupTableNode(shardName, t, s);
+                    tableNode = new GroupObjectNode(shardName, t, s);
                 } else {
-                    tableNode = new TableNode(shardName, tables.get(0), suffixes.get(0));
+                    tableNode = new ObjectNode(shardName, tables.get(0), suffixes.get(0));
                 }
                 result.add(tableNode);
             }
         } else {
             result = selected;
         }
-        return result.toArray(new TableNode[result.size()]);
+        return result.toArray(new ObjectNode[result.size()]);
     }
 
     private Set<String> shardNames() {
         Set<String> shards = New.linkedHashSet();
-        for (TableNode tableNode : selected) {
+        for (ObjectNode tableNode : selected) {
             String shardName = tableNode.getShardName();
             shards.add(shardName);
         }

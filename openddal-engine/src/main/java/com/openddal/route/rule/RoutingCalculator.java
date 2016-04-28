@@ -20,13 +20,15 @@ package com.openddal.route.rule;
 
 import java.util.List;
 
+import com.openddal.config.ShardedTableRule;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public interface RoutingCalculator {
 
-    RoutingResult calculate(TableRouter tableRouter, RoutingArgument arg);
+    RoutingResult calculate(ShardedTableRule tableRule, RoutingArgument arg);
 
-    RoutingResult calculate(TableRouter tableRouter, List<RoutingArgument> arguments);
+    RoutingResult calculate(ShardedTableRule tableRule, List<RoutingArgument> arguments);
 
 }

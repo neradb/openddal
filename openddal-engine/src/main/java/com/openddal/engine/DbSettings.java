@@ -47,17 +47,6 @@ public class DbSettings extends SettingsBase {
     public final boolean aliasColumnName = get("ALIAS_COLUMN_NAME", false);
 
     /**
-     * Database setting <code>ANALYZE_AUTO</code> (default: 2000).<br />
-     * After changing this many rows, ANALYZE is automatically run for a table.
-     * Automatically running ANALYZE is disabled if set to 0. If set to 1000,
-     * then ANALYZE will run against each user table after about 1000 changes to
-     * that table. The time between running ANALYZE doubles each time since
-     * starting the database. It is not run on local temporary tables, and
-     * tables that have a trigger on SELECT.
-     */
-    public final int analyzeAuto = get("ANALYZE_AUTO", 2000);
-
-    /**
      * Database setting <code>ANALYZE_SAMPLE</code> (default: 10000).<br />
      * The default sample size when analyzing a table.
      */
@@ -72,26 +61,13 @@ public class DbSettings extends SettingsBase {
      * aggregate, built-in functions, data types, and keywords).
      */
     public final boolean databaseToUpper = get("DATABASE_TO_UPPER", true);
-
-    /**
-     * Database setting <code>DB_CLOSE_ON_EXIT</code> (default: true).<br />
-     * Close the database when the virtual machine exits normally, using a
-     * shutdown hook.
-     */
-    public final boolean dbCloseOnExit = get("DB_CLOSE_ON_EXIT", true);
+    
     /**
      * Database setting <code>DEFAULT_ESCAPE</code> (default: \).<br />
      * The default escape character for LIKE comparisons. To select no escape
      * character, use an empty string.
      */
-    public final String defaultEscape = get("DEFAULT_ESCAPE", "\\");
-    /**
-     * Database setting <code>DEFRAG_ALWAYS</code> (default: false).<br />
-     * Each time the database is closed normally, it is fully defragmented (the
-     * same as SHUTDOWN DEFRAG). If you execute SHUTDOWN COMPACT, then this
-     * setting is ignored.
-     */
-    public final boolean defragAlways = get("DEFRAG_ALWAYS", false);
+    public final String defaultEscape = get("DEFAULT_ESCAPE", "\\"); 
     /**
      * Database setting <code>DROP_RESTRICT</code> (default: true).<br />
      * Whether the default action for DROP TABLE and DROP VIEW is RESTRICT.
@@ -111,20 +87,6 @@ public class DbSettings extends SettingsBase {
      */
     public final int estimatedFunctionTableRows = get(
             "ESTIMATED_FUNCTION_TABLE_ROWS", 1000);
-    /**
-     * Database setting <code>FUNCTIONS_IN_SCHEMA</code>
-     * (default: true).<br />
-     * If set, all functions are stored in a schema. Specially, the SCRIPT
-     * statement will always include the schema name in the CREATE ALIAS
-     * statement. This is not backward compatible with H2 versions 1.2.134 and
-     * older.
-     */
-    public final boolean functionsInSchema = get("FUNCTIONS_IN_SCHEMA", true);
-    /**
-     * Database setting <code>LARGE_TRANSACTIONS</code> (default: true).<br />
-     * Support very large transactions
-     */
-    public final boolean largeTransactions = get("LARGE_TRANSACTIONS", true);
     /**
      * Database setting <code>MAX_COMPACT_COUNT</code>
      * (default: Integer.MAX_VALUE).<br />
@@ -205,25 +167,6 @@ public class DbSettings extends SettingsBase {
      */
     public final boolean optimizeUpdate = get("OPTIMIZE_UPDATE", true);
     /**
-     * Database setting <code>PAGE_STORE_MAX_GROWTH</code>
-     * (default: 128 * 1024).<br />
-     * The maximum number of pages the file grows at any time.
-     */
-    public final int pageStoreMaxGrowth = get("PAGE_STORE_MAX_GROWTH",
-            128 * 1024);
-    /**
-     * Database setting <code>PAGE_STORE_INTERNAL_COUNT</code>
-     * (default: false).<br />
-     * Update the row counts on a node level.
-     */
-    public final boolean pageStoreInternalCount = get(
-            "PAGE_STORE_INTERNAL_COUNT", false);
-    /**
-     * Database setting <code>PAGE_STORE_TRIM</code> (default: true).<br />
-     * Trim the database size when closing.
-     */
-    public final boolean pageStoreTrim = get("PAGE_STORE_TRIM", true);
-    /**
      * Database setting <code>QUERY_CACHE_SIZE</code> (default: 8).<br />
      * The size of the query cache, in number of cached statements. Each session
      * has it's own cache with the given size. The cache is only used if the SQL
@@ -234,56 +177,17 @@ public class DbSettings extends SettingsBase {
      * transactional statements such as COMMIT. This works for both statements
      * and prepared statement.
      */
-    public final int queryCacheSize = get("QUERY_CACHE_SIZE", 8);
-    /**
-     * Database setting <code>RECOMPILE_ALWAYS</code> (default: false).<br />
-     * Always recompile prepared statements.
-     */
-    public final boolean recompileAlways = get("RECOMPILE_ALWAYS", false);
-    /**
-     * Database setting <code>RECONNECT_CHECK_DELAY</code> (default: 200).<br />
-     * Check the .lock.db file every this many milliseconds to detect that the
-     * database was changed. The process writing to the database must first
-     * notify a change in the .lock.db file, then wait twice this many
-     * milliseconds before updating the database.
-     */
-    public final int reconnectCheckDelay = get("RECONNECT_CHECK_DELAY", 200);
+    public final int queryCacheSize = get("QUERY_CACHE_SIZE", 8); 
     /**
      * Database setting <code>ROWID</code> (default: true).<br />
      * If set, each table has a pseudo-column _ROWID_.
      */
     public final boolean rowId = get("ROWID", true);
+    
     /**
-     * Database setting <code>SELECT_FOR_UPDATE_MVCC</code>
-     * (default: true).<br />
-     * If set, SELECT .. FOR UPDATE queries lock only the selected rows when
-     * using MVCC.
+     * Database setting <code>COMPATIBILITY_MODE</code> (default: REGULAR).<br />
      */
-    public final boolean selectForUpdateMvcc = get("SELECT_FOR_UPDATE_MVCC", true);
-    /**
-     * Database setting <code>SHARE_LINKED_CONNECTIONS</code>
-     * (default: true).<br />
-     * Linked connections should be shared, that means connections to the same
-     * database should be used for all linked tables that connect to the same
-     * database.
-     */
-    public final boolean shareLinkedConnections = get(
-            "SHARE_LINKED_CONNECTIONS", true);
-    /**
-     * Database setting <code>COMPRESS</code>
-     * (default: false).<br />
-     * Compress data when storing.
-     */
-    public final boolean compressData = get("COMPRESS", false);
-    /**
-     * Database setting <code>DEFAULT_CONNECTION</code> (default: false).<br />
-     * Whether Java functions can use
-     * <code>DriverManager.getConnection("jdbc:default:connection")</code> to
-     * get a database connection. This feature is disabled by default for
-     * performance reasons. Please note the Oracle JDBC driver will try to
-     * resolve this database URL if it is loaded before the H2 driver.
-     */
-    public boolean defaultConnection = get("DEFAULT_CONNECTION", false);
+    public final String compatibilityMode = get("COMPATIBILITY_MODE", Mode.REGULAR);
     /**
      * Database setting <code>MAX_QUERY_TIMEOUT</code> (default: 0).<br />
      * The maximum timeout of a query in milliseconds. The default is 0, meaning
@@ -309,6 +213,9 @@ public class DbSettings extends SettingsBase {
      * The default time to execute validation sql.
      */
     public int defaultValidationQueryTimeout = get("DEFAULT_VALIDATION_QUERYT_IMEOUT", -1);
+    
+    
+    
 
 
     private DbSettings(HashMap<String, String> s) {

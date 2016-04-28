@@ -16,7 +16,7 @@
 package com.openddal.route.algorithm;
 
 import com.openddal.route.rule.RuleEvaluateException;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 import com.openddal.value.ValueTimestamp;
@@ -44,7 +44,7 @@ public class RollingPartitioner extends CommonPartitioner {
     private int rollingType;
 
     @Override
-    public void initialize(List<TableNode> tableNodes) {
+    public void initialize(List<ObjectNode> tableNodes) {
         super.initialize(tableNodes);
         if (StringUtils.isNullOrEmpty(rollingBy)) {
             throw new IllegalArgumentException("rollingBy is require.");

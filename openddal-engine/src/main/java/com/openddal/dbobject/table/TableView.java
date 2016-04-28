@@ -28,13 +28,10 @@ import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
 import com.openddal.result.LocalResult;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
@@ -249,15 +246,6 @@ public class TableView extends Table {
         // ok
     }
 
-    @Override
-    public long getRowCount(Session session) {
-        throw DbException.throwInternalError();
-    }
-
-    @Override
-    public boolean canGetRowCount() {
-        return false;
-    }
 
     @Override
     public String getTableType() {
@@ -274,16 +262,6 @@ public class TableView extends Table {
 
     public String getQuery() {
         return querySQL;
-    }
-
-    @Override
-    public Index getScanIndex(Session session) {
-        if (createException != null) {
-            String msg = createException.getMessage();
-            throw DbException.get(ErrorCode.VIEW_IS_INVALID_2,
-                    createException, getSQL(), msg);
-        }
-        return new Index(this, 0, null, IndexColumn.wrap(columns), IndexType.createScan());
     }
 
     @Override

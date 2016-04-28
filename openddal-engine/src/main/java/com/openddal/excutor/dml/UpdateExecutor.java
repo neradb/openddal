@@ -27,7 +27,7 @@ import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
@@ -77,7 +77,7 @@ public class UpdateExecutor extends PreparedRoutingExecutor<Update> {
 
 
     @Override
-    protected List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff) {
+    protected List<Value> doTranslate(ObjectNode node, SearchRow row, StatementBuilder buff) {
         ArrayList<Value> params = New.arrayList();
         TableFilter tableFilter = prepared.getTableFilter();
         String forTable = node.getCompositeObjectName();

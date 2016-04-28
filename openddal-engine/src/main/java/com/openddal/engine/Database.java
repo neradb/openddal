@@ -22,10 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.openddal.command.dml.SetTypes;
 import com.openddal.config.Configuration;
-import com.openddal.config.SchemaConfig;
-import com.openddal.config.TableConfig;
+import com.openddal.config.ShardedTableRule;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.schema.Schema;
@@ -87,15 +85,15 @@ public class Database {
         this.configuration = configuration;
         this.compareMode = CompareMode.getInstance(null, 0);
         this.dbSettings = DbSettings.getInstance(null);
+        
 
-        String sqlMode = configuration.getProperty(SetTypes.MODE, Mode.MY_SQL);
-        maxMemoryRows = configuration.getIntProperty(SetTypes.MAX_MEMORY_ROWS, maxMemoryRows);
-        Mode settingMode = Mode.getInstance(sqlMode);
+        //String sqlMode = configuration.getProperty(SetTypes.MODE, Mode.MY_SQL);
+        //maxMemoryRows = configuration.getIntProperty(SetTypes.MAX_MEMORY_ROWS, maxMemoryRows);
+        Mode settingMode = Mode.getInstance(dbSettings.defaultTableEngine);
         if (settingMode != null) {
             this.mode = settingMode;
         }
-        traceSystem = new TraceSystem(null);
-        traceSystem.setLevelFile(TraceSystem.ADAPTER);
+        traceSystem = new TraceSystem();
         trace = traceSystem.getTrace(Trace.DATABASE);
         dsRepository = new DataSourceRepository(this);
         openDatabase();
@@ -114,10 +112,9 @@ public class Database {
 
         Session sysSession = createSession(systemUser);
         try {
-            SchemaConfig sc = configuration.getSchemaConfig();
-            List<TableConfig> ctList = sc.getTables();
-            for (TableConfig tableConfig : ctList) {
-                String identifier = tableConfig.getName();
+            List<ShardedTableRule> shardingTable = configuration.shardingTable;
+            for (ShardedTableRule st : shardingTable) {
+                String identifier = st.getName();
                 identifier = identifier(identifier);
                 TableMate tableMate = new TableMate(mainSchema, allocateObjectId(), identifier);
                 tableMate.setTableRouter(tableConfig.getTableRouter());
@@ -325,7 +322,6 @@ public class Database {
             }
         }
         dsRepository.close();
-        traceSystem.close();
     }
 
     /**

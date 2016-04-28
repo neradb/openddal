@@ -45,17 +45,9 @@ public class Set extends Prepared {
 
     @Override
     public boolean isTransactional() {
-        switch (type) {
-            case SetTypes.CLUSTER:
-            case SetTypes.VARIABLE:
-            case SetTypes.QUERY_TIMEOUT:
-            case SetTypes.LOCK_TIMEOUT:
-            case SetTypes.TRACE_LEVEL_SYSTEM_OUT:
-            case SetTypes.TRACE_LEVEL_FILE:
-            case SetTypes.THROTTLE:
+        switch (type) { 
+            case SetTypes.QUERY_TIMEOUT: 
             case SetTypes.SCHEMA:
-            case SetTypes.SCHEMA_SEARCH_PATH:
-            case SetTypes.RETENTION_TIME:
                 return true;
             default:
         }

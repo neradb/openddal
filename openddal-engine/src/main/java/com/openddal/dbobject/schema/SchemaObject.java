@@ -15,8 +15,6 @@
  */
 package com.openddal.dbobject.schema;
 
-import java.util.Collection;
-
 import com.openddal.dbobject.DbObject;
 
 /**
@@ -25,9 +23,6 @@ import com.openddal.dbobject.DbObject;
 public abstract class SchemaObject extends DbObject {
 
     private Schema schema;
-    private ObjectNode[] objectNodes;
-    private ObjectNode metadataNodes;
-
 
     protected void initSchemaObjectBase(Schema newSchema, int id, String name) {
         initDbObjectBase(newSchema.getDatabase(), id, name);
@@ -36,26 +31,6 @@ public abstract class SchemaObject extends DbObject {
 
     public Schema getSchema() {
         return schema;
-    }
-    
-    public ObjectNode[] getObjectNodes() {
-        return objectNodes;
-    }
-
-    public void setObjectNodes(ObjectNode[] objectNodes) {
-        this.objectNodes = objectNodes;
-    }
-
-    public void setObjectNodes(Collection<ObjectNode> objectNodes) {
-        this.objectNodes = objectNodes.toArray(new ObjectNode[objectNodes.size()]);
-    }
-    
-    public ObjectNode getMetadataNodes() {
-        return metadataNodes;
-    }
-
-    public void setMetadataNodes(ObjectNode metadataNodes) {
-        this.metadataNodes = metadataNodes;
     }
 
     @Override

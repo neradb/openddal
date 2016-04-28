@@ -15,18 +15,6 @@
  */
 package com.openddal.config.parser;
 
-import com.openddal.config.*;
-import com.openddal.config.ShardConfig.ShardItem;
-import com.openddal.route.algorithm.Partitioner;
-import com.openddal.route.rule.TableNode;
-import com.openddal.route.rule.TableRouter;
-import com.openddal.util.New;
-import com.openddal.util.StringUtils;
-import com.openddal.util.Utils;
-
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.sql.DataSource;
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -35,6 +23,21 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+
+import com.openddal.config.Configuration;
+import com.openddal.config.DataSourceException;
+import com.openddal.config.Shard.ShardItem;
+import com.openddal.config.XmlDataSourceProvider;
+import com.openddal.route.algorithm.Partitioner;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.TableRouter;
+import com.openddal.util.New;
+import com.openddal.util.StringUtils;
+import com.openddal.util.Utils;
 
 public class XmlConfigParser {
 
@@ -86,8 +89,9 @@ public class XmlConfigParser {
         }
     }
 
-    public Configuration parse() {
+    public Configuration parse(Configuration configuration) {
         try {
+            this.configuration = configuration;
             parseElement(parser.evalNode("/ddal-config"));
             return configuration;
         } catch (ParsingException e) {
@@ -340,9 +344,9 @@ public class XmlConfigParser {
                     nodes.add(string);
                 }
             }
-            TableNode[] tableNodes = new TableNode[nodes.size()];
+            ObjectNode[] tableNodes = new ObjectNode[nodes.size()];
             for (int i = 0; i < nodes.size(); i++) {
-                tableNodes[i] = new TableNode(nodes.get(i), tableName);
+                tableNodes[i] = new ObjectNode(nodes.get(i), tableName);
             }
             config.setShards(tableNodes);
         }
@@ -353,16 +357,16 @@ public class XmlConfigParser {
                 throw new ParsingException("The table router '" + router + "' is not found.");
             }
             TableRouter tableRouter = new TableRouter();
-            List<TableNode> partition = rawRouter.getPartition();
-            List<TableNode> inited = New.arrayList(partition.size());
-            for (TableNode item : partition) {
+            List<ObjectNode> partition = rawRouter.getPartition();
+            List<ObjectNode> inited = New.arrayList(partition.size());
+            for (ObjectNode item : partition) {
                 String shardName = item.getShardName();
                 String name = item.getObjectName();
                 String suffix = item.getSuffix();
                 if (StringUtils.isNullOrEmpty(name)) {
                     name = tableName;
                 }
-                TableNode initedNode = new TableNode(shardName, name, suffix);
+                ObjectNode initedNode = new ObjectNode(shardName, name, suffix);
                 inited.add(initedNode);
             }
 

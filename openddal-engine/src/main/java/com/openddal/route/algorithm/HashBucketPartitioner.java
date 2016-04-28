@@ -16,7 +16,7 @@
 package com.openddal.route.algorithm;
 
 import com.openddal.route.rule.RuleEvaluateException;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.MurmurHash;
 import com.openddal.value.Value;
 
@@ -44,7 +44,7 @@ public class HashBucketPartitioner extends CommonPartitioner {
     }
 
     @Override
-    public void initialize(List<TableNode> tableNodes) {
+    public void initialize(List<ObjectNode> tableNodes) {
         super.initialize(tableNodes);
         partitionUtil = new PartitionUtil(HASH_BUCKET_SIZE, count, length);
     }

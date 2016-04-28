@@ -26,7 +26,7 @@ import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 
@@ -63,12 +63,12 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
     public int executeUpdate() {
         String tableName = prepared.getTableName();
         TableMate table = getTableMate(tableName);
-        TableNode[] tableNodes = table.getPartitionNode();
+        ObjectNode[] tableNodes = table.getPartitionNode();
         int type = prepared.getType();
         switch (type) {
             case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
-                TableNode[] refTableNode = table.getPartitionNode();
-                Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNode);
+                ObjectNode[] refTableNode = table.getPartitionNode();
+                Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNode);
                 if (symmetryRelation == null) {
                     throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                             "The original table and reference table should be symmetrical.");
@@ -89,7 +89,7 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
     }
 
     @Override
-    protected String doTranslate(TableNode tableNode) {
+    protected String doTranslate(ObjectNode tableNode) {
         String tableName = prepared.getTableName();
         TableMate table = getTableMate(tableName);
         String forTable = tableNode.getCompositeObjectName();
@@ -116,9 +116,9 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
              */
                 String refTableName = prepared.getRefTableName();
                 TableMate refTable = getTableMate(refTableName);
-                Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(table.getPartitionNode(),
+                Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(table.getPartitionNode(),
                         refTable.getPartitionNode());
-                TableNode relation = symmetryRelation.get(tableNode);
+                ObjectNode relation = symmetryRelation.get(tableNode);
                 if (relation == null) {
                     throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                             "The original table and reference table should be symmetrical.");

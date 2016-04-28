@@ -23,7 +23,7 @@ import com.openddal.command.ddl.DropTable;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.route.rule.TableNode;
+import com.openddal.route.rule.ObjectNode;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -42,7 +42,7 @@ public class DropTableExecutor extends DefineCommandExecutor<DropTable> {
     }
 
     @Override
-    protected String doTranslate(TableNode tableNode) {
+    protected String doTranslate(ObjectNode tableNode) {
         String forTable = tableNode.getCompositeObjectName();
         StringBuilder sql = new StringBuilder();
         sql.append("DROP TABLE");
@@ -75,7 +75,7 @@ public class DropTableExecutor extends DefineCommandExecutor<DropTable> {
         String tableName = next.getTableName();
         TableMate table = findTableMate(tableName);
         if (table != null) {
-            TableNode[] nodes = table.getPartitionNode();
+            ObjectNode[] nodes = table.getPartitionNode();
             execute(nodes);
             table.markDeleted();
         }
