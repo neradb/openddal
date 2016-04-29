@@ -15,15 +15,17 @@
  */
 package com.openddal.jdbc;
 
-import com.openddal.engine.Constants;
-import com.openddal.message.DbException;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Properties;
 import java.util.logging.Logger;
+
+import com.openddal.engine.Constants;
+import com.openddal.engine.Engine;
+import com.openddal.engine.SessionInterface;
+import com.openddal.message.DbException;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -105,7 +107,10 @@ public class JdbcDriver implements java.sql.Driver {
             if (info == null) {
                 info = new Properties();
             }
-            return new JdbcConnection(url, info);
+            SessionInterface session = Engine.getImplicitInstance().createSession(info);
+            JdbcConnection conn = new JdbcConnection(session);
+            conn.setClientInfo(info);
+            return conn;
         } catch (Exception e) {
             throw DbException.toSQLException(e);
         }

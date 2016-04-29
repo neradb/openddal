@@ -17,6 +17,7 @@ package com.openddal.dbobject;
 
 import com.openddal.command.Parser;
 import com.openddal.engine.Database;
+import com.openddal.message.Trace;
 
 /**
  * A database object such as a table, an index, or a user.
@@ -52,6 +53,7 @@ public abstract class DbObject {
      * The database.
      */
     protected Database database;
+    protected Trace trace;
 
     private int id;
     private String objectName;
@@ -65,10 +67,11 @@ public abstract class DbObject {
      * @param name        the name
      * @param traceModule the trace module name
      */
-    protected void initDbObjectBase(Database db, int objectId, String name) {
+    protected void initDbObjectBase(Database db, String name) {
         this.database = db;
-        this.id = objectId;
+        this.id = db.allocateObjectId();
         this.objectName = name;
+        this.trace = database.getTrace(Trace.DATABASE);
     }
 
     protected void setObjectName(String name) {

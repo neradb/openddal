@@ -15,12 +15,15 @@
  */
 package com.openddal.command.expression;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.SelectOrderBy;
-import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
-import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
@@ -29,9 +32,15 @@ import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
-import com.openddal.value.*;
-
-import java.util.*;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueArray;
+import com.openddal.value.ValueBoolean;
+import com.openddal.value.ValueDouble;
+import com.openddal.value.ValueInt;
+import com.openddal.value.ValueLong;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueString;
 
 /**
  * Implements the integrated aggregate functions, such as COUNT, MAX, SUM.
@@ -518,39 +527,8 @@ public class Aggregate extends Expression {
         return text + StringUtils.enclose(on.getSQL());
     }
 
-    private Index getColumnIndex() {
-        if (on instanceof ExpressionColumn) {
-            ExpressionColumn col = (ExpressionColumn) on;
-            Column column = col.getColumn();
-            TableFilter filter = col.getTableFilter();
-            if (filter != null) {
-                Table table = filter.getTable();
-                Index index = table.getIndexForColumn(column);
-                return index;
-            }
-        }
-        return null;
-    }
-
     @Override
     public boolean isEverything(ExpressionVisitor visitor) {
-        if (visitor.getType() == ExpressionVisitor.OPTIMIZABLE_MIN_MAX_COUNT_ALL) {
-            switch (type) {
-                case COUNT:
-                    if (!distinct && on.getNullable() == Column.NOT_NULLABLE) {
-                        return visitor.getTable().canGetRowCount();
-                    }
-                    return false;
-                case COUNT_ALL:
-                    return visitor.getTable().canGetRowCount();
-                case MIN:
-                case MAX:
-                    Index index = getColumnIndex();
-                    return index != null;
-                default:
-                    return false;
-            }
-        }
         if (on != null && !on.isEverything(visitor)) {
             return false;
         }

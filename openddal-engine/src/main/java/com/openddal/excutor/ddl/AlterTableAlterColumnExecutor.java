@@ -22,6 +22,7 @@ import java.util.ArrayList;
 
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAlterColumn;
+import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
@@ -57,7 +58,7 @@ public class AlterTableAlterColumnExecutor extends DefineCommandExecutor<AlterTa
             DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, parseTable.getSQL());
         }
         TableMate table = (TableMate) parseTable;
-        ObjectNode[] tableNodes = table.getPartitionNode();
+        TableRule tableRule = table.getTableRule();
         Column oldColumn = prepared.getOldColumn();
         int type = prepared.getType();
         switch (type) {

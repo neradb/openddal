@@ -16,11 +16,11 @@
         limitations under the License.
 
         -->
-        <!ELEMENT ddal-config (settings?,schema,cluster,dataNodes?,tableRules?)>
+        <!ELEMENT ddal-config (settings?,schema,cluster,dataNodes?,algorithms?)>
 
         <!ELEMENT settings (property*)>
 
-        <!ELEMENT schema (tableGroup*, table*)>
+        <!ELEMENT schema (tableGroup*, table*, sequence*)>
         <!ATTLIST schema
                 name CDATA #REQUIRED
                 shard CDATA #IMPLIED
@@ -43,27 +43,33 @@
                 jndi-name CDATA #IMPLIED
                 >
 
-        <!ELEMENT tableRules (tableRule+)>
-        <!ELEMENT tableRule (#PCDATA)>
-        <!ATTLIST tableRule
-                resource CDATA #REQUIRED
-                >
+        <!ELEMENT algorithms (ruleAlgorithm+)>
+        <!ELEMENT ruleAlgorithm (property*)>
+        <!ATTLIST ruleAlgorithm
+                name CDATA #REQUIRED
+                class CDATA #REQUIRED
+                > 
 
-        <!ELEMENT table (#PCDATA)>
+        <!ELEMENT table (nodes?, node?, tableRule?)>
         <!ATTLIST table
                 name CDATA #REQUIRED
-                router CDATA #IMPLIED
-                shard CDATA #IMPLIED
+                ruleColumns CDATA #IMPLIED
+                metaNodeIndex CDATA #IMPLIED
                 validation (true|false) #IMPLIED
                 scanLevel (unlimited|filter|anyIndex|uniqueIndex|shardingKey) #IMPLIED
                 >
 
-        <!ELEMENT tableGroup (table+)>
+        <!ELEMENT tableGroup (tables+, nodes*, node?, tableRule?)>
         <!ATTLIST tableGroup
-                shard CDATA #IMPLIED
-                router CDATA #IMPLIED
+                ruleColumns CDATA #IMPLIED
+                metaNodeIndex CDATA #IMPLIED
                 validation (true|false) #IMPLIED
                 scanLevel (unlimited|filter|anyIndex|uniqueIndex|shardingKey) #IMPLIED
+                >
+                
+        <!ELEMENT sequence (#PCDATA)>
+        <!ATTLIST table
+                name CDATA #REQUIRED
                 >
 
         <!ELEMENT property (#PCDATA)>
@@ -78,4 +84,19 @@
                 ref CDATA #REQUIRED
                 wWeight CDATA #IMPLIED
                 rWeight CDATA #IMPLIED
+                > 
+
+        <!ELEMENT nodes (node+)>
+        <!ELEMENT tableRule (columns,algorithm)>
+
+        <!ELEMENT node (#PCDATA)>
+        <!ATTLIST node
+                shard CDATA #REQUIRED
+                catalog CDATA #IMPLIED
+                schema CDATA #IMPLIED
+                name CDATA #IMPLIED
+                suffix CDATA #IMPLIED
                 >
+                
+        <!ELEMENT columns (#PCDATA)>
+        <!ELEMENT algorithm (#PCDATA)>

@@ -60,11 +60,11 @@ public class Schema extends DbObject {
      * @param system     if this is a system schema (such a schema can not be
      *                   dropped)
      */
-    public Schema(Database database, int id, String schemaName, User owner, boolean system) {
+    public Schema(Database database, String schemaName, User owner, boolean system) {
         tablesAndViews = database.newStringMap();
         indexes = database.newStringMap();
         sequences = database.newStringMap();
-        initDbObjectBase(database, id, schemaName);
+        initDbObjectBase(database, schemaName);
         this.owner = owner;
         this.system = system;
     }
@@ -253,7 +253,7 @@ public class Schema extends DbObject {
      */
     public String getUniqueIndexName(Session session, Table table, String prefix) {
         HashMap<String, Index> tableIndexes;
-        if (table.isTemporary() && !table.isGlobalTemporary()) {
+        if (table.isTemporary()) {
             tableIndexes = session.getLocalTempTableIndexes();
         } else {
             tableIndexes = indexes;

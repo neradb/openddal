@@ -15,6 +15,13 @@
  */
 package com.openddal.jdbc;
 
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.RowIdLifetime;
+import java.sql.SQLException;
+
 import com.openddal.engine.Constants;
 import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
@@ -23,8 +30,6 @@ import com.openddal.message.TraceObject;
 import com.openddal.result.SimpleResultSet;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
-
-import java.sql.*;
 
 /**
  * Represents the meta data for a database.
@@ -479,7 +484,7 @@ public class JdbcDatabaseMetaData extends TraceObject implements
     public String getURL() throws SQLException {
         try {
             debugCodeCall("getURL");
-            return conn.getURL();
+            return conn.getClientInfo("url");
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -495,7 +500,7 @@ public class JdbcDatabaseMetaData extends TraceObject implements
     public String getUserName() throws SQLException {
         try {
             debugCodeCall("getUserName");
-            return conn.getUser();
+            return conn.getClientInfo("user");
         } catch (Exception e) {
             throw logAndConvert(e);
         }

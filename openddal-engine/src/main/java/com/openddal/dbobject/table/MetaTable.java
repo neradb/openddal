@@ -89,9 +89,9 @@ public class MetaTable extends Table {
      * @param id the object id
      * @param type the meta table type
      */
-    public MetaTable(Schema schema, int id, int type) {
+    public MetaTable(Schema schema, int type) {
         // tableName will be set later
-        super(schema, id, null);
+        super(schema, null);
         this.type = type;
         Column[] cols;
         String indexColumnName = null;
@@ -415,11 +415,7 @@ public class MetaTable extends Table {
                 } 
                 String storageType;
                 if (table.isTemporary()) {
-                    if (table.isGlobalTemporary()) {
-                        storageType = "GLOBAL TEMPORARY";
-                    } else {
-                        storageType = "LOCAL TEMPORARY";
-                    }
+                    storageType = "LOCAL TEMPORARY";
                 } else {
                     storageType = "CACHED";
                 }
@@ -880,30 +876,15 @@ public class MetaTable extends Table {
 
 
     @Override
-    public long getRowCount(Session session) {
-        throw DbException.throwInternalError();
-    }
-
-    @Override
-    public boolean canGetRowCount() {
-        return false;
-    }
-
-
-    @Override
     public String getTableType() {
         return Table.SYSTEM_TABLE;
     }
-
-    @Override
-    public Index getScanIndex(Session session) {
-        return new Index(this, -1, null, IndexColumn.wrap(columns), IndexType.createScan());
-    }
+    
 
     @Override
     public ArrayList<Index> getIndexes() {
         ArrayList<Index> list = New.arrayList(1); 
-        list.add(new Index(this, -1, null, IndexColumn.wrap(columns), IndexType.createScan())); 
+        list.add(new Index(this, null, IndexColumn.wrap(columns), IndexType.createScan())); 
         return list;
     }
 

@@ -70,10 +70,9 @@ public abstract class Table extends SchemaObject {
     private ArrayList<Sequence> sequences;
     private Row nullRow;
 
-    public Table(Schema schema, int id, String name) {
+    public Table(Schema schema, String name) {
         columnMap = schema.getDatabase().newStringMap();
-        initSchemaObjectBase(schema, id, name);
-        // compareMode = schema.getDatabase().getCompareMode();
+        initSchemaObjectBase(schema, name);
     }
 
     private static void remove(ArrayList<? extends DbObject> list, DbObject obj) {

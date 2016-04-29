@@ -28,6 +28,10 @@ public class TableRule implements Serializable {
     public ObjectNode getMetadataNode() {
         return metadataNode;
     }
+    
+    public ObjectNode randomMetadataNodeIfNeeded() {
+        return getMetadataNode();
+    } 
 
     public String getName() {
         return name;

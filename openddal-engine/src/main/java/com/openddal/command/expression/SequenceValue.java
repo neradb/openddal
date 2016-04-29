@@ -91,7 +91,6 @@ public class SequenceValue extends Expression {
     public boolean isEverything(ExpressionVisitor visitor) {
         switch (visitor.getType()) {
             case ExpressionVisitor.EVALUATABLE:
-            case ExpressionVisitor.OPTIMIZABLE_MIN_MAX_COUNT_ALL:
             case ExpressionVisitor.NOT_FROM_RESOLVER:
             case ExpressionVisitor.GET_COLUMNS:
                 return true;

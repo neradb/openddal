@@ -19,7 +19,6 @@ import java.util.ArrayList;
 
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.index.Index;
-import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
@@ -42,16 +41,14 @@ public class RangeTable extends Table {
     /**
      * Create a new range with the given start and end expressions.
      *
-     * @param schema    the schema (always the main schema)
-     * @param min       the start expression
-     * @param max       the end expression
+     * @param schema the schema (always the main schema)
+     * @param min the start expression
+     * @param max the end expression
      * @param noColumns whether this table has no columns
      */
-    public RangeTable(Schema schema, Expression min, Expression max,
-                      boolean noColumns) {
-        super(schema, 0, NAME);
-        Column[] cols = noColumns ? new Column[0] : new Column[]{new Column(
-                "X", Value.LONG)};
+    public RangeTable(Schema schema, Expression min, Expression max, boolean noColumns) {
+        super(schema, NAME);
+        Column[] cols = noColumns ? new Column[0] : new Column[] { new Column("X", Value.LONG) };
         this.min = min;
         this.max = max;
         setColumns(cols);
@@ -62,30 +59,14 @@ public class RangeTable extends Table {
         return NAME + "(" + min.getSQL() + ", " + max.getSQL() + ")";
     }
 
-
     @Override
     public void checkRename() {
         throw DbException.getUnsupportedException("SYSTEM_RANGE");
     }
 
     @Override
-    public boolean canGetRowCount() {
-        return true;
-    }
-
-    @Override
-    public long getRowCount(Session session) {
-        return Math.max(0, getMax(session) - getMin(session) + 1);
-    }
-
-    @Override
     public String getTableType() {
         throw DbException.throwInternalError();
-    }
-
-    @Override
-    public Index getScanIndex(Session session) {
-        return new Index(this, 0, null, IndexColumn.wrap(columns), IndexType.createScan());
     }
 
     /**
@@ -123,7 +104,6 @@ public class RangeTable extends Table {
         return null;
     }
 
-
     @Override
     public Index getUniqueIndex() {
         return null;
@@ -133,7 +113,6 @@ public class RangeTable extends Table {
     public long getRowCountApproximation() {
         return 100;
     }
-
 
     @Override
     public boolean isDeterministic() {

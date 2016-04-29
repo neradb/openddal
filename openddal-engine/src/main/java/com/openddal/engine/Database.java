@@ -23,11 +23,13 @@ import java.util.List;
 import java.util.Set;
 
 import com.openddal.config.Configuration;
-import com.openddal.config.ShardedTableRule;
+import com.openddal.config.TableRule;
+import com.openddal.config.TableRuleGroup;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.SchemaObject;
+import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.MetaTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
@@ -84,15 +86,8 @@ public class Database {
     public Database(Configuration configuration) {
         this.configuration = configuration;
         this.compareMode = CompareMode.getInstance(null, 0);
-        this.dbSettings = DbSettings.getInstance(null);
-        
-
-        //String sqlMode = configuration.getProperty(SetTypes.MODE, Mode.MY_SQL);
-        //maxMemoryRows = configuration.getIntProperty(SetTypes.MAX_MEMORY_ROWS, maxMemoryRows);
-        Mode settingMode = Mode.getInstance(dbSettings.defaultTableEngine);
-        if (settingMode != null) {
-            this.mode = settingMode;
-        }
+        this.dbSettings = DbSettings.getInstance(configuration.settings);
+        this.mode = Mode.getInstance(dbSettings.compatibilityMode);
         traceSystem = new TraceSystem();
         trace = traceSystem.getTrace(Trace.DATABASE);
         dsRepository = new DataSourceRepository(this);
@@ -100,44 +95,66 @@ public class Database {
     }
 
     private synchronized void openDatabase() {
-        User systemUser = new User(this, allocateObjectId(), SYSTEM_USER_NAME);
+        User systemUser = new User(this, SYSTEM_USER_NAME);
         systemUser.setAdmin(true);
         systemUser.setPassword(SYSTEM_USER_NAME);
         users.put(SYSTEM_USER_NAME, systemUser);
 
-        Schema mainSchema = new Schema(this, allocateObjectId(), Constants.SCHEMA_MAIN, systemUser, true);
-        Schema infoSchema = new Schema(this, -1, "INFORMATION_SCHEMA", systemUser, true);
+        Schema mainSchema = new Schema(this, Constants.SCHEMA_MAIN, systemUser, true);
+        Schema infoSchema = new Schema(this, "INFORMATION_SCHEMA", systemUser, true);
         schemas.put(mainSchema.getName(), mainSchema);
         schemas.put(infoSchema.getName(), infoSchema);
 
         Session sysSession = createSession(systemUser);
         try {
-            List<ShardedTableRule> shardingTable = configuration.shardingTable;
-            for (ShardedTableRule st : shardingTable) {
-                String identifier = st.getName();
+            List<TableRule> tableMates = New.arrayList();
+            for (TableRuleGroup tableGroup : configuration.tableGroup) {
+                tableMates.addAll(tableGroup.getTableRules());
+            }
+            tableMates.addAll(configuration.shardingTable);
+            tableMates.addAll(configuration.multiNodeTables);
+            tableMates.addAll(configuration.fixedNodeIndexs);
+            for (TableRule tableRule : tableMates) {
+                String identifier = tableRule.getName();
                 identifier = identifier(identifier);
-                TableMate tableMate = new TableMate(mainSchema, allocateObjectId(), identifier);
-                tableMate.setTableRouter(tableConfig.getTableRouter());
-                tableMate.setShards(tableConfig.getShards());
-                tableMate.setScanLevel(tableConfig.getScanLevel());
+                TableMate tableMate = new TableMate(mainSchema, identifier, tableRule);
                 tableMate.loadMataData(sysSession);
-                if (tableConfig.isValidation()) {
+                if (tableRule.isValidation()) {
                     tableMate.check();
                 }
                 this.addSchemaObject(tableMate);
             }
+            
+            for (int type = 0, count = MetaTable.getMetaTableTypeCount(); type < count; type++) {
+                MetaTable m = new MetaTable(infoSchema, type);
+                infoSchema.add(m);
+            }
+            
+            tableMates.clear();
+            tableMates.addAll(configuration.fixedNodeIndexs);
+            tableMates.addAll(configuration.multiNodeIndexs);
+            
+            /*
+            for (TableRule tableRule : tableMates) {
+                String identifier = tableRule.getName();
+                identifier = identifier(identifier);
+                Index index = new Index(getTableOrViewByName(name), identifier, newIndexColumns, newIndexType);
+                this.addSchemaObject(index);
+            }*/
+            
+            for (TableRule tableRule : configuration.sequnces) {
+                String identifier = tableRule.getName();
+                identifier = identifier(identifier);
+                Sequence sequence = new Sequence(mainSchema, identifier, 1L, 1L, null, null, null, false, false);
+                this.addSchemaObject(sequence);
+            }
+            
         } finally {
             sysSession.close();
         }
-        for (int type = 0, count = MetaTable.getMetaTableTypeCount();
-                type < count; type++) {
-            MetaTable m = new MetaTable(infoSchema, -1 - type, type);
-            infoSchema.add(m);
-        }
-    
-    }
-    
+        
 
+    }
 
     /**
      * Check if two values are equal with the current comparison mode.
@@ -158,7 +175,7 @@ public class Database {
      * @param a the first value
      * @param b the second value
      * @return 0 if both values are equal, -1 if the first value is smaller, and
-     * 1 otherwise
+     *         1 otherwise
      */
     public int compare(Value a, Value b) {
         return a.compareTo(b, compareMode);
@@ -171,7 +188,7 @@ public class Database {
      * @param a the first value
      * @param b the second value
      * @return 0 if both values are equal, -1 if the first value is smaller, and
-     * 1 otherwise
+     *         1 otherwise
      */
     public int compareTypeSave(Value a, Value b) {
         return a.compareTypeSave(b, compareMode);
@@ -191,14 +208,14 @@ public class Database {
     private HashMap<String, DbObject> getMap(int type) {
         HashMap<String, ? extends DbObject> result;
         switch (type) {
-            case DbObject.USER:
-                result = users;
-                break;
-            case DbObject.SCHEMA:
-                result = schemas;
-                break;
-            default:
-                throw DbException.throwInternalError("type=" + type);
+        case DbObject.USER:
+            result = users;
+            break;
+        case DbObject.SCHEMA:
+            result = schemas;
+            break;
+        default:
+            throw DbException.throwInternalError("type=" + type);
         }
         return (HashMap<String, DbObject>) result;
     }
@@ -274,7 +291,7 @@ public class Database {
     public synchronized Session createSession(User user) {
         Session session = new Session(this, user, ++nextSessionId);
         userSessions.add(session);
-        if(trace.isDebugEnabled()) {
+        if (trace.isDebugEnabled()) {
             trace.debug("create session #{0}", session.getId(), "engine");
         }
         return session;
@@ -381,7 +398,7 @@ public class Database {
         }
         return list;
     }
-    
+
     /**
      * Get the tables with the given name, if any.
      *
@@ -434,7 +451,7 @@ public class Database {
      * Rename a schema object.
      *
      * @param session the session
-     * @param obj     the object
+     * @param obj the object
      * @param newName the new name
      */
     public synchronized void renameSchemaObject(Session session, SchemaObject obj, String newName) {
@@ -445,7 +462,7 @@ public class Database {
      * Rename a database object.
      *
      * @param session the session
-     * @param obj     the object
+     * @param obj the object
      * @param newName the new name
      */
     public synchronized void renameDatabaseObject(Session session, DbObject obj, String newName) {
@@ -484,7 +501,7 @@ public class Database {
      * Remove the object from the database.
      *
      * @param session the session
-     * @param obj     the object to remove
+     * @param obj the object to remove
      */
     public synchronized void removeDatabaseObject(Session session, DbObject obj) {
         String objName = obj.getName();
@@ -500,13 +517,13 @@ public class Database {
      * Remove an object from the system table.
      *
      * @param session the session
-     * @param obj     the object to be removed
+     * @param obj the object to be removed
      */
     public synchronized void removeSchemaObject(Session session, SchemaObject obj) {
         int type = obj.getType();
         if (type == DbObject.TABLE_OR_VIEW) {
             Table table = (Table) obj;
-            if (table.isTemporary() && !table.isGlobalTemporary()) {
+            if (table.isTemporary()) {
                 session.removeLocalTempTable(table);
                 return;
             }
@@ -575,7 +592,6 @@ public class Database {
     public DbSettings getSettings() {
         return dbSettings;
     }
-    
 
     public void setQueryStatistics(boolean b) {
         queryStatistics = b;

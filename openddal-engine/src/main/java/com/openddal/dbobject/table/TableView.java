@@ -59,10 +59,9 @@ public class TableView extends Table {
     private LocalResult recursiveResult;
     private boolean tableExpression;
 
-    public TableView(Schema schema, int id, String name, String querySQL,
-                     ArrayList<Parameter> params, String[] columnNames, Session session,
-                     boolean recursive) {
-        super(schema, id, name);
+    public TableView(Schema schema, int id, String name, String querySQL, ArrayList<Parameter> params,
+            String[] columnNames, Session session, boolean recursive) {
+        super(schema, name);
         init(querySQL, params, columnNames, session, recursive);
     }
 
@@ -77,20 +76,17 @@ public class TableView extends Table {
     /**
      * Create a temporary view out of the given query.
      *
-     * @param session  the session
-     * @param owner    the owner of the query
-     * @param name     the view name
-     * @param query    the query
+     * @param session the session
+     * @param owner the owner of the query
+     * @param name the view name
+     * @param query the query
      * @param topQuery the top level query
      * @return the view table
      */
-    public static TableView createTempView(Session session, User owner,
-                                           String name, Query query, Query topQuery) {
+    public static TableView createTempView(Session session, User owner, String name, Query query, Query topQuery) {
         Schema mainSchema = session.getDatabase().getSchema(Constants.SCHEMA_MAIN);
         String querySQL = query.getPlanSQL();
-        TableView v = new TableView(mainSchema, 0, name,
-                querySQL, query.getParameters(), null, session,
-                false);
+        TableView v = new TableView(mainSchema, 0, name, querySQL, query.getParameters(), null, session, false);
         if (v.createException != null) {
             throw v.createException;
         }
@@ -100,8 +96,8 @@ public class TableView extends Table {
         return v;
     }
 
-    private synchronized void init(String querySQL, ArrayList<Parameter> params,
-                                   String[] columnNames, Session session, boolean recursive) {
+    private synchronized void init(String querySQL, ArrayList<Parameter> params, String[] columnNames, Session session,
+            boolean recursive) {
         this.querySQL = querySQL;
         this.columnNames = columnNames;
         this.recursive = recursive;
@@ -110,7 +106,7 @@ public class TableView extends Table {
 
     private void initColumnsAndTables(Session session) {
         Column[] cols;
-        //removeViewFromTables();
+        // removeViewFromTables();
         try {
             Query query = compileViewQuery(session, querySQL);
             this.querySQL = query.getPlanSQL();
@@ -143,8 +139,7 @@ public class TableView extends Table {
                     }
                 }
                 if (fromColumn != null) {
-                    Expression checkExpression = fromColumn.getColumn()
-                            .getCheckConstraint(session, name);
+                    Expression checkExpression = fromColumn.getColumn().getCheckConstraint(session, name);
                     if (checkExpression != null) {
                         col.addCheckConstraint(session, checkExpression);
                     }
@@ -168,13 +163,13 @@ public class TableView extends Table {
                 for (int i = 0; i < columnNames.length; i++) {
                     cols[i] = new Column(columnNames[i], Value.STRING);
                 }
-                //index.setRecursive(true);
+                // index.setRecursive(true);
                 createException = null;
             }
         }
         setColumns(cols);
         if (getId() != 0) {
-            //addViewToTables();
+            // addViewToTables();
         }
     }
 
@@ -197,23 +192,21 @@ public class TableView extends Table {
                 return false;
             }
         }
-        return !(topQuery != null &&
-                !topQuery.isEverything(ExpressionVisitor.QUERY_COMPARABLE_VISITOR));
+        return !(topQuery != null && !topQuery.isEverything(ExpressionVisitor.QUERY_COMPARABLE_VISITOR));
     }
 
     /**
      * Generate "CREATE" SQL statement for the view.
      *
      * @param orReplace if true, then include the OR REPLACE clause
-     * @param force     if true, then include the FORCE clause
+     * @param force if true, then include the FORCE clause
      * @return the SQL statement
      */
     public String getCreateSQL(boolean orReplace, boolean force) {
         return getCreateSQL(orReplace, force, getSQL());
     }
 
-    private String getCreateSQL(boolean orReplace, boolean force,
-                                String quotedName) {
+    private String getCreateSQL(boolean orReplace, boolean force, String quotedName) {
         StatementBuilder buff = new StatementBuilder("CREATE ");
         if (orReplace) {
             buff.append("OR REPLACE ");
@@ -245,7 +238,6 @@ public class TableView extends Table {
     public void checkRename() {
         // ok
     }
-
 
     @Override
     public String getTableType() {

@@ -23,8 +23,7 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 
 /**
- * A sequence is created using the statement
- * CREATE SEQUENCE
+ * A sequence is created using the statement CREATE SEQUENCE
  */
 public class Sequence extends SchemaObject {
 
@@ -45,55 +44,45 @@ public class Sequence extends SchemaObject {
     /**
      * Creates a new sequence for an auto-increment column.
      *
-     * @param schema     the schema
-     * @param id         the object id
-     * @param name       the sequence name
+     * @param schema the schema
+     * @param id the object id
+     * @param name the sequence name
      * @param startValue the first value to return
-     * @param increment  the increment count
+     * @param increment the increment count
      */
-    public Sequence(Schema schema, int id, String name, long startValue,
-                    long increment) {
-        this(schema, id, name, startValue, increment, null, null, null, false,
-                true);
+    public Sequence(Schema schema, String name, long startValue, long increment) {
+        this(schema, name, startValue, increment, null, null, null, false, true);
     }
 
     /**
      * Creates a new sequence.
      *
-     * @param schema         the schema
-     * @param id             the object id
-     * @param name           the sequence name
-     * @param startValue     the first value to return
-     * @param increment      the increment count
-     * @param cacheSize      the number of entries to pre-fetch
-     * @param minValue       the minimum value
-     * @param maxValue       the maximum value
-     * @param cycle          whether to jump back to the min value if needed
+     * @param schema the schema
+     * @param id the object id
+     * @param name the sequence name
+     * @param startValue the first value to return
+     * @param increment the increment count
+     * @param cacheSize the number of entries to pre-fetch
+     * @param minValue the minimum value
+     * @param maxValue the maximum value
+     * @param cycle whether to jump back to the min value if needed
      * @param belongsToTable whether this sequence belongs to a table (for
-     *                       auto-increment columns)
+     *            auto-increment columns)
      */
-    public Sequence(Schema schema, int id, String name, Long startValue,
-                    Long increment, Long cacheSize, Long minValue, Long maxValue,
-                    boolean cycle, boolean belongsToTable) {
-        initSchemaObjectBase(schema, id, name);
-        this.increment = increment != null ?
-                increment : 1;
-        this.minValue = minValue != null ?
-                minValue : getDefaultMinValue(startValue, this.increment);
-        this.maxValue = maxValue != null ?
-                maxValue : getDefaultMaxValue(startValue, this.increment);
-        this.value = startValue != null ?
-                startValue : getDefaultStartValue(this.increment);
+    public Sequence(Schema schema, String name, Long startValue, Long increment, Long cacheSize, Long minValue,
+            Long maxValue, boolean cycle, boolean belongsToTable) {
+        initSchemaObjectBase(schema, name);
+        this.increment = increment != null ? increment : 1;
+        this.minValue = minValue != null ? minValue : getDefaultMinValue(startValue, this.increment);
+        this.maxValue = maxValue != null ? maxValue : getDefaultMaxValue(startValue, this.increment);
+        this.value = startValue != null ? startValue : getDefaultStartValue(this.increment);
         this.valueWithMargin = value;
-        this.cacheSize = cacheSize != null ?
-                Math.max(1, cacheSize) : DEFAULT_CACHE_SIZE;
+        this.cacheSize = cacheSize != null ? Math.max(1, cacheSize) : DEFAULT_CACHE_SIZE;
         this.cycle = cycle;
         this.belongsToTable = belongsToTable;
         if (!isValid(this.value, this.minValue, this.maxValue, this.increment)) {
-            throw DbException.get(ErrorCode.SEQUENCE_ATTRIBUTES_INVALID, name,
-                    String.valueOf(this.value), String.valueOf(this.minValue),
-                    String.valueOf(this.maxValue),
-                    String.valueOf(this.increment));
+            throw DbException.get(ErrorCode.SEQUENCE_ATTRIBUTES_INVALID, name, String.valueOf(this.value),
+                    String.valueOf(this.minValue), String.valueOf(this.maxValue), String.valueOf(this.increment));
         }
     }
 
@@ -102,22 +91,18 @@ public class Sequence extends SchemaObject {
      * increment relative to each other, since each of their respective
      * validities are contingent on the values of the other parameters.
      *
-     * @param value     the prospective start value
-     * @param minValue  the prospective min value
-     * @param maxValue  the prospective max value
+     * @param value the prospective start value
+     * @param minValue the prospective min value
+     * @param maxValue the prospective max value
      * @param increment the prospective increment
      */
-    private static boolean isValid(long value, long minValue, long maxValue,
-                                   long increment) {
-        return minValue <= value &&
-                maxValue >= value &&
-                maxValue > minValue &&
-                increment != 0 &&
-                // Math.abs(increment) < maxValue - minValue
-                // use BigInteger to avoid overflows when maxValue and minValue
-                // are really big
-                BigInteger.valueOf(increment).abs().compareTo(
-                        BigInteger.valueOf(maxValue).subtract(BigInteger.valueOf(minValue))) < 0;
+    private static boolean isValid(long value, long minValue, long maxValue, long increment) {
+        return minValue <= value && maxValue >= value && maxValue > minValue && increment != 0 &&
+        // Math.abs(increment) < maxValue - minValue
+        // use BigInteger to avoid overflows when maxValue and minValue
+        // are really big
+                BigInteger.valueOf(increment).abs()
+                        .compareTo(BigInteger.valueOf(maxValue).subtract(BigInteger.valueOf(minValue))) < 0;
     }
 
     private static long getDefaultMinValue(Long startValue, long increment) {
@@ -144,12 +129,11 @@ public class Sequence extends SchemaObject {
      * etc).
      *
      * @param startValue the new start value (<code>null</code> if no change)
-     * @param minValue   the new min value (<code>null</code> if no change)
-     * @param maxValue   the new max value (<code>null</code> if no change)
-     * @param increment  the new increment (<code>null</code> if no change)
+     * @param minValue the new min value (<code>null</code> if no change)
+     * @param maxValue the new max value (<code>null</code> if no change)
+     * @param increment the new increment (<code>null</code> if no change)
      */
-    public synchronized void modify(Long startValue, Long minValue,
-                                    Long maxValue, Long increment) {
+    public synchronized void modify(Long startValue, Long minValue, Long maxValue, Long increment) {
         if (startValue == null) {
             startValue = this.value;
         }
@@ -163,11 +147,8 @@ public class Sequence extends SchemaObject {
             increment = this.increment;
         }
         if (!isValid(startValue, minValue, maxValue, increment)) {
-            throw DbException.get(ErrorCode.SEQUENCE_ATTRIBUTES_INVALID,
-                    getName(), String.valueOf(startValue),
-                    String.valueOf(minValue),
-                    String.valueOf(maxValue),
-                    String.valueOf(increment));
+            throw DbException.get(ErrorCode.SEQUENCE_ATTRIBUTES_INVALID, getName(), String.valueOf(startValue),
+                    String.valueOf(minValue), String.valueOf(maxValue), String.valueOf(increment));
         }
         this.value = startValue;
         this.valueWithMargin = startValue;
@@ -216,13 +197,11 @@ public class Sequence extends SchemaObject {
      */
     public synchronized long getNext(Session session) {
         boolean needsFlush = false;
-        if ((increment > 0 && value >= valueWithMargin) ||
-                (increment < 0 && value <= valueWithMargin)) {
+        if ((increment > 0 && value >= valueWithMargin) || (increment < 0 && value <= valueWithMargin)) {
             valueWithMargin += increment * cacheSize;
             needsFlush = true;
         }
-        if ((increment > 0 && value > maxValue) ||
-                (increment < 0 && value < minValue)) {
+        if ((increment > 0 && value > maxValue) || (increment < 0 && value < minValue)) {
             if (cycle) {
                 value = increment > 0 ? minValue : maxValue;
                 valueWithMargin = value + (increment * cacheSize);

@@ -15,6 +15,11 @@
  */
 package com.openddal.command.expression;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.TreeSet;
+
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -24,11 +29,6 @@ import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 import com.openddal.value.ValueBoolean;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TreeSet;
 
 /**
  * Used for optimised IN(...) queries where the contents of the IN list are all
@@ -137,7 +137,6 @@ public class ConditionInConstantSet extends Condition {
             return false;
         }
         switch (visitor.getType()) {
-            case ExpressionVisitor.OPTIMIZABLE_MIN_MAX_COUNT_ALL:
             case ExpressionVisitor.DETERMINISTIC:
             case ExpressionVisitor.READONLY:
             case ExpressionVisitor.INDEPENDENT:

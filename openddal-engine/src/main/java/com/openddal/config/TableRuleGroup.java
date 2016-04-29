@@ -20,17 +20,17 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
             tableRule.setOwnerGroup(this);
             if (tableRule instanceof ShardedTableRule) {
                 ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
-                shardedTableRule.setScanLevel(getScanLevel());
-                shardedTableRule.cloneObjectNodes(getObjectNodes());
-                shardedTableRule.setPartitioner(getPartitioner());
-                List<String> ruleColumns = this.getRuleColumns();
-                if (ruleColumns.size() == 1 && RULECOLUMNS_QUOTE.equals(ruleColumns.get(0))) {
-
+                shardedTableRule.setPartitioner(getPartitioner());                
+                if (!isUseTableRuleColumns()) {
+                    shardedTableRule.setRuleColumns(getRuleColumns());
                 }
-            } else if (tableRule instanceof MultiNodeTableRule) {
-
-            } else {
-
+                if (SCANLEVEL_ANYINDEX == shardedTableRule.getScanLevel()) {
+                    shardedTableRule.setScanLevel(getScanLevel());
+                }
+            } 
+            if (tableRule instanceof MultiNodeTableRule) {
+                MultiNodeTableRule multiNodeTableRule = (MultiNodeTableRule) tableRule;
+                multiNodeTableRule.cloneObjectNodes(getObjectNodes());
             }
         }
         return tableRules;
@@ -42,6 +42,11 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
 
     public void setTableRules(TableRule... tableRules) {
         this.tableRules = Arrays.asList(tableRules);
+    }
+    
+    public boolean isUseTableRuleColumns() {
+        List<String> ruleColumns = this.getRuleColumns();
+        return ruleColumns.size() == 1 && RULECOLUMNS_QUOTE.equals(ruleColumns.get(0));
     }
 
 }

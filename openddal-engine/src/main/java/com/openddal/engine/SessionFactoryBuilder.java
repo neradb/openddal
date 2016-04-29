@@ -3,17 +3,20 @@ package com.openddal.engine;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceProvider;
 import com.openddal.config.MultiNodeTableRule;
 import com.openddal.config.SequnceConfig;
 import com.openddal.config.Shard;
+import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.config.TableRuleGroup;
 import com.openddal.config.parser.XmlConfigParser;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.util.Utils;
 
@@ -34,8 +37,7 @@ public final class SessionFactoryBuilder {
         try {
             source = Utils.getResourceAsStream(fromXml);
             if (source == null) {
-                throw new IllegalArgumentException(
-                        "Can't load config file " + fromXml + " from classpath.");
+                throw new IllegalArgumentException("Can't load config file " + fromXml + " from classpath.");
             }
             XmlConfigParser parser = new XmlConfigParser(source);
             parser.parse(configuration);
@@ -43,10 +45,10 @@ public final class SessionFactoryBuilder {
             try {
                 source.close();
             } catch (Exception e) {
-                //ignored
+                // ignored
             }
         }
-    
+
         return this;
     }
 
@@ -59,9 +61,7 @@ public final class SessionFactoryBuilder {
     }
 
     public SessionFactoryBuilder dbCluster(List<Shard> cluster) {
-        if (cluster == null || cluster.isEmpty()) {
-            throw new IllegalArgumentException();
-        }
+        vaildateCluster(cluster);
         configuration.cluster = cluster;
         return this;
     }
@@ -75,66 +75,70 @@ public final class SessionFactoryBuilder {
     }
 
     public SessionFactoryBuilder addTableRuleGrop(TableRuleGroup group) {
-        validateNode(group);
+        validateTableRule(group);
         configuration.tableGroup.add(group);
         return this;
     }
-    
 
     public SessionFactoryBuilder addTableRule(ShardedTableRule table) {
-        validateNode(table);
+        validateTableRule(table);
         configuration.shardingTable.add(table);
         return this;
     }
 
     public SessionFactoryBuilder addTableRule(MultiNodeTableRule table) {
-        validateNode(table);
+        validateTableRule(table);
         configuration.multiNodeTables.add(table);
         return this;
     }
 
     public SessionFactoryBuilder addTableRule(TableRule table) {
-        validateNode(table);
+        validateTableRule(table);
         configuration.fixedNodeTables.add(table);
         return this;
     }
 
     public SessionFactoryBuilder addIndex(MultiNodeTableRule index) {
-        validateNode(index);
+        validateTableRule(index);
         configuration.multiNodeIndexs.add(index);
         return this;
     }
 
     public SessionFactoryBuilder addIndex(TableRule index) {
-        validateNode(index);
+        validateTableRule(index);
         configuration.fixedNodeIndexs.add(index);
         return this;
     }
 
     public SessionFactoryBuilder addSequnce(SequnceConfig sequnce) {
-        validateNode(sequnce);
+        validateTableRule(sequnce);
         configuration.sequnces.add(sequnce);
         return this;
     }
 
-    public SessionFactory build() {
-        
-        return null;
+    public SessionFactoryBuilder defaultShardName(String shardName) {
+        configuration.defaultShardName = shardName;
+        return this;
     }
 
-    private void validateNode(TableRule oject) {
+    public SessionFactoryBuilder forceLoadTableMate(boolean force) {
+        configuration.forceLoadTableMate = force;
+        return this;
+    }
+
+    public SessionFactory build() {
+        beforeBuild();
+        Database database = new Database(configuration);
+        Engine engine = new Engine(database);
+        return engine;
+    }
+
+    private void validateTableRule(TableRule oject) {
         if (oject == null) {
             throw new IllegalArgumentException();
         }
         if (StringUtils.isNullOrEmpty(oject.getName())) {
             throw new IllegalArgumentException();
-        }
-        if (oject instanceof TableRuleGroup) {
-            TableRuleGroup group = (TableRuleGroup) oject;
-            List<TableRule> tables = group.getTableRules();
-            if (tables == null || tables.isEmpty()) {
-                throw new IllegalArgumentException();
-            }
         }
         if (oject instanceof ShardedTableRule) {
             ShardedTableRule shardingTable = (ShardedTableRule) oject;
@@ -162,6 +166,84 @@ public final class SessionFactoryBuilder {
             if (oject.getMetadataNode() == null) {
                 throw new IllegalArgumentException();
             }
+        }
+    }
+
+    private void validateTableRule(TableRuleGroup tableGroup) {
+        List<TableRule> tables = tableGroup.getTableRules();
+        if (tables == null || tables.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        int columns = -1;
+        Set<String> typeFilter = New.hashSet();
+        for (TableRule tableRule : tables) {
+            if (tableRule == null) {
+                throw new IllegalArgumentException();
+            }
+            typeFilter.add(typeFilter.getClass().getName());
+            if (StringUtils.isNullOrEmpty(tableRule.getName())) {
+                throw new IllegalArgumentException();
+            }
+            tableGroup.isUseTableRuleColumns();
+            if(tableRule instanceof ShardedTableRule) {
+                ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
+                List<String> ruleColumns = shardedTableRule.getRuleColumns();
+                if(ruleColumns == null || ruleColumns.isEmpty()) {
+                    throw new IllegalArgumentException("The TableRule columns is required if use table rule columns");
+                }
+                if(columns == -1) {
+                    columns = ruleColumns.size();
+                } else if(columns != ruleColumns.size()){
+                    throw new IllegalArgumentException("The length of TableRule columns must be equal");
+                }
+            }
+        }
+        if(typeFilter.size() > 1) {
+            throw new IllegalArgumentException("The type of TableRule in table group must be same.");
+        }
+        
+    
+    }
+
+    private void vaildateCluster(List<Shard> cluster) {
+        if (cluster == null || cluster.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+        for (Shard item : cluster) {
+            if (StringUtils.isNullOrEmpty(item.getName())) {
+                throw new IllegalArgumentException("Shard's name required.");
+            }
+            List<ShardItem> shardItems = item.getShardItems();
+            for (ShardItem shardItem : shardItems) {
+                if (StringUtils.isNullOrEmpty(shardItem.getRef())) {
+                    throw new IllegalArgumentException("member 's ref is required.");
+                }
+                if (shardItem.getwWeight() <= 0 && shardItem.getrWeight() <= 0) {
+                    throw new IllegalArgumentException("member 's weight not be less than zero.");
+                }
+                if (shardItem.getwWeight() <= 0) {
+                    shardItem.setReadOnly(true);
+                }
+            }
+        }
+    }
+    
+    private void beforeBuild() {
+        vaildateCluster(configuration.cluster);
+        for (TableRuleGroup group : configuration.tableGroup) {
+            validateTableRule(group);
+        }
+        for (ShardedTableRule table : configuration.shardingTable) {
+            validateTableRule(table);
+        }
+        for (MultiNodeTableRule table : configuration.multiNodeIndexs) {
+            validateTableRule(table);
+        }
+        for (TableRule table : configuration.fixedNodeTables) {
+            validateTableRule(table);
+        }
+        if (configuration.provider == null) {
+            throw new IllegalArgumentException("DataSourceProvider is required.");
         }
     }
 

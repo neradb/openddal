@@ -18,18 +18,28 @@
 
 package com.openddal.config;
 
-import com.openddal.util.New;
-import com.openddal.util.StringUtils;
+import java.util.Map;
 
 import javax.sql.DataSource;
-import java.util.Map;
+
+import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class XmlDataSourceProvider implements DataSourceProvider {
+public class DefaultDataSourceProvider implements DataSourceProvider {
 
-    private final Map<String, DataSource> dataNodes = New.hashMap();
+    private final Map<String, DataSource> dataNodes;
+    
+    public DefaultDataSourceProvider() {
+       this.dataNodes = New.hashMap();
+    }
+
+    public DefaultDataSourceProvider(Map<String, DataSource> dataNodes) {
+        super();
+        this.dataNodes = dataNodes;
+    }
 
     /**
      * @return the dataNodes

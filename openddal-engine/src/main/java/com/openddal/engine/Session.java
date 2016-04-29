@@ -106,7 +106,6 @@ public class Session implements SessionInterface {
     private boolean commitOrRollbackDisabled;
     private Table waitForLock;
     private Thread waitForLockThread;
-    private int modificationId;
     private int objectId;
     private SmallLRUCache<String, Command> queryCache;
     private ArrayList<Value> temporaryLobs;
@@ -115,7 +114,7 @@ public class Session implements SessionInterface {
 
     public Session(Database database, User user, int id) {
         this.database = database;
-        this.queryTimeout = database.getSettings().maxQueryTimeout;
+        this.queryTimeout = database.getSettings().queryTimeout;
         this.queryCacheSize = database.getSettings().queryCacheSize;
         this.user = user;
         this.id = id;
@@ -142,7 +141,6 @@ public class Session implements SessionInterface {
      */
     public void setVariable(String name, Value value) {
         initVariables();
-        modificationId++;
         Value old;
         if (value == ValueNull.INSTANCE) {
             old = variables.remove(name);
@@ -217,7 +215,6 @@ public class Session implements SessionInterface {
         if (localTempTables.get(table.getName()) != null) {
             throw DbException.get(ErrorCode.TABLE_OR_VIEW_ALREADY_EXISTS_1, table.getSQL());
         }
-        modificationId++;
         localTempTables.put(table.getName(), table);
     }
 
@@ -227,7 +224,6 @@ public class Session implements SessionInterface {
      * @param table the table
      */
     public void removeLocalTempTable(Table table) {
-        modificationId++;
         localTempTables.remove(table.getName());
     }
 
@@ -519,7 +515,6 @@ public class Session implements SessionInterface {
         if (localTempTables != null && localTempTables.size() > 0) {
             synchronized (database) {
                 for (Table table : New.arrayList(localTempTables.values())) {
-                    modificationId++;
                     localTempTables.remove(table.getName());
                     if (closeSession) {
                         // need to commit, otherwise recovery might
@@ -722,7 +717,6 @@ public class Session implements SessionInterface {
     }
 
     public void setCurrentSchema(Schema schema) {
-        modificationId++;
         this.currentSchemaName = schema.getName();
     }
 
@@ -808,7 +802,6 @@ public class Session implements SessionInterface {
     }
 
     public void setSchemaSearchPath(String[] schemas) {
-        modificationId++;
         this.schemaSearchPath = schemas;
     }
 
@@ -875,7 +868,7 @@ public class Session implements SessionInterface {
     }
 
     public void setQueryTimeout(int queryTimeout) {
-        int max = database.getSettings().maxQueryTimeout;
+        int max = database.getSettings().queryTimeout;
         if (max != 0 && (max < queryTimeout || queryTimeout == 0)) {
             // the value must be at most max
             queryTimeout = max;
@@ -904,10 +897,6 @@ public class Session implements SessionInterface {
 
     public Thread getWaitForLockThread() {
         return waitForLockThread;
-    }
-
-    public int getModificationId() {
-        return modificationId;
     }
 
     @Override

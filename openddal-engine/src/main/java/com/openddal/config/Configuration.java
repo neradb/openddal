@@ -28,10 +28,11 @@ import com.openddal.util.New;
  */
 public class Configuration {
     
-    public boolean validation = true;
+    public boolean forceLoadTableMate = true;
     public Properties settings;
     public List<Shard> cluster;
     public DataSourceProvider provider;
+    public String defaultShardName;
 
     public final List<TableRuleGroup> tableGroup = New.arrayList();
     public final List<ShardedTableRule> shardingTable = New.arrayList();

@@ -15,12 +15,12 @@
  */
 package com.openddal.command.expression;
 
+import java.util.HashSet;
+
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.Table;
-
-import java.util.HashSet;
 
 /**
  * The visitor pattern is used to iterate through all expressions of a query
@@ -40,12 +40,6 @@ public class ExpressionVisitor {
      */
     public static final ExpressionVisitor INDEPENDENT_VISITOR =
             new ExpressionVisitor(INDEPENDENT);
-
-    /**
-     * Are all aggregates MIN(column), MAX(column), or COUNT(*) for the given
-     * table (getTable)?
-     */
-    public static final int OPTIMIZABLE_MIN_MAX_COUNT_ALL = 1;
 
     /**
      * Does the expression return the same results for the same parameters?
@@ -161,17 +155,6 @@ public class ExpressionVisitor {
             HashSet<DbObject> dependencies) {
         return new ExpressionVisitor(GET_DEPENDENCIES, 0, dependencies, null,
                 null, null);
-    }
-
-    /**
-     * Create a new visitor to check if all aggregates are for the given table.
-     *
-     * @param table the table
-     * @return the new visitor
-     */
-    public static ExpressionVisitor getOptimizableVisitor(Table table) {
-        return new ExpressionVisitor(OPTIMIZABLE_MIN_MAX_COUNT_ALL, 0, null,
-                null, table, null);
     }
 
     /**

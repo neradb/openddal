@@ -12,8 +12,6 @@ import javax.naming.Name;
 import javax.naming.Reference;
 import javax.naming.spi.ObjectFactory;
 
-import com.openddal.engine.Constants;
-import com.openddal.engine.SysProperties;
 import com.openddal.jdbc.JdbcDriver;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
@@ -79,10 +77,7 @@ public class JdbcDataSourceFactory implements ObjectFactory {
     public static TraceSystem getTraceSystem() {
         synchronized (JdbcDataSourceFactory.class) {
             if (cachedTraceSystem == null) {
-                cachedTraceSystem = new TraceSystem(
-                        SysProperties.CLIENT_TRACE_DIRECTORY + "h2datasource" +
-                                Constants.SUFFIX_TRACE_FILE);
-                cachedTraceSystem.setLevelFile(SysProperties.DATASOURCE_TRACE_LEVEL);
+                cachedTraceSystem = new TraceSystem();
             }
             return cachedTraceSystem;
         }

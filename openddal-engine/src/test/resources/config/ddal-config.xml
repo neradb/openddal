@@ -2,9 +2,16 @@
 <!DOCTYPE ddal-config PUBLIC "-//openddal.com//DTD ddal-config//EN" "http://openddal.com/dtd/ddal-config.dtd">
 <ddal-config>
 
-	<schema name="ddal_schema">
+	<settings>
+		<property name="ddal.compatibilityMode" value="MySQL" />
+		<property name="ddal.queryTimeout" value="3000" />
+		<property name="ddal.validationQuery" value="select 1" />
+		<property name="ddal.validationQueryTimeout" value="1000" />
+	</settings>
 
-		<tableGroup router="order_group">
+	<schema name="ut-app">
+
+		<tableGroup router="order_group" validation="false">
 			<tables>
 				<table name="orders" />
 				<table name="order_items" />
@@ -40,13 +47,13 @@
 			</tableRule>
 		</tableGroup>
 
-		<table name="product">
+		<table name="product" validation="false">
 			<nodes>
 				<node shard="shard0,shard1,shard2,shard3" />
 			</nodes>
 		</table>
 
-		<table name="product_category">
+		<table name="product_category" validation="false">
 			<nodes>
 				<node shard="shard0,shard1,shard2,shard3" />
 			</nodes>
@@ -110,17 +117,17 @@
 	</dataNodes>
 
 
-	<partitioners>
-		<partitioner name="customer_partitioner"
+	<algorithms>
+		<ruleAlgorithm name="customer_partitioner"
 			class="com.openddal.route.algorithm.HashBucketPartitioner">
 			<property name="partitionCount" value="8" />
 			<property name="partitionLength" value="128" />
-		</partitioner>
-		<partitioner name="customer_partitioner"
+		</ruleAlgorithm>
+		<ruleAlgorithm name="customer_partitioner"
 			class="com.openddal.route.algorithm.HashBucketPartitioner">
 			<property name="partitionCount" value="8" />
 			<property name="partitionLength" value="128" />
-		</partitioner>
-	</partitioner>
+		</ruleAlgorithm>
+	</algorithms>
 
 </ddal-config>

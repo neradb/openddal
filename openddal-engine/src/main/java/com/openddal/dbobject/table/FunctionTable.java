@@ -49,7 +49,7 @@ public class FunctionTable extends Table {
 
     public FunctionTable(Schema schema, Session session,
                          Expression functionExpr, FunctionCall function) {
-        super(schema, 0, function.getName());
+        super(schema, function.getName());
         this.functionExpr = functionExpr;
         this.function = function;
         if (function instanceof TableFunction) {

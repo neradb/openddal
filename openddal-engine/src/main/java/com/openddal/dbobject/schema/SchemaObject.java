@@ -24,8 +24,8 @@ public abstract class SchemaObject extends DbObject {
 
     private Schema schema;
 
-    protected void initSchemaObjectBase(Schema newSchema, int id, String name) {
-        initDbObjectBase(newSchema.getDatabase(), id, name);
+    protected void initSchemaObjectBase(Schema newSchema, String name) {
+        initDbObjectBase(newSchema.getDatabase(), name);
         this.schema = newSchema;
     }
 

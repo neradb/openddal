@@ -31,7 +31,7 @@ import javax.sql.DataSource;
 import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceException;
 import com.openddal.config.Shard.ShardItem;
-import com.openddal.config.XmlDataSourceProvider;
+import com.openddal.config.DefaultDataSourceProvider;
 import com.openddal.route.algorithm.Partitioner;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.TableRouter;
@@ -169,7 +169,7 @@ public class XmlConfigParser {
     }
 
     private void parseDataSource(List<XNode> xNodes) {
-        XmlDataSourceProvider provider = new XmlDataSourceProvider();
+        DefaultDataSourceProvider provider = new DefaultDataSourceProvider();
         for (XNode dataSourceNode : xNodes) {
             DataNodeConfig dsConfig = new DataNodeConfig();
             String id = dataSourceNode.getStringAttribute("id");

@@ -15,28 +15,33 @@
  */
 package com.openddal.shards;
 
-import com.openddal.config.Configuration;
-import com.openddal.config.DataSourceException;
-import com.openddal.config.DataSourceProvider;
-import com.openddal.config.ShardConfig;
-import com.openddal.config.ShardConfig.ShardItem;
-import com.openddal.engine.Database;
-import com.openddal.message.Trace;
-import com.openddal.util.JdbcUtils;
-import com.openddal.util.New;
-import com.openddal.util.StringUtils;
-import com.openddal.util.Threads;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
+import java.util.concurrent.TimeUnit;
+
+import javax.sql.DataSource;
+
+import com.openddal.config.Configuration;
+import com.openddal.config.DataSourceException;
+import com.openddal.config.DataSourceProvider;
+import com.openddal.config.Shard;
+import com.openddal.config.Shard.ShardItem;
+import com.openddal.engine.Database;
+import com.openddal.message.Trace;
+import com.openddal.util.JdbcUtils;
+import com.openddal.util.New;
+import com.openddal.util.StringUtils;
+import com.openddal.util.Threads;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -63,17 +68,16 @@ public class DataSourceRepository {
     public DataSourceRepository(Database database) {
         this.database = database;
         Configuration configuration = database.getConfiguration();
-        this.defaultShardName = configuration.getSchemaConfig().getShard();
-        this.validationQuery = database.getSettings().defaultValidationQuery;
-        this.validationQueryTimeout = database.getSettings().defaultValidationQueryTimeout;
-        this.dataSourceProvider = configuration.getObject("dataSourceProvider");
+        this.defaultShardName = configuration.defaultShardName;
+        this.validationQuery = database.getSettings().validationQuery;
+        this.validationQueryTimeout = database.getSettings().validationQueryTimeout;
+        this.dataSourceProvider = configuration.provider;
         if (dataSourceProvider == null) {
             throw new IllegalArgumentException();
         }
         this.trace = database.getTrace(Trace.DATASOURCE);
-        Map<String, ShardConfig> shardMapping = configuration.getCluster();
-        for (ShardConfig value : shardMapping.values()) {
-            List<ShardItem> shardItems = value.getShardItems();
+        for (Shard shardItem : configuration.cluster) {
+            List<ShardItem> shardItems = shardItem.getShardItems();
             List<DataSourceMarker> shardDs = New.arrayList(shardItems.size());
             DataSourceMarker dsMarker = new DataSourceMarker();
             for (ShardItem i : shardItems) {
@@ -83,7 +87,7 @@ public class DataSourceRepository {
                     throw new DataSourceException("Can' find data source: " + ref);
                 }
                 dsMarker.setDataSource(dataSource);
-                dsMarker.setShardName(value.getName());
+                dsMarker.setShardName(shardItem.getName());
                 dsMarker.setUid(ref);
                 dsMarker.setReadOnly(i.isReadOnly());
                 dsMarker.setwWeight(i.getwWeight());
@@ -92,12 +96,12 @@ public class DataSourceRepository {
                 idMapping.put(ref, dsMarker.getDataSource());
             }
             if (shardDs.size() < 1) {
-                throw new DataSourceException("No datasource in " + value.getName());
+                throw new DataSourceException("No datasource in " + shardItem.getName());
             }
             registered.addAll(shardDs);
-            DataSource dataSource = shardDs.size() > 1 ? new SmartDataSource(this, value.getName(), shardDs)
+            DataSource dataSource = shardDs.size() > 1 ? new SmartDataSource(this, shardItem.getName(), shardDs)
                     : shardDs.get(0).getDataSource();
-            shardMaping.put(value.getName(), dataSource);
+            shardMaping.put(shardItem.getName(), dataSource);
         }
         scheduledExecutor = Executors.newScheduledThreadPool(1, Threads.newThreadFactory("datasource-ha-thread"));
         scheduledExecutor.scheduleAtFixedRate(new Worker(), 10, 10, TimeUnit.SECONDS);

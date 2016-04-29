@@ -15,14 +15,14 @@
  */
 package com.openddal.message;
 
+import java.text.MessageFormat;
+import java.util.ArrayList;
+
 import com.openddal.command.expression.ParameterInterface;
 import com.openddal.engine.SysProperties;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
-
-import java.text.MessageFormat;
-import java.util.ArrayList;
 
 /**
  * This class represents a trace module.
@@ -33,12 +33,7 @@ public class Trace {
      * The trace module name for commands.
      */
     public static final String COMMAND = "command";
-
-    /**
-     * The trace module name for constraints.
-     */
-    public static final String CONSTRAINT = "constraint";
-
+    
     /**
      * The trace module name for databases.
      */
@@ -50,25 +45,10 @@ public class Trace {
     public static final String FUNCTION = "function";
 
     /**
-     * The trace module name for file locks.
-     */
-    public static final String FILE_LOCK = "fileLock";
-
-    /**
-     * The trace module name for indexes.
-     */
-    public static final String INDEX = "index";
-
-    /**
      * The trace module name for the JDBC API.
      */
     public static final String JDBC = "jdbc";
-
-    /**
-     * The trace module name for locks.
-     */
-    public static final String LOCK = "lock";
-
+    
     /**
      * The trace module name for schemas.
      */
@@ -78,26 +58,6 @@ public class Trace {
      * The trace module name for sequences.
      */
     public static final String SEQUENCE = "sequence";
-
-    /**
-     * The trace module name for settings.
-     */
-    public static final String SETTING = "setting";
-
-    /**
-     * The trace module name for tables.
-     */
-    public static final String TABLE = "table";
-
-    /**
-     * The trace module name for triggers.
-     */
-    public static final String TRIGGER = "trigger";
-
-    /**
-     * The trace module name for users.
-     */
-    public static final String USER = "user";
 
     /**
      * The trace module name for executor.

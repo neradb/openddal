@@ -28,8 +28,8 @@ public class User extends DbObject {
     private boolean admin;
     private String password;
 
-    public User(Database database, int id, String userName) {
-        initDbObjectBase(database, id, userName);
+    public User(Database database, String userName) {
+        initDbObjectBase(database, userName);
 
     }
 

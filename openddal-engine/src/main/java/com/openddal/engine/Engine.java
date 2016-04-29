@@ -15,104 +15,71 @@
  */
 package com.openddal.engine;
 
-import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import com.openddal.config.Configuration;
-import com.openddal.config.parser.XmlConfigParser;
 import com.openddal.dbobject.User;
-import com.openddal.util.StringUtils;
-import com.openddal.util.Utils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class Engine implements SessionFactory {
+    
+    private static Engine implicitInstance;
 
-    private static Engine INSTANCE = null;
-    private static Database DATABASE = null;
+    private Database database = null;
 
-    private Engine() {
+    public Engine(Database database) {
+        this.database = database; 
         Runtime.getRuntime().addShutdownHook(new Shutdown());
     }
 
-    public synchronized static Engine getInstance() {
-        if (INSTANCE == null) {
+    public synchronized static Engine getImplicitInstance() {
+        if(implicitInstance == null) {
             String configLocation = SysProperties.ENGINE_CONFIG_LOCATION;
-            INSTANCE = configuration(configLocation);
+            implicitInstance = (Engine)SessionFactoryBuilder.newBuilder().fromXml(configLocation).build();
         }
-        return INSTANCE;
+        return implicitInstance;
     }
 
-    private static Engine configuration(String configLocation) {
-        if (StringUtils.isNullOrEmpty(configLocation)) {
-            throw new IllegalArgumentException("Engine configLocation file must not be null");
-        }
-        InputStream source = null;
-        try {
-            source = Utils.getResourceAsStream(configLocation);
-            if (source == null) {
-                throw new IllegalArgumentException(
-                        "Can't load engine configLocation " + configLocation + " from classpath.");
-            }
-            XmlConfigParser parser = new XmlConfigParser(source);
-            Configuration configuration = parser.parse();
-            DATABASE = new Database(configuration);
-            return new Engine();
-        } finally {
-            try {
-                source.close();
-            } catch (Exception e) {
-                //ignored
-            }
-        }
-    }
 
     @Override
-    public SessionInterface createSession(String url, Properties ci) throws SQLException {
-        if (StringUtils.isNullOrEmpty(url)) {
-            throw new IllegalArgumentException();
-        }
-        return INSTANCE.openSession(url, ci);
-    }
-
-    private Session openSession(String url, Properties info) {
-        String userName = info.getProperty("user");
-        String password = info.getProperty("password");
+    public SessionInterface createSession(Properties ci) throws SQLException {
+        String userName = ci.getProperty("user");
+        String password = ci.getProperty("password");
         if (userName == null) {
             userName = Database.SYSTEM_USER_NAME;
         }
-        User user = DATABASE.findUser(userName);
+        User user = database.findUser(userName);
         if (user == null) {
             // users is the last thing we add, so if no user is around,
             // the database is new (or not initialized correctly)
-            user = new User(DATABASE, DATABASE.allocateObjectId(), userName);
+            user = new User(database, userName);
             user.setAdmin(true);
             user.setPassword(password);
-            DATABASE.addDatabaseObject(user);
+            database.addDatabaseObject(user);
         }
-        User userObject = DATABASE.getUser(userName);
-        Session session = DATABASE.createSession(userObject);
+        User userObject = database.getUser(userName);
+        Session session = database.createSession(userObject);
         return session;
 
     }
 
-
-    private static class Shutdown extends Thread {
+    
+    private class Shutdown extends Thread {
         private Shutdown() {
-            super("database-engine-closer");
+            super("database-closer");
         }
+        
         @Override
         public void run() {
-            synchronized (Engine.class) {
-                try {
-                    DATABASE.close();
-                } catch (Exception e) {
-
-                }
+            if(database != null) {
+                database.close();
             }
         }
     }
+
+
+
 
 }

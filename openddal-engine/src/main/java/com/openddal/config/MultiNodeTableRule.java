@@ -1,5 +1,7 @@
 package com.openddal.config;
 
+import java.util.Random;
+
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.StringUtils;
 
@@ -7,6 +9,8 @@ public class MultiNodeTableRule extends TableRule {
 
     private static final long serialVersionUID = 1L;
     private ObjectNode[] objectNodes;
+
+    private final Random random = new Random();
 
     public MultiNodeTableRule(String name) {
         super(name, null);
@@ -24,6 +28,16 @@ public class MultiNodeTableRule extends TableRule {
 
     public ObjectNode[] getObjectNodes() {
         return objectNodes;
+    }
+
+    @Override
+    public ObjectNode randomMetadataNodeIfNeeded() {
+        ObjectNode metadataNode = this.getMetadataNode();
+        if(metadataNode == null) {
+            int bound = objectNodes.length - 1;
+            return objectNodes[random.nextInt(bound)];
+        }
+        return metadataNode;
     }
 
     public void setObjectNodes(ObjectNode... objectNode) {

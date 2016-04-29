@@ -23,7 +23,7 @@ import java.util.Properties;
  * exists so that the JDBC layer (the client) can be compiled without dependency
  * to the core database engine.
  */
-interface SessionFactory {
+public interface SessionFactory {
 
     /**
      * Create a new session.
@@ -31,6 +31,6 @@ interface SessionFactory {
      * @param ci the connection parameters
      * @return the new session
      */
-    SessionInterface createSession(String url, Properties ci) throws SQLException;
+    SessionInterface createSession(Properties ci) throws SQLException;
 
 }

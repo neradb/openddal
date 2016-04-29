@@ -15,9 +15,32 @@
  */
 package com.openddal.jdbc;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.CallableStatement;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.sql.Struct;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Executor;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.engine.Constants;
-import com.openddal.engine.Engine;
 import com.openddal.engine.SessionInterface;
 import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
@@ -26,16 +49,12 @@ import com.openddal.message.TraceObject;
 import com.openddal.result.ResultInterface;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.Utils;
-import com.openddal.value.*;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.sql.*;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Executor;
+import com.openddal.value.CompareMode;
+import com.openddal.value.Value;
+import com.openddal.value.ValueInt;
+import com.openddal.value.ValueLobDb;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueString;
 
 /**
  * <p>
@@ -49,8 +68,6 @@ import java.util.concurrent.Executor;
  */
 public class JdbcConnection extends TraceObject implements Connection {
 
-    private final String url;
-    private final String user;
     private final CompareMode compareMode = CompareMode.getInstance(null, 0);
     // ResultSet.HOLD_CURSORS_OVER_COMMIT
     private int holdability = 1;
@@ -72,13 +89,11 @@ public class JdbcConnection extends TraceObject implements Connection {
     /**
      * INTERNAL
      */
-    public JdbcConnection(String url, Properties info) throws SQLException {
-        this.session = Engine.getInstance().createSession(url, info);
+    public JdbcConnection(SessionInterface session) throws SQLException {
+        this.session = session;
         trace = session.getTrace();
         int id = getNextId(TraceObject.CONNECTION);
         setTrace(trace, TraceObject.CONNECTION, id);
-        this.user = info.getProperty("user");
-        this.url = url;
     }
 
 
@@ -1362,16 +1377,6 @@ public class JdbcConnection extends TraceObject implements Connection {
         }
     }
 
-    String getURL() {
-        checkClosed();
-        return url;
-    }
-
-    String getUser() {
-        checkClosed();
-        return user;
-    }
-
     private void rollbackInternal() {
         rollback = prepareCommand("ROLLBACK", rollback);
         rollback.executeUpdate();
@@ -1713,14 +1718,6 @@ public class JdbcConnection extends TraceObject implements Connection {
     public int getNetworkTimeout() {
         checkClosed();
         return 0;
-    }
-
-    /**
-     * INTERNAL
-     */
-    @Override
-    public String toString() {
-        return getTraceObjectName() + ": url=" + url + " user=" + user;
     }
 
     /**

@@ -15,6 +15,8 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -24,8 +26,6 @@ import com.openddal.value.Value;
 import com.openddal.value.ValueArray;
 import com.openddal.value.ValueBoolean;
 import com.openddal.value.ValueNull;
-
-import java.util.List;
 
 /**
  * An expression representing a constant value.
@@ -162,7 +162,6 @@ public class ValueExpression extends Expression {
     @Override
     public boolean isEverything(ExpressionVisitor visitor) {
         switch (visitor.getType()) {
-            case ExpressionVisitor.OPTIMIZABLE_MIN_MAX_COUNT_ALL:
             case ExpressionVisitor.DETERMINISTIC:
             case ExpressionVisitor.READONLY:
             case ExpressionVisitor.INDEPENDENT:

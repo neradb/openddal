@@ -16,6 +16,10 @@
 package com.openddal.engine;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import com.openddal.util.New;
 
 /**
  * This class contains various database-level settings. To override the
@@ -194,7 +198,7 @@ public class DbSettings extends SettingsBase {
      * no limit. Please note the actual query timeout may be set to a lower
      * value.
      */
-    public int maxQueryTimeout = get("MAX_QUERY_TIMEOUT", 0);
+    public int queryTimeout = get("QUERY_TIMEOUT", 0);
     /**
      * Database setting <code>DEFAULT_TABLE_ENGINE</code>
      * (default: null).<br />
@@ -206,13 +210,13 @@ public class DbSettings extends SettingsBase {
      * (default: SELECT 1 FROM DUAL).<br />
      * The default sql to validation jdbc connection.
      */
-    public String defaultValidationQuery = get("DEFAULT_VALIDATION_QUERY", "SELECT 1 FROM DUAL");
+    public String validationQuery = get("VALIDATION_QUERY", "SELECT 1 FROM DUAL");
     /**
      * Database setting <code>DEFAULT_VALIDATION_QUERYT_IMEOUT</code>
      * (default: -1).<br />
      * The default time to execute validation sql.
      */
-    public int defaultValidationQueryTimeout = get("DEFAULT_VALIDATION_QUERYT_IMEOUT", -1);
+    public int validationQueryTimeout = get("VALIDATION_QUERYT_IMEOUT", -1);
     
     
     
@@ -237,6 +241,23 @@ public class DbSettings extends SettingsBase {
             return defaultSettings;
         }
         return new DbSettings(s);
+    }
+    
+    /**
+     * INTERNAL.
+     * Get the settings for the given properties (may be null).
+     *
+     * @param s the settings
+     * @return the settings
+     */
+    public static DbSettings getInstance(Properties s) {
+        HashMap<String, String> arg = New.hashMap();
+        if (s != null) {
+            for (Map.Entry<Object,Object> item : s.entrySet()) {
+                arg.put(item.getKey().toString(), item.getKey().toString());
+            }
+        }
+        return getInstance(arg);
     }
 
 }

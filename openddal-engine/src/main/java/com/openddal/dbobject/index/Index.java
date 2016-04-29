@@ -44,9 +44,9 @@ public class Index extends SchemaObject {
      *                        not yet known
      * @param newIndexType    the index type
      */
-    public Index(Table newTable, int id, String name,
+    public Index(Table newTable, String name,
                      IndexColumn[] newIndexColumns, IndexType newIndexType) {
-        initSchemaObjectBase(newTable.getSchema(), id, name);
+        initSchemaObjectBase(newTable.getSchema(), name);
         this.indexType = newIndexType;
         this.table = newTable;
         if (newIndexColumns != null) {

@@ -31,8 +31,6 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import com.openddal.command.ddl.CreateTableData;
-import com.openddal.config.MultiNodeTableRule;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.Index;
@@ -46,7 +44,6 @@ import com.openddal.message.ErrorCode;
 import com.openddal.result.SortOrder;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
-import com.openddal.route.rule.TableRouter;
 import com.openddal.shards.DataSourceRepository;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.MathUtils;
@@ -64,9 +61,9 @@ public class TableMate extends Table {
 
     private static final int MAX_RETRY = 2;
 
+    private final TableRule tableRule;
     private final ArrayList<Index> indexes = New.arrayList();
     private Column[] ruleColumns;
-    private TableRule tableRule;
 
     private DbException initException;
     private boolean storesLowerCase;
@@ -74,72 +71,9 @@ public class TableMate extends Table {
     private boolean storesMixedCaseQuoted;
     private boolean supportsMixedCaseIdentifiers;
 
-    public TableMate(CreateTableData data) {
-        super(data.schema, data.id, data.tableName);
-        setTemporary(data.temporary);
-        Column[] cols = new Column[data.columns.size()];
-        data.columns.toArray(cols);
-        setColumns(cols);
-    }
-
-    public TableMate(Schema schema, int id, String name) {
-        super(schema, id, name);
-    }
-
-    private static long convertPrecision(int sqlType, long precision) {
-        // workaround for an Oracle problem:
-        // for DATE columns, the reported precision is 7
-        // for DECIMAL columns, the reported precision is 0
-        switch (sqlType) {
-            case Types.DECIMAL:
-            case Types.NUMERIC:
-                if (precision == 0) {
-                    precision = 65535;
-                }
-                break;
-            case Types.DATE:
-                precision = Math.max(ValueDate.PRECISION, precision);
-                break;
-            case Types.TIMESTAMP:
-                precision = Math.max(ValueTimestamp.PRECISION, precision);
-                break;
-            case Types.TIME:
-                precision = Math.max(ValueTime.PRECISION, precision);
-                break;
-        }
-        return precision;
-    }
-
-    private static int convertScale(int sqlType, int scale) {
-        // workaround for an Oracle problem:
-        // for DECIMAL columns, the reported precision is -127
-        switch (sqlType) {
-            case Types.DECIMAL:
-            case Types.NUMERIC:
-                if (scale < 0) {
-                    scale = 32767;
-                }
-                break;
-        }
-        return scale;
-    }
-
-    private static boolean isShardMatch(ObjectNode[] nodes1, ObjectNode[] nodes2) {
-        ObjectNode[] group1 = RoutingResult.fixedResult(nodes1).group();
-        ObjectNode[] group2 = RoutingResult.fixedResult(nodes2).group();
-        for (ObjectNode tableNode1 : group1) {
-            boolean isMatched = false;
-            for (ObjectNode tableNode2 : group2) {
-                if (tableNode1.getShardName().equals(tableNode2.getShardName())) {
-                    isMatched = true;
-                    break;
-                }
-            }
-            if (!isMatched) {
-                return false;
-            }
-        }
-        return true;
+    public TableMate(Schema schema, String name, TableRule tableRule) {
+        super(schema, name);
+        this.tableRule = tableRule;
     }
 
     /**
@@ -149,53 +83,8 @@ public class TableMate extends Table {
         return ruleColumns;
     }
 
-    /**
-     * test the table is global table.
-     *
-     * @return
-     */
-    public boolean isReplication() {
-        return tableRule.getClass() == MultiNodeTableRule.class;
-    }
-
-    /**
-     * @return
-     * @see TableRouter#getPartition()
-     */
-    public ObjectNode[] getPartitionNode() {
-        if (tableRouter != null) {
-            List<ObjectNode> partition = tableRouter.getPartition();
-            return partition.toArray(new ObjectNode[partition.size()]);
-        }
-        return shards;
-
-    }
-
-    /**
-     * validation the rule columns is in the table columns
-     */
-    private void validationRuleColumn(Column[] columns) {
-        if (tableRule instanceof ShardedTableRule) {
-            ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
-            List<String> ruleColNames = shardedTableRule.getRuleColumns();
-            ruleColumns = new Column[ruleColNames.size()];
-            for (int i = 0; i < ruleColNames.size(); i++) {
-                String ruleCol = ruleColNames.get(i);
-                Column matched = null;
-                for (Column column : columns) {
-                    String colName = column.getName();
-                    if (colName.equalsIgnoreCase(ruleCol)) {
-                        matched = column;
-                        ruleColumns[i] = column;
-                        break;
-                    }
-                }
-                if (matched == null) {
-                    throw DbException.throwInternalError(
-                            "The rule column " + ruleCol + " does not exist in " + getName() + " table.");
-                }
-            }
-        }
+    public TableRule getTableRule() {
+        return tableRule;
     }
 
     public void check() {
@@ -245,9 +134,6 @@ public class TableMate extends Table {
 
     @Override
     public long getRowCountApproximation() {
-        if (tableRouter != null) {
-            return tableRouter.getPartition().size() * Constants.COST_ROW_OFFSET;
-        }
         return Constants.COST_ROW_OFFSET;
     }
 
@@ -259,7 +145,7 @@ public class TableMate extends Table {
     private Index addIndex(String name, ArrayList<Column> list, IndexType indexType) {
         Column[] cols = new Column[list.size()];
         list.toArray(cols);
-        Index index = new Index(this, 0, name, IndexColumn.wrap(cols), indexType);
+        Index index = new Index(this, name, IndexColumn.wrap(cols), indexType);
         indexes.add(index);
         return index;
     }
@@ -270,21 +156,17 @@ public class TableMate extends Table {
     }
 
     public void loadMataData(Session session) {
-        ObjectNode[] nodes = getPartitionNode();
-        if (nodes == null || nodes.length < 1) {
-            throw new IllegalStateException();
-        }
-        ObjectNode matadataNode = nodes[0];
-        String tableName = matadataNode.getCompositeObjectName();
-        String shardName = matadataNode.getShardName();
+        ObjectNode node = tableRule.randomMetadataNodeIfNeeded();
+        String tableName = node.getCompositeObjectName();
+        String shardName = node.getShardName();
         try {
-            //trace.debug("Try to load {0} metadata from table {1}.{2}", getName(), shardName, tableName);
-            readMataData(session, matadataNode);
-            //trace.debug("Load the {0} metadata success.", getName());
+            trace.debug("Try to load {0} metadata from table {1}.{2}", getName(), shardName, tableName);
+            readMataData(session, node);
+            trace.debug("Load the {0} metadata success.", getName());
             initException = null;
         } catch (DbException e) {
-            //trace.debug("Fail to load {0} metadata from table {1}.{2}. error: {3}", getName(), shardName, tableName,
-            //        e.getCause().getMessage());
+            trace.debug("Fail to load {0} metadata from table {1}.{2}. error: {3}", getName(), shardName, tableName,
+                    e.getCause().getMessage());
             initException = e;
             Column[] cols = {};
             setColumns(cols);
@@ -295,7 +177,7 @@ public class TableMate extends Table {
      * @param session
      */
     public void readMataData(Session session, ObjectNode matadataNode) {
-        for (int retry = 0; ; retry++) {
+        for (int retry = 0;; retry++) {
             try {
                 Connection conn = null;
                 String tableName = matadataNode.getCompositeObjectName();
@@ -379,7 +261,7 @@ public class TableMate extends Table {
             if (columnList.size() == 0) {
                 // alternative solution
                 ResultSetMetaData rsMeta = rs.getMetaData();
-                for (i = 0; i < rsMeta.getColumnCount(); ) {
+                for (i = 0; i < rsMeta.getColumnCount();) {
                     String n = rsMeta.getColumnName(i + 1);
                     n = convertColumnName(n);
                     int sqlType = rsMeta.getColumnType(i + 1);
@@ -528,23 +410,91 @@ public class TableMate extends Table {
         }
     }
 
-    public boolean isSymmetricTable(TableMate o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null) {
-            return false;
-        }
-        if (tableRouter != null) {
-            if (o.tableRouter != null) {
-                return tableRouter.equals(o.tableRouter);
-            } else {
-                return isShardMatch(getPartitionNode(), o.getPartitionNode());
+    private static long convertPrecision(int sqlType, long precision) {
+        // workaround for an Oracle problem:
+        // for DATE columns, the reported precision is 7
+        // for DECIMAL columns, the reported precision is 0
+        switch (sqlType) {
+        case Types.DECIMAL:
+        case Types.NUMERIC:
+            if (precision == 0) {
+                precision = 65535;
             }
-        } else {
-            return isShardMatch(getPartitionNode(), o.getPartitionNode());
+            break;
+        case Types.DATE:
+            precision = Math.max(ValueDate.PRECISION, precision);
+            break;
+        case Types.TIMESTAMP:
+            precision = Math.max(ValueTimestamp.PRECISION, precision);
+            break;
+        case Types.TIME:
+            precision = Math.max(ValueTime.PRECISION, precision);
+            break;
         }
+        return precision;
+    }
 
+    private static int convertScale(int sqlType, int scale) {
+        // workaround for an Oracle problem:
+        // for DECIMAL columns, the reported precision is -127
+        switch (sqlType) {
+        case Types.DECIMAL:
+        case Types.NUMERIC:
+            if (scale < 0) {
+                scale = 32767;
+            }
+            break;
+        }
+        return scale;
+    }
+
+    private static boolean isShardMatch(ObjectNode[] nodes1, ObjectNode[] nodes2) {
+        ObjectNode[] group1 = RoutingResult.fixedResult(nodes1).group();
+        ObjectNode[] group2 = RoutingResult.fixedResult(nodes2).group();
+        for (ObjectNode tableNode1 : group1) {
+            boolean isMatched = false;
+            for (ObjectNode tableNode2 : group2) {
+                if (tableNode1.getShardName().equals(tableNode2.getShardName())) {
+                    isMatched = true;
+                    break;
+                }
+            }
+            if (!isMatched) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * validation the rule columns is in the table columns
+     */
+    private void validationRuleColumn(Column[] columns) {
+        if (tableRule instanceof ShardedTableRule) {
+            ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
+            List<String> ruleColNames = shardedTableRule.getRuleColumns();
+            ruleColumns = new Column[ruleColNames.size()];
+            for (int i = 0; i < ruleColNames.size(); i++) {
+                String ruleCol = ruleColNames.get(i);
+                Column matched = null;
+                for (Column column : columns) {
+                    String colName = column.getName();
+                    if (colName.equalsIgnoreCase(ruleCol)) {
+                        matched = column;
+                        ruleColumns[i] = column;
+                        break;
+                    }
+                }
+                if (matched == null) {
+                    throw DbException.throwInternalError(
+                            "The rule column " + ruleCol + " does not exist in " + getName() + " table.");
+                }
+            }
+        }
+    }
+
+    public boolean isSymmetricTable(TableMate o) {
+        return false;
     }
 
 }

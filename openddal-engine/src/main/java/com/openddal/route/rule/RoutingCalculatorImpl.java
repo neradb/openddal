@@ -18,12 +18,13 @@
 
 package com.openddal.route.rule;
 
+import java.util.List;
+
+import com.openddal.config.ShardedTableRule;
 import com.openddal.route.algorithm.MultColumnPartitioner;
 import com.openddal.route.algorithm.Partitioner;
 import com.openddal.util.New;
 import com.openddal.value.Value;
-
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -31,12 +32,12 @@ import java.util.List;
 public class RoutingCalculatorImpl implements RoutingCalculator {
 
     @Override
-    public RoutingResult calculate(TableRouter tableRouter, RoutingArgument arg) {
-        List<ObjectNode> partition = tableRouter.getPartition();
+    public RoutingResult calculate(ShardedTableRule tableRouter, RoutingArgument arg) {
+        ObjectNode[] partition = tableRouter.getObjectNodes();
         Partitioner partitioner = tableRouter.getPartitioner();
         switch (arg.getArgumentType()) {
             case RoutingArgument.NONE_ROUTING_ARGUMENT:
-                return RoutingResult.fixedResult(tableRouter.getPartition());
+                return RoutingResult.fixedResult(partition);
             case RoutingArgument.FIXED_ROUTING_ARGUMENT:
                 List<Value> values = arg.getValues();
                 Value[] toArray = values.toArray(new Value[values.size()]);
@@ -44,7 +45,7 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
                 checkReturnValue(tableRouter, position);
                 List<ObjectNode> selected = New.arrayList();
                 for (Integer integer : position) {
-                    ObjectNode tableNode = partition.get(integer);
+                    ObjectNode tableNode = partition[integer];
                     selected.add(tableNode);
                 }
                 return RoutingResult.fixedResult(selected);
@@ -55,7 +56,7 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
                 checkReturnValue(tableRouter, position);
                 List<ObjectNode> seleced = New.arrayList();
                 for (Integer integer : position) {
-                    ObjectNode tableNode = partition.get(integer);
+                    ObjectNode tableNode = partition[integer];
                     seleced.add(tableNode);
                 }
                 return RoutingResult.fixedResult(seleced);
@@ -64,8 +65,8 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
     }
 
     @Override
-    public RoutingResult calculate(TableRouter tableRouter, List<RoutingArgument> arguments) {
-        List<ObjectNode> partition = tableRouter.getPartition();
+    public RoutingResult calculate(ShardedTableRule tableRouter, List<RoutingArgument> arguments) {
+        ObjectNode[] partition = tableRouter.getObjectNodes();
         Partitioner partitioner = tableRouter.getPartitioner();
         boolean typeof = partitioner instanceof MultColumnPartitioner;
         if (!typeof) {
@@ -77,7 +78,7 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
         checkReturnValue(tableRouter, position);
         List<ObjectNode> selected = New.arrayList();
         for (Integer integer : position) {
-            ObjectNode tableNode = partition.get(integer);
+            ObjectNode tableNode = partition[integer];
             selected.add(tableNode);
         }
         return RoutingResult.fixedResult(selected);
@@ -89,8 +90,8 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
      * @param positions
      * @throws RuleEvaluateException
      */
-    private void checkReturnValue(TableRouter tableRouter, Integer... positions) throws RuleEvaluateException {
-        List<ObjectNode> partition = tableRouter.getPartition();
+    private void checkReturnValue(ShardedTableRule tableRouter, Integer... positions) throws RuleEvaluateException {
+        ObjectNode[] partition = tableRouter.getObjectNodes();
         String ptrName = tableRouter.getPartitioner().getClass().getName();
         if (positions == null) {
             String msg = String.format("The %s returned a illegal value null.", ptrName);
@@ -101,7 +102,7 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
                 String msg = String.format("The %s returned a illegal value null.", ptrName);
                 throw new RuleEvaluateException(msg);
             }
-            if (position < 0 || position >= partition.size()) {
+            if (position < 0 || position >= partition.length) {
                 String msg = String.format("The %s returned a illegal value %d, it's out of table nodes bounds.",
                         ptrName, position);
                 throw new RuleEvaluateException(msg);
