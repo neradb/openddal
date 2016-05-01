@@ -24,6 +24,7 @@ import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
 import com.openddal.config.ShardedTableRule;
+import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
@@ -184,7 +185,11 @@ public class SelectExecutor extends PreparedRoutingExecutor<Select> {
         TableMate table = castTableMate(test);
         table.check();
         Index index = filter.getIndex();
-        int scanLevel = table.getScanLevel();
+        TableRule tableRule = table.getTableRule();
+        if (!(tableRule instanceof ShardedTableRule)) {
+            return;
+        }
+        int scanLevel = ((ShardedTableRule) tableRule).getScanLevel();
         switch (scanLevel) {
             case ShardedTableRule.SCANLEVEL_UNLIMITED:
                 break;

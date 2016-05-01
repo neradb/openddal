@@ -27,12 +27,10 @@ import com.openddal.command.expression.ExpressionColumn;
 import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.command.expression.Parameter;
 import com.openddal.command.expression.Wildcard;
-import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
@@ -379,7 +377,6 @@ public class Select extends Query {
                 havingIndex < 0 && filters.size() == 1) {
             isQuickAggregateQuery = true;
         }
-        isAccordantQuery = prepareAccordantQuery();
         cost = preparePlan();
 
         expressionArray = new Expression[expressions.size()];
@@ -471,50 +468,6 @@ public class Select extends Query {
         }
     }
 
-    /**
-     * determine the query whether a accordant query
-     *
-     * @return
-     */
-    private boolean prepareAccordantQuery() {
-        for (TableFilter outer : filters) {
-            if (!outer.isFromTableMate()) {
-                return false;
-            }
-            TableMate lTable = (TableMate) outer.getTable();
-            Column[] lefts = lTable.getRuleColumns();
-            ArrayList<IndexCondition> conditions = outer.getIndexConditions();
-            for (TableFilter inner : filters) {
-                if (outer == inner) {
-                    continue;
-                }
-                if (!inner.isFromTableMate()
-                        || !lTable.isSymmetricTable((TableMate) inner.getTable())) {
-                    return false;
-                }
-                TableMate rTable = (TableMate) inner.getTable();
-                //join on replication table
-                if (lTable.isReplication() || rTable.isReplication()) {
-                    continue;
-                } else {
-                    Column[] rights = rTable.getRuleColumns();
-                    for (int i = 0; i < lefts.length && lefts.length == rights.length; i++) {
-                        boolean columnExisting = false;
-                        for (IndexCondition condition : conditions) {
-                            columnExisting = condition.isColumnEquality(lefts[i], rights[i]);
-                            if (columnExisting) {
-                                break;
-                            }
-                        }
-                        if (!columnExisting) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
 
     @Override
     public String getPlanSQL() {

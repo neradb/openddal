@@ -34,13 +34,9 @@ public class Configuration {
     public DataSourceProvider provider;
     public String defaultShardName;
 
-    public final List<TableRuleGroup> tableGroup = New.arrayList();
-    public final List<ShardedTableRule> shardingTable = New.arrayList();
-    public final List<MultiNodeTableRule> multiNodeTables = New.arrayList();
-    public final List<TableRule> fixedNodeTables = New.arrayList();
+    public final List<TableRule> tableRules = New.arrayList();
 
-    public final List<MultiNodeTableRule> multiNodeIndexs = New.arrayList();
-    public final List<TableRule> fixedNodeIndexs = New.arrayList();
+    public final List<TableRule> nodedIndexs = New.arrayList();
     public final List<SequnceConfig> sequnces = New.arrayList();
     
 }

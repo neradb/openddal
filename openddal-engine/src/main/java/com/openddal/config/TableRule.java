@@ -11,7 +11,6 @@ public class TableRule implements Serializable {
     private static final long serialVersionUID = 1L;
     private final String name;
     private ObjectNode metadataNode;
-    private boolean validation = true;
     private TableRuleGroup ownerGroup;
 
 
@@ -41,32 +40,24 @@ public class TableRule implements Serializable {
         this.metadataNode = metadataNode;
     }
 
-    public TableRule newFixedNodeTable(String name, ObjectNode metadataNode) {
+    public static TableRule newFixedNodeTable(String name, ObjectNode metadataNode) {
         return new TableRule(name, metadataNode);
     }
 
-    public TableRule newFixedNodeIndex(String name, ObjectNode metadataNode) {
+    public static TableRule newFixedNodeIndex(String name, ObjectNode metadataNode) {
         return new TableRule(name, metadataNode);
     }
     
-    public MultiNodeTableRule newMultiNodeTable(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
+    public static MultiNodeTableRule newMultiNodeTable(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
         return new MultiNodeTableRule(name, metadataNode, objectNodes);
     }
     
-    public MultiNodeTableRule newMultiNodeIndex(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
+    public static MultiNodeTableRule newMultiNodeIndex(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
         return new MultiNodeTableRule(name, metadataNode,objectNodes);
     }
     
-    public ShardedTableRule newShardedTable(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
+    public static ShardedTableRule newShardedTable(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
         return new ShardedTableRule(name, metadataNode, objectNodes);
-    }
-    
-    public boolean isValidation() {
-        return validation;
-    }
-    
-    public void setValidation(boolean validation) {
-        this.validation = validation;
     }
 
     public TableRuleGroup getOwnerGroup() {

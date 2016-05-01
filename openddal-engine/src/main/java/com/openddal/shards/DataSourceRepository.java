@@ -180,7 +180,7 @@ public class DataSourceRepository {
             int corePoolSize = Runtime.getRuntime().availableProcessors();
             int maximumPoolSize = 200;// TODO configurable
             int capacity = maximumPoolSize * 1;
-            int keepAliveTime = database.getSettings().maxQueryTimeout;
+            int keepAliveTime = database.getSettings().queryTimeout;
             if (keepAliveTime <= 0) {
                 keepAliveTime = 15 * 60000; // 15 MINUTES
             }

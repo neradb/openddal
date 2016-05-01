@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
+import com.openddal.util.New;
+
 public class TableRuleGroup extends ShardedTableRule implements Serializable {
 
     
@@ -13,7 +15,7 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
 
     private static final long serialVersionUID = 1L;
     public static final String RULECOLUMNS_QUOTE = "${table.ruleColumns}";
-    private List<TableRule> tableRules;
+    private List<TableRule> tableRules = New.arrayList();
 
     public List<TableRule> getTableRules() {
         for (TableRule tableRule : tableRules) {
@@ -24,7 +26,7 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
                 if (!isUseTableRuleColumns()) {
                     shardedTableRule.setRuleColumns(getRuleColumns());
                 }
-                if (SCANLEVEL_ANYINDEX == shardedTableRule.getScanLevel()) {
+                if (shardedTableRule.getScanLevel() == 0) {
                     shardedTableRule.setScanLevel(getScanLevel());
                 }
             } 
@@ -32,6 +34,8 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
                 MultiNodeTableRule multiNodeTableRule = (MultiNodeTableRule) tableRule;
                 multiNodeTableRule.cloneObjectNodes(getObjectNodes());
             }
+            tableRule.setMetadataNode(getMetadataNode());
+
         }
         return tableRules;
     }
@@ -44,6 +48,10 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
         this.tableRules = Arrays.asList(tableRules);
     }
     
+    public void addTableRules(TableRule... tableRules) {
+        this.tableRules.addAll(Arrays.asList(tableRules));
+    }
+
     public boolean isUseTableRuleColumns() {
         List<String> ruleColumns = this.getRuleColumns();
         return ruleColumns.size() == 1 && RULECOLUMNS_QUOTE.equals(ruleColumns.get(0));

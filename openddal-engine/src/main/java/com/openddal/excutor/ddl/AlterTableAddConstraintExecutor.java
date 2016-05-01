@@ -22,6 +22,7 @@ import java.util.Map;
 
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAddConstraint;
+import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
@@ -63,7 +64,8 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
     public int executeUpdate() {
         String tableName = prepared.getTableName();
         TableMate table = getTableMate(tableName);
-        ObjectNode[] tableNodes = table.getPartitionNode();
+        TableRule tableRule = table.getTableRule();
+        ObjectNode[] tableNodes = tableRule.get
         int type = prepared.getType();
         switch (type) {
             case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {

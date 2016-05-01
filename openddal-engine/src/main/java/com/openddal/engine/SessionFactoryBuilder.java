@@ -76,37 +76,38 @@ public final class SessionFactoryBuilder {
 
     public SessionFactoryBuilder addTableRuleGrop(TableRuleGroup group) {
         validateTableRule(group);
-        configuration.tableGroup.add(group);
+        List<TableRule> tableRules = group.getTableRules();
+        configuration.tableRules.addAll(tableRules);
         return this;
     }
 
     public SessionFactoryBuilder addTableRule(ShardedTableRule table) {
         validateTableRule(table);
-        configuration.shardingTable.add(table);
+        configuration.tableRules.add(table);
         return this;
     }
 
     public SessionFactoryBuilder addTableRule(MultiNodeTableRule table) {
         validateTableRule(table);
-        configuration.multiNodeTables.add(table);
+        configuration.tableRules.add(table);
         return this;
     }
 
     public SessionFactoryBuilder addTableRule(TableRule table) {
         validateTableRule(table);
-        configuration.fixedNodeTables.add(table);
+        configuration.tableRules.add(table);
         return this;
     }
 
     public SessionFactoryBuilder addIndex(MultiNodeTableRule index) {
         validateTableRule(index);
-        configuration.multiNodeIndexs.add(index);
+        configuration.nodedIndexs.add(index);
         return this;
     }
 
     public SessionFactoryBuilder addIndex(TableRule index) {
         validateTableRule(index);
-        configuration.fixedNodeIndexs.add(index);
+        configuration.nodedIndexs.add(index);
         return this;
     }
 
@@ -185,24 +186,23 @@ public final class SessionFactoryBuilder {
                 throw new IllegalArgumentException();
             }
             tableGroup.isUseTableRuleColumns();
-            if(tableRule instanceof ShardedTableRule) {
+            if (tableRule instanceof ShardedTableRule) {
                 ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
                 List<String> ruleColumns = shardedTableRule.getRuleColumns();
-                if(ruleColumns == null || ruleColumns.isEmpty()) {
+                if (ruleColumns == null || ruleColumns.isEmpty()) {
                     throw new IllegalArgumentException("The TableRule columns is required if use table rule columns");
                 }
-                if(columns == -1) {
+                if (columns == -1) {
                     columns = ruleColumns.size();
-                } else if(columns != ruleColumns.size()){
+                } else if (columns != ruleColumns.size()) {
                     throw new IllegalArgumentException("The length of TableRule columns must be equal");
                 }
             }
         }
-        if(typeFilter.size() > 1) {
+        if (typeFilter.size() > 1) {
             throw new IllegalArgumentException("The type of TableRule in table group must be same.");
         }
-        
-    
+
     }
 
     private void vaildateCluster(List<Shard> cluster) {
@@ -227,20 +227,16 @@ public final class SessionFactoryBuilder {
             }
         }
     }
-    
+
     private void beforeBuild() {
         vaildateCluster(configuration.cluster);
-        for (TableRuleGroup group : configuration.tableGroup) {
-            validateTableRule(group);
-        }
-        for (ShardedTableRule table : configuration.shardingTable) {
-            validateTableRule(table);
-        }
-        for (MultiNodeTableRule table : configuration.multiNodeIndexs) {
-            validateTableRule(table);
-        }
-        for (TableRule table : configuration.fixedNodeTables) {
-            validateTableRule(table);
+        for (TableRule table : configuration.tableRules) {
+            if (table instanceof ShardedTableRule)
+                validateTableRule((ShardedTableRule) table);
+            else if (table instanceof MultiNodeTableRule)
+                validateTableRule((MultiNodeTableRule) table);
+            else
+                validateTableRule(table);
         }
         if (configuration.provider == null) {
             throw new IllegalArgumentException("DataSourceProvider is required.");

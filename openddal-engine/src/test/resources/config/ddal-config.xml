@@ -11,7 +11,7 @@
 
 	<schema name="ut-app">
 
-		<tableGroup router="order_group" validation="false">
+		<tableGroup>
 			<tables>
 				<table name="orders" />
 				<table name="order_items" />
@@ -30,7 +30,7 @@
 
 		</tableGroup>
 
-		<tableGroup validation="false">
+		<tableGroup>
 			<tables>
 				<table name="customers" ruleColumns="id" />
 				<table name="address" ruleColumns="customers_id" />
@@ -47,13 +47,13 @@
 			</tableRule>
 		</tableGroup>
 
-		<table name="product" validation="false">
+		<table name="product">
 			<nodes>
 				<node shard="shard0,shard1,shard2,shard3" />
 			</nodes>
 		</table>
 
-		<table name="product_category" validation="false">
+		<table name="product_category">
 			<nodes>
 				<node shard="shard0,shard1,shard2,shard3" />
 			</nodes>
@@ -123,10 +123,10 @@
 			<property name="partitionCount" value="8" />
 			<property name="partitionLength" value="128" />
 		</ruleAlgorithm>
-		<ruleAlgorithm name="customer_partitioner"
+		<ruleAlgorithm name="order_partitioner"
 			class="com.openddal.route.algorithm.HashBucketPartitioner">
-			<property name="partitionCount" value="8" />
-			<property name="partitionLength" value="128" />
+			<property name="partitionCount" value="16" />
+			<property name="partitionLength" value="64" />
 		</ruleAlgorithm>
 	</algorithms>
 

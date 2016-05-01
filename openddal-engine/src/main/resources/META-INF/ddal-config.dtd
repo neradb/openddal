@@ -23,8 +23,8 @@
         <!ELEMENT schema (tableGroup*, table*, sequence*)>
         <!ATTLIST schema
                 name CDATA #REQUIRED
-                shard CDATA #IMPLIED
-                validation (true|false) #IMPLIED
+                default CDATA #IMPLIED
+                force (true|false) #IMPLIED
                 >
 
 
@@ -50,25 +50,23 @@
                 class CDATA #REQUIRED
                 > 
 
-        <!ELEMENT table (nodes?, node?, tableRule?)>
+        <!ELEMENT table ((nodes|node)?, tableRule?)>
         <!ATTLIST table
                 name CDATA #REQUIRED
                 ruleColumns CDATA #IMPLIED
                 metaNodeIndex CDATA #IMPLIED
-                validation (true|false) #IMPLIED
                 scanLevel (unlimited|filter|anyIndex|uniqueIndex|shardingKey) #IMPLIED
                 >
 
-        <!ELEMENT tableGroup (tables+, nodes*, node?, tableRule?)>
+        <!ELEMENT tableGroup (tables, (nodes|node)?, tableRule?)>
         <!ATTLIST tableGroup
-                ruleColumns CDATA #IMPLIED
                 metaNodeIndex CDATA #IMPLIED
-                validation (true|false) #IMPLIED
                 scanLevel (unlimited|filter|anyIndex|uniqueIndex|shardingKey) #IMPLIED
                 >
+        <!ELEMENT tables (table+)>
                 
         <!ELEMENT sequence (#PCDATA)>
-        <!ATTLIST table
+        <!ATTLIST sequence
                 name CDATA #REQUIRED
                 >
 

@@ -19,12 +19,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import com.openddal.config.Configuration;
 import com.openddal.config.TableRule;
-import com.openddal.config.TableRuleGroup;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.schema.Schema;
@@ -107,19 +105,12 @@ public class Database {
 
         Session sysSession = createSession(systemUser);
         try {
-            List<TableRule> tableMates = New.arrayList();
-            for (TableRuleGroup tableGroup : configuration.tableGroup) {
-                tableMates.addAll(tableGroup.getTableRules());
-            }
-            tableMates.addAll(configuration.shardingTable);
-            tableMates.addAll(configuration.multiNodeTables);
-            tableMates.addAll(configuration.fixedNodeIndexs);
-            for (TableRule tableRule : tableMates) {
+            for (TableRule tableRule : configuration.tableRules) {
                 String identifier = tableRule.getName();
                 identifier = identifier(identifier);
                 TableMate tableMate = new TableMate(mainSchema, identifier, tableRule);
                 tableMate.loadMataData(sysSession);
-                if (tableRule.isValidation()) {
+                if (configuration.forceLoadTableMate) {
                     tableMate.check();
                 }
                 this.addSchemaObject(tableMate);
@@ -130,9 +121,6 @@ public class Database {
                 infoSchema.add(m);
             }
             
-            tableMates.clear();
-            tableMates.addAll(configuration.fixedNodeIndexs);
-            tableMates.addAll(configuration.multiNodeIndexs);
             
             /*
             for (TableRule tableRule : tableMates) {

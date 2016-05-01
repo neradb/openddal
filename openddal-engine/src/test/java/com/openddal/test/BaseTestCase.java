@@ -58,9 +58,6 @@ import com.openddal.util.MurmurHash;
 
 public abstract class BaseTestCase {
 
-    static {
-        System.setProperty("ddal.engineConfigLocation", "ddal-engine.xml");
-    }
 
     /**
      * The base directory.
@@ -71,6 +68,10 @@ public abstract class BaseTestCase {
      * The base directory.
      */
     public static final String BASE_TEST_CONFIGLOCATION = "/config/ddal-config.xml";
+
+    static {
+        System.setProperty("ddal.engineConfigLocation", BASE_TEST_CONFIGLOCATION);
+    }
 
     /**
      * An id used to create unique file names.
