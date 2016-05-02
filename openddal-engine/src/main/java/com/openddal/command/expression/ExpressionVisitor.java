@@ -65,11 +65,6 @@ public class ExpressionVisitor {
             new ExpressionVisitor(EVALUATABLE);
 
     /**
-     * Request to set the latest modification id (addDataModificationId).
-     */
-    public static final int SET_MAX_DATA_MODIFICATION_ID = 4;
-
-    /**
      * Does the expression have no side effects (change the data)?
      */
     public static final int READONLY = 5;
@@ -177,11 +172,6 @@ public class ExpressionVisitor {
      */
     public static ExpressionVisitor getColumnsVisitor(HashSet<Column> columns) {
         return new ExpressionVisitor(GET_COLUMNS, 0, null, columns, null, null);
-    }
-
-    public static ExpressionVisitor getMaxModificationIdVisitor() {
-        return new ExpressionVisitor(SET_MAX_DATA_MODIFICATION_ID, 0, null,
-                null, null, null);
     }
 
     /**
