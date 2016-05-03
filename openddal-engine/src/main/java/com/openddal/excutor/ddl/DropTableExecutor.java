@@ -24,6 +24,7 @@ import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -75,7 +76,9 @@ public class DropTableExecutor extends DefineCommandExecutor<DropTable> {
         String tableName = next.getTableName();
         TableMate table = findTableMate(tableName);
         if (table != null) {
-            ObjectNode[] nodes = table.getPartitionNode();
+            RoutingResult tableRoute = routingHandler.doRoute(table);
+            session.commit(true);
+            ObjectNode[] nodes = tableRoute.getSelectNodes();
             execute(nodes);
             table.markDeleted();
         }

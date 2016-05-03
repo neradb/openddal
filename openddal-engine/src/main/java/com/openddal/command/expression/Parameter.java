@@ -156,9 +156,6 @@ public class Parameter extends Expression implements ParameterInterface {
         switch (visitor.getType()) {
             case ExpressionVisitor.EVALUATABLE:
                 // the parameter _will_be_ evaluatable at execute time
-            case ExpressionVisitor.SET_MAX_DATA_MODIFICATION_ID:
-                // it is checked independently if the value is the same as the last
-                // time
             case ExpressionVisitor.NOT_FROM_RESOLVER:
             case ExpressionVisitor.QUERY_COMPARABLE:
             case ExpressionVisitor.GET_DEPENDENCIES:

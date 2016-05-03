@@ -18,6 +18,10 @@
 
 package com.openddal.excutor;
 
+import java.sql.ResultSet;
+import java.util.List;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import com.openddal.command.Prepared;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
@@ -28,12 +32,9 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.LocalResult;
 import com.openddal.result.ResultTarget;
+import com.openddal.route.RoutingHandler;
 import com.openddal.util.New;
 import com.openddal.value.Value;
-
-import java.sql.ResultSet;
-import java.util.List;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -45,6 +46,8 @@ public abstract class CommonPreparedExecutor<T extends Prepared> implements Prep
     protected final Database database;
     protected final ThreadPoolExecutor jdbcExecutor;
     protected final List<JdbcWorker<?>> runingWorkers;
+    protected final RoutingHandler routingHandler;
+
 
     /**
      * @param prepared
@@ -56,6 +59,8 @@ public abstract class CommonPreparedExecutor<T extends Prepared> implements Prep
         this.database = session.getDatabase();
         this.jdbcExecutor = session.getDataSourceRepository().getJdbcExecutor();
         this.runingWorkers = New.linkedList();
+        this.routingHandler = database.getRoutingHandler();
+
     }
 
     /**

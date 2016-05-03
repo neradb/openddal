@@ -18,15 +18,17 @@
 
 package com.openddal.test.sql.dml;
 
-import com.openddal.test.BaseTestCase;
-import junit.framework.Assert;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+
+import org.junit.Test;
+
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -51,6 +53,7 @@ public class QueryTestCase extends BaseTestCase {
             resultSet = statement.executeQuery();
             conn.commit();
         } catch (SQLException e) {
+            e.printStackTrace();
             succee = false;
             try {
                 conn.rollback();

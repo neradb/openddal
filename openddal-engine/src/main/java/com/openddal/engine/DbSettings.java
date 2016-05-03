@@ -16,10 +16,6 @@
 package com.openddal.engine;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
-import com.openddal.util.New;
 
 /**
  * This class contains various database-level settings. To override the
@@ -228,36 +224,25 @@ public class DbSettings extends SettingsBase {
 
     /**
      * INTERNAL.
-     * Get the settings for the given properties (may be null).
+     * Get the settings for the given properties (may not be null).
      *
      * @param s the settings
      * @return the settings
      */
     public static DbSettings getInstance(HashMap<String, String> s) {
-        if (s == null || s.isEmpty()) {
-            if (defaultSettings == null) {
-                defaultSettings = new DbSettings(new HashMap<String, String>());
-            }
-            return defaultSettings;
-        }
         return new DbSettings(s);
     }
-    
+
     /**
      * INTERNAL.
-     * Get the settings for the given properties (may be null).
+     * Get the default settings. Those must not be modified.
      *
-     * @param s the settings
      * @return the settings
      */
-    public static DbSettings getInstance(Properties s) {
-        HashMap<String, String> arg = New.hashMap();
-        if (s != null) {
-            for (Map.Entry<Object,Object> item : s.entrySet()) {
-                arg.put(item.getKey().toString(), item.getKey().toString());
-            }
+    public static DbSettings getDefaultSettings() {
+        if (defaultSettings == null) {
+            defaultSettings = new DbSettings(new HashMap<String, String>());
         }
-        return getInstance(arg);
+        return defaultSettings;
     }
-
 }

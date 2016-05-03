@@ -15,6 +15,14 @@
  */
 package com.openddal.excutor.dml;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import com.openddal.command.Prepared;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
@@ -24,35 +32,23 @@ import com.openddal.excutor.JdbcWorker;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
-import com.openddal.route.RoutingHandler;
-import com.openddal.route.rule.RoutingResult;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public abstract class PreparedRoutingExecutor<T extends Prepared> extends CommonPreparedExecutor<T> {
 
-    protected final RoutingHandler routingHandler;
-
     /**
      * @param prepared
      */
     public PreparedRoutingExecutor(T prepared) {
         super(prepared);
-        this.routingHandler = database.getRoutingHandler();
     }
 
     protected static boolean isNull(Value v) {

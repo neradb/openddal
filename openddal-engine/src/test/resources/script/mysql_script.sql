@@ -1,6 +1,6 @@
 
 CREATE TABLE IF NOT EXISTS `customers` (
-  `customer_id` int(11) NOT NULL,
+  `id` int(11) NOT NULL,
   `rand_id` int(11) DEFAULT NULL,
   `name` varchar(20) DEFAULT NULL,
   `customer_info` varchar(100) DEFAULT NULL,

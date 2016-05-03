@@ -129,6 +129,7 @@ public final class SessionFactoryBuilder {
 
     public SessionFactory build() {
         beforeBuild();
+        System.getProperties().putAll(configuration.settings);
         Database database = new Database(configuration);
         Engine engine = new Engine(database);
         return engine;

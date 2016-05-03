@@ -76,9 +76,6 @@ public class Variable extends Expression {
         switch (visitor.getType()) {
             case ExpressionVisitor.EVALUATABLE:
                 // the value will be evaluated at execute time
-            case ExpressionVisitor.SET_MAX_DATA_MODIFICATION_ID:
-                // it is checked independently if the value is the same as the last
-                // time
             case ExpressionVisitor.READONLY:
             case ExpressionVisitor.INDEPENDENT:
             case ExpressionVisitor.NOT_FROM_RESOLVER:

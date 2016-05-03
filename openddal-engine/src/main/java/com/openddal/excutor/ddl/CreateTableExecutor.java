@@ -36,6 +36,7 @@ import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
@@ -83,7 +84,7 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
                 sequences.add(seq);
             }
         }
-
+        RoutingResult tableRoute = routingHandler.doRoute(tableMate);
         try {
             for (Column c : tableMate.getColumns()) {
                 c.prepareExpression(session);
@@ -96,9 +97,10 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
                     AlterTableAddConstraint stmt = (AlterTableAddConstraint) command;
                     String refTableName = stmt.getRefTableName();
                     TableMate refTable = getTableMate(refTableName);
-                    if (refTable != null && refTable.getPartitionNode().length > 1) {
-                        ObjectNode[] tableNodes = tableMate.getPartitionNode();
-                        ObjectNode[] refTableNodes = refTable.getPartitionNode();
+                    RoutingResult refRoute = routingHandler.doRoute(refTable);
+                    if (refRoute.isMultipleNode()) {
+                        ObjectNode[] tableNodes = tableRoute.getSelectNodes();
+                        ObjectNode[] refTableNodes = refRoute.getSelectNodes();
                         Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNodes);
                         if (symmetryRelation == null) {
                             throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
@@ -107,7 +109,7 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
                     }
                 }
             }
-            ObjectNode[] nodes = tableMate.getPartitionNode();
+            ObjectNode[] nodes = tableRoute.getSelectNodes();
             execute(nodes);
             if (query != null) {
                 Insert insert = new Insert(session);
@@ -213,10 +215,12 @@ public class CreateTableExecutor extends DefineCommandExecutor<CreateTable> {
                     String refTableName = stmt.getRefTableName();
                     TableMate table = getTableMate(stmt.getTableName());
                     TableMate refTable = getTableMate(refTableName);
+                    RoutingResult tableRoute = routingHandler.doRoute(table);
                     if (refTable != null) {
-                        ObjectNode[] partitionNode = refTable.getPartitionNode();
+                        RoutingResult refRoute = routingHandler.doRoute(refTable);
+                        ObjectNode[] partitionNode = refRoute.getSelectNodes();
                         if (partitionNode.length > 1) {
-                            ObjectNode[] tableNodes = table.getPartitionNode();
+                            ObjectNode[] tableNodes = tableRoute.getSelectNodes();
                             ObjectNode[] refTableNodes = partitionNode;
                             Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNodes);
                             ObjectNode relation = symmetryRelation.get(tableNode);

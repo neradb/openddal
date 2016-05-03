@@ -108,9 +108,7 @@ public class JdbcDriver implements java.sql.Driver {
                 info = new Properties();
             }
             SessionInterface session = Engine.getImplicitInstance().createSession(info);
-            JdbcConnection conn = new JdbcConnection(session);
-            conn.setClientInfo(info);
-            return conn;
+            return new JdbcConnection(session);
         } catch (Exception e) {
             throw DbException.toSQLException(e);
         }

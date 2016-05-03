@@ -22,13 +22,13 @@ import java.util.ArrayList;
 
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAlterColumn;
-import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.StatementBuilder;
 
 /**
@@ -58,7 +58,8 @@ public class AlterTableAlterColumnExecutor extends DefineCommandExecutor<AlterTa
             DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, parseTable.getSQL());
         }
         TableMate table = (TableMate) parseTable;
-        TableRule tableRule = table.getTableRule();
+        RoutingResult tableRoute = routingHandler.doRoute(table);
+
         Column oldColumn = prepared.getOldColumn();
         int type = prepared.getType();
         switch (type) {
@@ -76,7 +77,7 @@ public class AlterTableAlterColumnExecutor extends DefineCommandExecutor<AlterTa
             case CommandInterface.ALTER_TABLE_ALTER_COLUMN_CHANGE_TYPE:
             case CommandInterface.ALTER_TABLE_ADD_COLUMN:
             case CommandInterface.ALTER_TABLE_DROP_COLUMN: {
-                execute(tableNodes);
+                execute(tableRoute.getSelectNodes());
                 table.loadMataData(session);
                 break;
             }

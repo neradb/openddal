@@ -73,11 +73,11 @@ public abstract class NettyServer {
 
         try {
             if (!StringUtils.isNullOrEmpty(args.configFile)) {
-                SysProperties.setEngineConfigLocation(args.configFile);
+                System.setProperty("ddal.engineConfigLocation",args.configFile);
             }
             LOGGER.info("{} server init ddal-engine from {}", getServerName(), 
-                    SysProperties.getEngineConfigLocation());
-            ddalEngine = Engine.getInstance();
+                    SysProperties.ENGINE_CONFIG_LOCATION);
+            ddalEngine = Engine.getImplicitInstance();
             LOGGER.info("{} server ddal-engine inited.", getServerName());
         } catch (Exception e) {
             LOGGER.error("Exception happen when init ddal-engine ", e);

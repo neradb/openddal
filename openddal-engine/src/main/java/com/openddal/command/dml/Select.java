@@ -17,7 +17,6 @@ import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
 import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.command.expression.Parameter;
-import com.openddal.dbobject.index.Cursor;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
@@ -32,7 +31,6 @@ import com.openddal.result.LocalResult;
 import com.openddal.result.ResultInterface;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
-import com.openddal.result.SearchRow;
 import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
@@ -377,43 +375,7 @@ public class Select extends Query {
     }
 
     private void queryDistinct(ResultTarget result, long limitRows) {
-        // limitRows must be long, otherwise we get an int overflow
-        // if limitRows is at or near Integer.MAX_VALUE
-        // limitRows is never 0 here
-        if (limitRows > 0 && offsetExpr != null) {
-            int offset = offsetExpr.getValue(session).getInt();
-            if (offset > 0) {
-                limitRows += offset;
-            }
-        }
-        int rowNumber = 0;
-        setCurrentRowNumber(0);
-        Index index = topTableFilter.getIndex();
-        SearchRow first = null;
-        int columnIndex = index.getColumns()[0].getColumnId();
-        int sampleSize = getSampleSizeValue(session);
-        while (true) {
-            setCurrentRowNumber(rowNumber + 1);
-            Cursor cursor = index.findNext(session, first, null);
-            if (!cursor.next()) {
-                break;
-            }
-            SearchRow found = cursor.getSearchRow();
-            Value value = found.getValue(columnIndex);
-            if (first == null) {
-                first = topTableFilter.getTable().getTemplateSimpleRow(true);
-            }
-            first.setValue(columnIndex, value);
-            Value[] row = { value };
-            result.addRow(row);
-            rowNumber++;
-            if ((sort == null || sortUsingIndex) && limitRows > 0 && rowNumber >= limitRows) {
-                break;
-            }
-            if (sampleSize > 0 && rowNumber >= sampleSize) {
-                break;
-            }
-        }
+        
     }
 
     private void queryFlat(int columnCount, ResultTarget result, long limitRows) {

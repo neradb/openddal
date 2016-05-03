@@ -84,7 +84,8 @@ public class Database {
     public Database(Configuration configuration) {
         this.configuration = configuration;
         this.compareMode = CompareMode.getInstance(null, 0);
-        this.dbSettings = DbSettings.getInstance(configuration.settings);
+        this.dbSettings = DbSettings.getDefaultSettings();
+
         this.mode = Mode.getInstance(dbSettings.compatibilityMode);
         traceSystem = new TraceSystem();
         trace = traceSystem.getTrace(Trace.DATABASE);

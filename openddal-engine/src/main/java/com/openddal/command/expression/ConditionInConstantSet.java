@@ -141,7 +141,6 @@ public class ConditionInConstantSet extends Condition {
             case ExpressionVisitor.READONLY:
             case ExpressionVisitor.INDEPENDENT:
             case ExpressionVisitor.EVALUATABLE:
-            case ExpressionVisitor.SET_MAX_DATA_MODIFICATION_ID:
             case ExpressionVisitor.NOT_FROM_RESOLVER:
             case ExpressionVisitor.GET_DEPENDENCIES:
             case ExpressionVisitor.QUERY_COMPARABLE:

@@ -18,6 +18,7 @@ package com.openddal.excutor.ddl;
 import com.openddal.command.ddl.TruncateTable;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -35,8 +36,9 @@ public class TruncateTableExecutor extends DefineCommandExecutor<TruncateTable> 
     @Override
     public int executeUpdate() {
         TableMate table = castTableMate(prepared.getTable());
+        RoutingResult tableRoute = routingHandler.doRoute(table);
         session.commit(true);
-        ObjectNode[] nodes = table.getPartitionNode();
+        ObjectNode[] nodes = tableRoute.getSelectNodes();
         execute(nodes);
         return 0;
 

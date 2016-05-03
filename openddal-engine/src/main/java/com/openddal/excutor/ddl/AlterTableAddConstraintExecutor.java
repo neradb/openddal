@@ -22,12 +22,12 @@ import java.util.Map;
 
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAddConstraint;
-import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 
@@ -46,17 +46,17 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
 
     private static void appendAction(StatementBuilder buff, int action) {
         switch (action) {
-            case AlterTableAddConstraint.CASCADE:
-                buff.append("CASCADE");
-                break;
-            case AlterTableAddConstraint.SET_DEFAULT:
-                buff.append("SET DEFAULT");
-                break;
-            case AlterTableAddConstraint.SET_NULL:
-                buff.append("SET NULL");
-                break;
-            default:
-                DbException.throwInternalError("action=" + action);
+        case AlterTableAddConstraint.CASCADE:
+            buff.append("CASCADE");
+            break;
+        case AlterTableAddConstraint.SET_DEFAULT:
+            buff.append("SET DEFAULT");
+            break;
+        case AlterTableAddConstraint.SET_NULL:
+            buff.append("SET NULL");
+            break;
+        default:
+            DbException.throwInternalError("action=" + action);
         }
     }
 
@@ -64,27 +64,30 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
     public int executeUpdate() {
         String tableName = prepared.getTableName();
         TableMate table = getTableMate(tableName);
-        TableRule tableRule = table.getTableRule();
-        ObjectNode[] tableNodes = tableRule.get
+        RoutingResult tableRoute = routingHandler.doRoute(table);
+        ObjectNode[] tableNodes = tableRoute.getSelectNodes();
         int type = prepared.getType();
         switch (type) {
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
-                ObjectNode[] refTableNode = table.getPartitionNode();
-                Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNode);
-                if (symmetryRelation == null) {
-                    throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
-                            "The original table and reference table should be symmetrical.");
-                }
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY:
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE:
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
-                execute(tableNodes);
-                break;
-            }
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
+            TableMate refTable = getTableMate(prepared.getRefTableName());
+            RoutingResult refRoute = routingHandler.doRoute(refTable);
 
-            default:
-                throw DbException.throwInternalError("type=" + type);
+            ObjectNode[] refTableNode = refRoute.getSelectNodes();
+            Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNode);
+            if (symmetryRelation == null) {
+                throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
+                        "The original table and reference table should be symmetrical.");
+            }
+        }
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY:
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE:
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
+            execute(tableNodes);
+            break;
+        }
+
+        default:
+            throw DbException.throwInternalError("type=" + type);
         }
 
         return 0;
@@ -97,38 +100,42 @@ public class AlterTableAddConstraintExecutor extends DefineCommandExecutor<Alter
         String forTable = tableNode.getCompositeObjectName();
         IndexColumn.mapColumns(prepared.getIndexColumns(), table);
         switch (prepared.getType()) {
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY: {
-                return doBuildUnique(forTable, AlterTableAddConstraint.PRIMARY_KEY);
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE: {
-                String uniqueType = AlterTableAddConstraint.UNIQUE + " KEY";
-                return doBuildUnique(forTable, uniqueType);
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY: {
+            return doBuildUnique(forTable, AlterTableAddConstraint.PRIMARY_KEY);
+        }
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE: {
+            String uniqueType = AlterTableAddConstraint.UNIQUE + " KEY";
+            return doBuildUnique(forTable, uniqueType);
+        }
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
             /*
              * MySQL. The CHECK clause is parsed but ignored by all storage
              * engines.
              */
-                return doBuildCheck(forTable);
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
+            return doBuildCheck(forTable);
+        }
+        case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
             /*
              * MySQL. The FOREIGN KEY and REFERENCES clauses are supported by
              * the InnoDB and NDB storage engines
              */
-                String refTableName = prepared.getRefTableName();
-                TableMate refTable = getTableMate(refTableName);
-                Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(table.getPartitionNode(),
-                        refTable.getPartitionNode());
-                ObjectNode relation = symmetryRelation.get(tableNode);
-                if (relation == null) {
-                    throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
-                            "The original table and reference table should be symmetrical.");
-                }
-                return doBuildReferences(forTable, relation.getCompositeObjectName());
+            
+            String refTableName = prepared.getRefTableName();
+            TableMate refTable = getTableMate(refTableName);
+            RoutingResult tableRoute = routingHandler.doRoute(table);
+            RoutingResult rRoute = routingHandler.doRoute(refTable);
+
+            Map<ObjectNode, ObjectNode> symmetryRelation = getSymmetryRelation(tableRoute.getSelectNodes(),
+                    rRoute.getSelectNodes());
+            ObjectNode relation = symmetryRelation.get(tableNode);
+            if (relation == null) {
+                throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
+                        "The original table and reference table should be symmetrical.");
             }
-            default:
-                throw DbException.throwInternalError("type=" + prepared.getType());
+            return doBuildReferences(forTable, relation.getCompositeObjectName());
+        }
+        default:
+            throw DbException.throwInternalError("type=" + prepared.getType());
 
         }
     }
