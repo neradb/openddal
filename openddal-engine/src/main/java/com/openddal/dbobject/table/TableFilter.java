@@ -16,6 +16,8 @@
 package com.openddal.dbobject.table;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import com.openddal.command.Parser;
 import com.openddal.command.dml.Select;
@@ -23,6 +25,7 @@ import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.ConditionAndOr;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
+import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.index.IndexCursor;
@@ -98,6 +101,7 @@ public class TableFilter implements ColumnResolver {
     private ArrayList<Column> naturalJoinColumns;
     private boolean foundOne;
     private Expression fullCondition;
+    private ArrayList<Expression> expressions;
 
     /**
      * Create a new table filter object.
@@ -440,30 +444,26 @@ public class TableFilter implements ColumnResolver {
         return table.getName();
     }
 
-    /**
-     * test the table is table mata
-     *
-     * @return
-     */
-    public boolean isFromTableMate() {
-        return table instanceof TableMate;
+    public void addSelectExpression(Expression expr) {
+        HashSet<Column> columns = New.hashSet();
+        expr.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
+        for (Iterator<Column> it = columns.iterator(); it.hasNext();) {
+            if (it.next().getTable() != table) {
+                return;
+            }
+        }
+        if (expressions == null) {
+            expressions = New.arrayList(10);
+        }
+        expressions.add(expr);
     }
 
-    /**
-     * Add an index condition.
-     *
-     * @param condition the index condition
-     */
+
     public void addIndexCondition(IndexCondition condition) {
         indexConditions.add(condition);
     }
 
-    /**
-     * Add a filter condition.
-     *
-     * @param condition the condition
-     * @param isJoin    if this is in fact a join condition
-     */
+
     public void addFilterCondition(Expression condition, boolean isJoin) {
         if (isJoin) {
             if (joinCondition == null) {
@@ -482,14 +482,7 @@ public class TableFilter implements ColumnResolver {
         }
     }
 
-    /**
-     * Add a joined table.
-     *
-     * @param filter the joined table filter
-     * @param outer  if this is an outer join
-     * @param nested if this is a nested join
-     * @param on     the join condition
-     */
+
     public void addJoin(TableFilter filter, boolean outer, boolean nested,
                         final Expression on) {
         if (on != null) {
@@ -900,6 +893,15 @@ public class TableFilter implements ColumnResolver {
      */
     public boolean isNaturalJoinColumn(Column c) {
         return naturalJoinColumns != null && naturalJoinColumns.contains(c);
+    }
+
+    /**
+     * test the table is table mata
+     *
+     * @return
+     */
+    public boolean isFromTableMate() {
+        return table instanceof TableMate;
     }
 
     @Override
