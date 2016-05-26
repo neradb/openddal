@@ -18,7 +18,6 @@ package com.openddal.command.dml;
 import com.openddal.command.CommandInterface;
 import com.openddal.command.Prepared;
 import com.openddal.command.expression.Expression;
-import com.openddal.dbobject.table.PlanItem;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.result.ResultInterface;
@@ -65,10 +64,12 @@ public class Delete extends Prepared {
             condition = condition.optimize(session);
             condition.createIndexConditions(session, tableFilter);
         }
-        PlanItem item = tableFilter.getBestPlanItem(session, 1);
-        tableFilter.setPlanItem(item);
+        //PlanItem item = tableFilter.getBestPlanItem(session, 1);
+        //tableFilter.setPlanItem(item);
         tableFilter.prepare();
     }
+    
+    
 
     @Override
     public boolean isTransactional() {

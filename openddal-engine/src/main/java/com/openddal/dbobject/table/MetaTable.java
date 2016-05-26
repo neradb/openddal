@@ -55,16 +55,16 @@ public class MetaTable extends Table {
     private static final int CATALOGS = 5;
     //private static final int SETTINGS = 6;
     //private static final int HELP = 7;
-    private static final int SEQUENCES = 8;
-    private static final int USERS = 9;
+    private static final int SEQUENCES = 6;
+    private static final int USERS = 7;
     //private static final int ROLES = 10;
     //private static final int RIGHTS = 11;
     //private static final int FUNCTION_ALIASES = 12;
-    private static final int SCHEMATA = 13;
+    private static final int SCHEMATA = 8;
     //private static final int TABLE_PRIVILEGES = 14;
     //private static final int COLUMN_PRIVILEGES = 15;
     //private static final int COLLATIONS = 16;
-    private static final int VIEWS = 17;
+    private static final int VIEWS = 9;
     //private static final int IN_DOUBT = 18;
     //private static final int CROSS_REFERENCES = 19;
     //private static final int CONSTRAINTS = 20;
@@ -72,10 +72,10 @@ public class MetaTable extends Table {
     //private static final int CONSTANTS = 22;
     //private static final int DOMAINS = 23;
     //private static final int TRIGGERS = 24;
-    private static final int SESSIONS = 25;
+    private static final int SESSIONS = 10;
     //private static final int LOCKS = 26;
-    private static final int SESSION_STATE = 27;
-    private static final int QUERY_STATISTICS = 28;
+    private static final int SESSION_STATE = 11;
+    private static final int QUERY_STATISTICS = 12;
     private static final int META_TABLE_TYPE_COUNT = QUERY_STATISTICS + 1;
 
     private final int type;

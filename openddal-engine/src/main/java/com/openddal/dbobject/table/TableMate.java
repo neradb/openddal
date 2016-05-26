@@ -493,8 +493,4 @@ public class TableMate extends Table {
         }
     }
 
-    public boolean isSymmetricTable(TableMate o) {
-        return false;
-    }
-
 }

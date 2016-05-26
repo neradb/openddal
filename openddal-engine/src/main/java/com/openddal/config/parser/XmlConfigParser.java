@@ -36,7 +36,7 @@ import org.w3c.dom.NodeList;
 import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceException;
 import com.openddal.config.DefaultDataSourceProvider;
-import com.openddal.config.MultiNodeTableRule;
+import com.openddal.config.GlobalTableRule;
 import com.openddal.config.Shard;
 import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.ShardedTableRule;
@@ -267,7 +267,7 @@ public class XmlConfigParser {
         if (tableRule != null) {
             templete = parseShardedTableRule(tableNode);
         } else if (!nodeNodes.isEmpty()) {
-            templete = parseMultiNodeTableRule(tableNode);
+            templete = parseGlobalTableRule(tableNode);
         } else {
             templete = parseSingleNodeTableRule(tableNode);
         }
@@ -278,8 +278,8 @@ public class XmlConfigParser {
             group.setPartitioner(shardedTableRule.getPartitioner());
             group.setObjectNodes(shardedTableRule.getObjectNodes());
             group.setMetadataNode(shardedTableRule.getMetadataNode());
-        } else if (templete instanceof MultiNodeTableRule) {
-            MultiNodeTableRule multiNodeTableRule = (MultiNodeTableRule) templete;
+        } else if (templete instanceof GlobalTableRule) {
+            GlobalTableRule multiNodeTableRule = (GlobalTableRule) templete;
             group.setObjectNodes(multiNodeTableRule.getObjectNodes());
             group.setMetadataNode(multiNodeTableRule.getMetadataNode());
         } else {
@@ -299,8 +299,8 @@ public class XmlConfigParser {
                 ShardedTableRule shardedTableRule = new ShardedTableRule(tableName);
                 shardedTableRule.setRuleColumns(columns);
                 item = shardedTableRule;
-            } else if (templete instanceof MultiNodeTableRule) {
-                item = new MultiNodeTableRule(tableName);
+            } else if (templete instanceof GlobalTableRule) {
+                item = new GlobalTableRule(tableName);
             } else {
                 item = new TableRule(tableName);
             }
@@ -329,7 +329,7 @@ public class XmlConfigParser {
         if (tableRule != null) {
             table = parseShardedTableRule(tableNode);
         } else if (!nodeNodes.isEmpty()) {
-            table = parseMultiNodeTableRule(tableNode);
+            table = parseGlobalTableRule(tableNode);
         } else {
             table = parseSingleNodeTableRule(tableNode);
         }
@@ -372,14 +372,14 @@ public class XmlConfigParser {
 
     }
 
-    private MultiNodeTableRule parseMultiNodeTableRule(XNode tableNode) {
+    private GlobalTableRule parseGlobalTableRule(XNode tableNode) {
         String tableName = tableNode.getStringAttribute("name");
-        MultiNodeTableRule shardTable = new MultiNodeTableRule(tableName);
+        GlobalTableRule globalTableRule = new GlobalTableRule(tableName);
         String metaNodeIndex = tableNode.getStringAttribute("metaNodeIndex");
-        parseNodes(shardTable, tableNode.evalNodes("nodes/node"));
+        //parseNodes(shardTable, tableNode.evalNodes("nodes/node"));
         // alter object node init.
-        setMetaNodeIndex(shardTable, metaNodeIndex);
-        return shardTable;
+        setMetaNodeIndex(globalTableRule, metaNodeIndex);
+        return globalTableRule;
     }
 
     private TableRule parseSingleNodeTableRule(XNode tableNode) {
@@ -406,7 +406,7 @@ public class XmlConfigParser {
         return tableRule;
     }
 
-    private void parseNodes(MultiNodeTableRule table, List<XNode> list) {
+    private void parseNodes(ShardedTableRule table, List<XNode> list) {
         if (list.isEmpty()) {
             throw new ParsingException("Table 'nodes' element is required.");
         }
@@ -504,7 +504,7 @@ public class XmlConfigParser {
         }
     }
 
-    private void setMetaNodeIndex(MultiNodeTableRule table, String metaNodeIndex) {
+    private void setMetaNodeIndex(GlobalTableRule table, String metaNodeIndex) {
         if (StringUtils.isNullOrEmpty(metaNodeIndex)) {
             return;
         }

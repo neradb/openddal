@@ -145,22 +145,58 @@ public class TableFilter implements ColumnResolver {
      * Get the best plan item (index, cost) to use use for the current join
      * order.
      *
-     * @param s     the session
-     * @param level 1 for the first table in a join, 2 for the second, and so on
+     * @param s the session
+     * @param filters all joined table filters
+     * @param filter the current table filter index
      * @return the best plan item
      */
-    public PlanItem getBestPlanItem(Session s, int level) {
-        PlanItem item = new PlanItem();
+    public PlanItem getBestPlanItem(Session s, TableFilter[] filters, int filter) {
+        PlanItem item1 = null;
+        if (indexConditions.size() == 0) {
+            /*
+            item1 = new PlanItem();
+            item1.setIndex(table.getScanIndex(s, null, filters, filter, sortOrder));
+            item1.cost = item1.getIndex().getCost(s, null, filters, filter, sortOrder);
+            */
+        }
+        int len = table.getColumns().length;
+        int[] masks = new int[len];
+        for (IndexCondition condition : indexConditions) {
+            if (condition.isEvaluatable()) {
+                if (condition.isAlwaysFalse()) {
+                    masks = null;
+                    break;
+                }
+                int id = condition.getColumn().getColumnId();
+                if (id >= 0) {
+                    masks[id] |= condition.getMask(indexConditions);
+                }
+            }
+        }
+        PlanItem item = null;//table.getBestPlanItem(s, masks, filters, filter, sortOrder);
+        //item.setMasks(masks);
+        // The more index conditions, the earlier the table.
+        // This is to ensure joins without indexes run quickly:
+        // x (x.a=10); y (x.b=y.b) - see issue 113
+        item.cost -= item.cost * indexConditions.size() / 100 / (filter + 1);
+
+        if (item1 != null && item1.cost < item.cost) {
+            item = item1;
+        }
+
         if (nestedJoin != null) {
             setEvaluatable(nestedJoin);
-            item.setNestedJoinPlan(nestedJoin.getBestPlanItem(s, level));
+            item.setNestedJoinPlan(nestedJoin.getBestPlanItem(s, filters, filter));
             // TODO optimizer: calculate cost of a join: should use separate
             // expected row number and lookup cost
             item.cost += item.cost * item.getNestedJoinPlan().cost;
         }
         if (join != null) {
             setEvaluatable(join);
-            item.setJoinPlan(join.getBestPlanItem(s, level));
+            do {
+                filter++;
+            } while (filters[filter] != join);
+            item.setJoinPlan(join.getBestPlanItem(s, filters, filter));
             // TODO optimizer: calculate cost of a join: should use separate
             // expected row number and lookup cost
             item.cost += item.cost * item.getJoinPlan().cost;
@@ -198,7 +234,7 @@ public class TableFilter implements ColumnResolver {
             // this will result in an exception later on
             return;
         }
-        setIndex(item.getIndex());
+        //setIndex(item.getIndex());
         if (nestedJoin != null) {
             if (item.getNestedJoinPlan() != null) {
                 nestedJoin.setPlanItem(item.getNestedJoinPlan());

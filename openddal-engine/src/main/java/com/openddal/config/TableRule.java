@@ -13,7 +13,6 @@ public class TableRule implements Serializable {
     private ObjectNode metadataNode;
     private TableRuleGroup ownerGroup;
 
-
     public TableRule(String name) {
         this.name = name;
     }
@@ -39,35 +38,32 @@ public class TableRule implements Serializable {
     public void setMetadataNode(ObjectNode metadataNode) {
         this.metadataNode = metadataNode;
     }
+    
+    public boolean isNodeComparable(TableRule o) {
+        if(o.getClass() == TableRule.class) {
+            return metadataNode.getShardName().equals(o.metadataNode.getShardName());
+        }
+        return false;
+    }
 
     public static TableRule newFixedNodeTable(String name, ObjectNode metadataNode) {
         return new TableRule(name, metadataNode);
     }
-
-    public static TableRule newFixedNodeIndex(String name, ObjectNode metadataNode) {
-        return new TableRule(name, metadataNode);
-    }
     
-    public static MultiNodeTableRule newMultiNodeTable(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
-        return new MultiNodeTableRule(name, metadataNode, objectNodes);
-    }
-    
-    public static MultiNodeTableRule newMultiNodeIndex(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
-        return new MultiNodeTableRule(name, metadataNode,objectNodes);
+    public static GlobalTableRule newGlobalNodeTable(String name, ObjectNode metadataNode) {
+        return new GlobalTableRule(name, metadataNode);
     }
     
     public static ShardedTableRule newShardedTable(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
         return new ShardedTableRule(name, metadataNode, objectNodes);
     }
 
-    public TableRuleGroup getOwnerGroup() {
+    protected TableRuleGroup getOwnerGroup() {
         return ownerGroup;
     }
 
     protected void setOwnerGroup(TableRuleGroup ownerGroup) {
         this.ownerGroup = ownerGroup;
     }
-    
-    
 
 }

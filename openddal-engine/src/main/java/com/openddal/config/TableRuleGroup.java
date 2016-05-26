@@ -8,7 +8,6 @@ import com.openddal.util.New;
 
 public class TableRuleGroup extends ShardedTableRule implements Serializable {
 
-    
     public TableRuleGroup() {
         super(null);
     }
@@ -22,17 +21,15 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
             tableRule.setOwnerGroup(this);
             if (tableRule instanceof ShardedTableRule) {
                 ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
-                shardedTableRule.setPartitioner(getPartitioner());                
+                shardedTableRule.setPartitioner(getPartitioner());
                 if (!isUseTableRuleColumns()) {
                     shardedTableRule.setRuleColumns(getRuleColumns());
                 }
                 if (shardedTableRule.getScanLevel() == 0) {
                     shardedTableRule.setScanLevel(getScanLevel());
                 }
-            } 
-            if (tableRule instanceof MultiNodeTableRule) {
-                MultiNodeTableRule multiNodeTableRule = (MultiNodeTableRule) tableRule;
-                multiNodeTableRule.cloneObjectNodes(getObjectNodes());
+                shardedTableRule.cloneObjectNodes(getObjectNodes());
+
             }
             tableRule.setMetadataNode(getMetadataNode());
 
@@ -47,7 +44,7 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
     public void setTableRules(TableRule... tableRules) {
         this.tableRules = Arrays.asList(tableRules);
     }
-    
+
     public void addTableRules(TableRule... tableRules) {
         this.tableRules.addAll(Arrays.asList(tableRules));
     }

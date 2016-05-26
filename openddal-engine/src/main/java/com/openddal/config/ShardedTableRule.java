@@ -6,11 +6,12 @@ import java.util.List;
 
 import com.openddal.route.algorithm.Partitioner;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class ShardedTableRule extends MultiNodeTableRule implements Serializable {
+public class ShardedTableRule extends GlobalTableRule implements Serializable {
 
     public static final int SCANLEVEL_UNLIMITED = 1;
     public static final int SCANLEVEL_FILTER = 2;
@@ -20,10 +21,9 @@ public class ShardedTableRule extends MultiNodeTableRule implements Serializable
 
     private static final long serialVersionUID = 1L;
     private int scanLevel = SCANLEVEL_ANYINDEX;
+    private ObjectNode[] objectNodes;
     private List<String> ruleColumns;
-    private Partitioner partitioner;
-    private TableRuleGroup owner;
-    
+    private Partitioner partitioner;    
     
 
     public ShardedTableRule(String name) {
@@ -31,7 +31,8 @@ public class ShardedTableRule extends MultiNodeTableRule implements Serializable
     }
 
     public ShardedTableRule(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
-        super(name, metadataNode, objectNodes);
+        super(name, metadataNode);
+        this.objectNodes = objectNodes;
     }
     
     
@@ -56,6 +57,36 @@ public class ShardedTableRule extends MultiNodeTableRule implements Serializable
     public void setPartitioner(Partitioner partitioner) {
         this.partitioner = partitioner;
     }
+    
+    public ObjectNode[] getObjectNodes() {
+        return objectNodes;
+    }
+
+    public void setObjectNodes(ObjectNode... objectNode) {
+        for (ObjectNode item : objectNode) {
+            if (StringUtils.isNullOrEmpty(item.getShardName())) {
+                throw new IllegalArgumentException("The shardName attribute of ObjectNode is required.");
+            }
+            if (StringUtils.isNullOrEmpty(item.getObjectName())) {
+                item.setObjectName(getName());
+            }
+
+        }
+        this.objectNodes = objectNode;
+    }
+
+    public void cloneObjectNodes(ObjectNode... objectNode) {
+        this.objectNodes = new ObjectNode[objectNode.length];
+        for (int i = 0; i < objectNode.length; i++) {
+            ObjectNode item = objectNode[i];
+            if (StringUtils.isNullOrEmpty(item.getShardName())) {
+                throw new IllegalArgumentException("The shardName attribute of ObjectNode is required.");
+            }
+            this.objectNodes[i] = new ObjectNode(item.getShardName(), item.getCatalog(), item.getSchema(),
+                    this.getName(), item.getSuffix());
+        }
+    }
+    
     public ShardedTableRule ruleColumn(String ... ruleColumn) {
         setRuleColumns(Arrays.asList(ruleColumn));
         return this;
@@ -64,15 +95,12 @@ public class ShardedTableRule extends MultiNodeTableRule implements Serializable
         setPartitioner(partitioner);
         return this;
     }
-    public TableRuleGroup getOwner() {
-        return owner;
+    
+    @Override
+    public boolean isNodeComparable(TableRule o) {
+        if (o instanceof ShardedTableRule) {
+            return getOwnerGroup() == o.getOwnerGroup();
+        } 
+        return o.isNodeComparable(this);
     }
-    void setOwner(TableRuleGroup owner) {
-        this.owner = owner;
-    }
-    
-    
-    
-    
-
 }

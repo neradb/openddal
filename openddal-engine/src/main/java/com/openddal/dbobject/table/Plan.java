@@ -15,14 +15,17 @@
  */
 package com.openddal.dbobject.table;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.table.TableFilter.TableFilterVisitor;
 import com.openddal.engine.Session;
+import com.openddal.message.Trace;
 import com.openddal.util.New;
-
-import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * A possible query execution plan. The time required to execute a query depends
@@ -38,8 +41,8 @@ public class Plan {
     /**
      * Create a query plan with the given order.
      *
-     * @param filters   the tables of the query
-     * @param count     the number of table items
+     * @param filters the tables of the query
+     * @param count the number of table items
      * @param condition the condition in the WHERE clause
      */
     public Plan(TableFilter[] filters, int count, Expression condition) {
@@ -115,11 +118,18 @@ public class Plan {
      * @return the cost
      */
     public double calculateCost(Session session) {
+        Trace t = session.getTrace();
+        if (t.isDebugEnabled()) {
+            t.debug("Plan: calculate cost for plan {0}", Arrays.toString(allFilters));
+        }
         double cost = 1;
         boolean invalidPlan = false;
-        int level = 1;
-        for (TableFilter tableFilter : allFilters) {
-            PlanItem item = tableFilter.getBestPlanItem(session, level++);
+        for (int i = 0; i < allFilters.length; i++) {
+            TableFilter tableFilter = allFilters[i];
+            if (t.isDebugEnabled()) {
+                t.debug("Plan: for table filter {0}", tableFilter);
+            }
+            PlanItem item = tableFilter.getBestPlanItem(session, allFilters, i);
             planItems.put(tableFilter, item);
             cost += cost * item.cost;
             setEvaluatable(tableFilter, true);
@@ -134,6 +144,9 @@ public class Plan {
         if (invalidPlan) {
             cost = Double.POSITIVE_INFINITY;
         }
+        if (t.isDebugEnabled()) {
+            session.getTrace().debug("Plan: plan cost {0}", cost);
+        }
         for (TableFilter f : allFilters) {
             setEvaluatable(f, false);
         }
@@ -146,4 +159,26 @@ public class Plan {
             e.setEvaluatable(filter, b);
         }
     }
+    
+    
+    private List<PlanItem> prepareJoinFree(TableFilter[] filters) {
+        List<PlanItem> planItems = New.arrayList();
+        PlanItem planItem = new PlanItem();
+        planItems.add(planItem);
+        planItem.addTableFilter(filters[1]);
+        if(filters.length == 1) {
+            planItem.cost = 100;
+            return planItems;
+        }
+        for (int i = 1; i < filters.length; i++) {
+            TableFilter filter = filters[i];
+            if(!planItem.addJoinFilter(filter)) {
+                planItem = new PlanItem();
+                planItems.add(planItem);
+            }
+        }
+        return planItems;
+    }
+    
+    
 }

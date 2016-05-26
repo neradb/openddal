@@ -7,7 +7,7 @@ import java.util.Set;
 
 import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceProvider;
-import com.openddal.config.MultiNodeTableRule;
+import com.openddal.config.GlobalTableRule;
 import com.openddal.config.SequnceConfig;
 import com.openddal.config.Shard;
 import com.openddal.config.Shard.ShardItem;
@@ -87,7 +87,8 @@ public final class SessionFactoryBuilder {
         return this;
     }
 
-    public SessionFactoryBuilder addTableRule(MultiNodeTableRule table) {
+    public SessionFactoryBuilder addTableRule(GlobalTableRule table) {
+        table.config(configuration);
         validateTableRule(table);
         configuration.tableRules.add(table);
         return this;
@@ -96,18 +97,6 @@ public final class SessionFactoryBuilder {
     public SessionFactoryBuilder addTableRule(TableRule table) {
         validateTableRule(table);
         configuration.tableRules.add(table);
-        return this;
-    }
-
-    public SessionFactoryBuilder addIndex(MultiNodeTableRule index) {
-        validateTableRule(index);
-        configuration.nodedIndexs.add(index);
-        return this;
-    }
-
-    public SessionFactoryBuilder addIndex(TableRule index) {
-        validateTableRule(index);
-        configuration.nodedIndexs.add(index);
         return this;
     }
 
@@ -157,8 +146,8 @@ public final class SessionFactoryBuilder {
                 throw new IllegalArgumentException();
             }
         }
-        if (oject instanceof MultiNodeTableRule) {
-            MultiNodeTableRule multiNodeObject = (MultiNodeTableRule) oject;
+        if (oject instanceof GlobalTableRule) {
+            GlobalTableRule multiNodeObject = (GlobalTableRule) oject;
             ObjectNode[] objectNodes = multiNodeObject.getObjectNodes();
             if (objectNodes == null) {
                 throw new IllegalArgumentException();
@@ -234,8 +223,8 @@ public final class SessionFactoryBuilder {
         for (TableRule table : configuration.tableRules) {
             if (table instanceof ShardedTableRule)
                 validateTableRule((ShardedTableRule) table);
-            else if (table instanceof MultiNodeTableRule)
-                validateTableRule((MultiNodeTableRule) table);
+            else if (table instanceof GlobalTableRule)
+                validateTableRule((GlobalTableRule) table);
             else
                 validateTableRule(table);
         }
