@@ -70,7 +70,7 @@ public class QueryTestCase extends BaseTestCase {
 
     @Test
     public void test_inner_join_conndiditon() {
-        String sql = "SELECT * FROM orders a inner join order_items b on a.order_id=b.order_id inner join order_status c on b.order_id = c.order_id where customer_id = 1";
+        String sql = "SELECT customer_id FROM orders a inner join order_items b on a.order_id=b.order_id inner join order_status c on b.order_id = c.order_id where customer_id = 1";
         this.query_Sql(sql, null);
     }
 

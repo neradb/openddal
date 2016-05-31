@@ -16,15 +16,12 @@
 package com.openddal.dbobject.table;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
 
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.ConditionAndOr;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
-import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
@@ -454,21 +451,6 @@ public class TableFilter implements ColumnResolver {
         }
         return table.getName();
     }
-
-    public void addSelectExpression(Expression expr) {
-        HashSet<Column> columns = New.hashSet();
-        expr.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
-        for (Iterator<Column> it = columns.iterator(); it.hasNext();) {
-            if (it.next().getTable() != table) {
-                return;
-            }
-        }
-        if (expressions == null) {
-            expressions = New.arrayList(10);
-        }
-        expressions.add(expr);
-    }
-
 
     public void addIndexCondition(IndexCondition condition) {
         indexConditions.add(condition);
