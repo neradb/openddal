@@ -55,13 +55,13 @@
                 name CDATA #REQUIRED
                 ruleColumns CDATA #IMPLIED
                 metaNodeIndex CDATA #IMPLIED
-                scanLevel (unlimited|filter|anyIndex|uniqueIndex|shardingKey) #IMPLIED
+                scanLevel (unlimited|anyIndex|uniqueIndex|shardingKey) #IMPLIED
                 >
 
         <!ELEMENT tableGroup (tables, (nodes|node)?, tableRule?)>
         <!ATTLIST tableGroup
                 metaNodeIndex CDATA #IMPLIED
-                scanLevel (unlimited|filter|anyIndex|uniqueIndex|shardingKey) #IMPLIED
+                scanLevel (unlimited|anyIndex|uniqueIndex|shardingKey) #IMPLIED
                 >
         <!ELEMENT tables (table+)>
                 

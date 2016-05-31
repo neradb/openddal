@@ -34,16 +34,16 @@ import javax.sql.DataSource;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.Index;
+import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.index.IndexType;
 import com.openddal.dbobject.schema.Schema;
+import com.openddal.dbobject.table.PlanItem.ScanningStrategy;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
 import com.openddal.excutor.Optional;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.result.SortOrder;
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.route.rule.RoutingResult;
 import com.openddal.shards.DataSourceRepository;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.MathUtils;
@@ -150,9 +150,69 @@ public class TableMate extends Table {
         return index;
     }
 
-    @Override
-    public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter filter, SortOrder sortOrder) {
-        return super.getBestPlanItem(session, masks, filter, sortOrder);
+    public PlanItem getBestPlanItem(Session session, int[] masks, TableFilter[] filters, int filter) {
+        PlanItem item = new PlanItem();
+        item.cost = Constants.COST_ROW_OFFSET;
+        if (tableRule instanceof ShardedTableRule) {
+            ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
+            int nodeCount = shardedTableRule.getObjectNodes().length;
+            item.cost = Constants.COST_ROW_OFFSET * nodeCount;
+        }
+
+        Column[] columns = getRuleColumns();
+        if (columns != null && masks != null) {
+            for (int i = 0, len = columns.length; i < len; i++) {
+                Column column = columns[i];
+                int index = column.getColumnId();
+                int mask = masks[index];
+                if ((mask & IndexCondition.EQUALITY) == IndexCondition.EQUALITY) {
+                    if (i == columns.length - 1) {
+                        item.cost = Constants.COST_ROW_OFFSET;
+                        item.scanningStrategyFor(ScanningStrategy.USE_SHARDINGKEY);
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+        double rowsCost = item.cost;
+        ArrayList<Index> indexes = getIndexes();
+        if (indexes != null && masks != null) {
+            for (Index index : indexes) {
+                columns = index.getColumns();
+                for (int i = 0, len = columns.length; i < len; i++) {
+                    Column column = columns[i];
+                    int columnId = column.getColumnId();
+                    int mask = masks[columnId];
+                    if ((mask & IndexCondition.EQUALITY) == IndexCondition.EQUALITY) {
+                        if (i == columns.length - 1 && index.getIndexType().isUnique()) {
+                            item.cost = rowsCost * 0.25d;
+                            item.scanningStrategyFor(ScanningStrategy.USE_UNIQUEKEY);
+                            break;
+                        }
+                        item.cost = Math.max(rowsCost * 0.5d, item.cost * 0.5d);
+                        item.scanningStrategyFor(ScanningStrategy.USE_INDEXKEY);
+                    } else if ((mask & IndexCondition.RANGE) == IndexCondition.RANGE) {
+                        item.cost = item.cost * 0.70d;
+                        item.scanningStrategyFor(ScanningStrategy.USE_INDEXKEY);
+                        break;
+                    } else if ((mask & IndexCondition.START) == IndexCondition.START) {
+                        item.cost = item.cost * 0.75d;
+                        item.scanningStrategyFor(ScanningStrategy.USE_INDEXKEY);
+                        break;
+                    } else if ((mask & IndexCondition.END) == IndexCondition.END) {
+                        item.cost = item.cost * 0.75d;
+                        item.scanningStrategyFor(ScanningStrategy.USE_INDEXKEY);
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+        validationPlanItem(item);
+        return item;
     }
 
     public void loadMataData(Session session) {
@@ -448,24 +508,6 @@ public class TableMate extends Table {
         return scale;
     }
 
-    private static boolean isShardMatch(ObjectNode[] nodes1, ObjectNode[] nodes2) {
-        ObjectNode[] group1 = RoutingResult.fixedResult(nodes1).group();
-        ObjectNode[] group2 = RoutingResult.fixedResult(nodes2).group();
-        for (ObjectNode tableNode1 : group1) {
-            boolean isMatched = false;
-            for (ObjectNode tableNode2 : group2) {
-                if (tableNode1.getShardName().equals(tableNode2.getShardName())) {
-                    isMatched = true;
-                    break;
-                }
-            }
-            if (!isMatched) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
      * validation the rule columns is in the table columns
      */
@@ -493,4 +535,31 @@ public class TableMate extends Table {
         }
     }
 
+    private void validationPlanItem(PlanItem item) {
+        int priority = item.getScanningStrategy().priority;
+        if (tableRule instanceof ShardedTableRule) {
+            ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
+            switch (shardedTableRule.getScanLevel()) {
+            case ShardedTableRule.SCANLEVEL_SHARDINGKEY:
+                if (priority < ScanningStrategy.USE_SHARDINGKEY.priority) {
+                    throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE, getName(), "shardingKey", "shardingKey");
+                }
+                break;
+            case ShardedTableRule.SCANLEVEL_UNIQUEINDEX:
+                if (priority < ScanningStrategy.USE_UNIQUEKEY.priority) {
+                    throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE, getName(), "uniqueIndex", "uniqueIndex");
+                }
+                break;
+            case ShardedTableRule.SCANLEVEL_ANYINDEX:
+                if (priority < ScanningStrategy.USE_INDEXKEY.priority) {
+                    throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE, getName(), "indexKey", "indexKey");
+                }
+                break;
+            case ShardedTableRule.SCANLEVEL_UNLIMITED:
+                break;
+            default:
+                throw DbException.throwInternalError("invalid scanLevel");
+            }
+        }
+    }
 }

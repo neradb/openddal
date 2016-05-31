@@ -15,6 +15,12 @@
  */
 package com.openddal.dbobject.index;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+
 import com.openddal.command.dml.Query;
 import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.Expression;
@@ -28,8 +34,6 @@ import com.openddal.result.ResultInterface;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.CompareMode;
 import com.openddal.value.Value;
-
-import java.util.*;
 
 /**
  * A index condition object is made for each condition that can potentially use
@@ -79,10 +83,9 @@ public class IndexCondition {
 
     /**
      * @param compareType the comparison type, see constants in
-     *                    {@link Comparison}
+     *            {@link Comparison}
      */
-    private IndexCondition(int compareType, ExpressionColumn column,
-                           Expression expression) {
+    private IndexCondition(int compareType, ExpressionColumn column, Expression expression) {
         this.compareType = compareType;
         this.column = column == null ? null : column.getColumn();
         this.expression = expression;
@@ -92,13 +95,12 @@ public class IndexCondition {
      * Create an index condition with the given parameters.
      *
      * @param compareType the comparison type, see constants in
-     *                    {@link Comparison}
-     * @param column      the column
-     * @param expression  the expression
+     *            {@link Comparison}
+     * @param column the column
+     * @param expression the expression
      * @return the index condition
      */
-    public static IndexCondition get(int compareType, ExpressionColumn column,
-                                     Expression expression) {
+    public static IndexCondition get(int compareType, ExpressionColumn column, Expression expression) {
         return new IndexCondition(compareType, column, expression);
     }
 
@@ -107,11 +109,10 @@ public class IndexCondition {
      * given parameters.
      *
      * @param column the column
-     * @param list   the expression list
+     * @param list the expression list
      * @return the index condition
      */
-    public static IndexCondition getInList(ExpressionColumn column,
-                                           List<Expression> list) {
+    public static IndexCondition getInList(ExpressionColumn column, List<Expression> list) {
         IndexCondition cond = new IndexCondition(Comparison.IN_LIST, column, null);
         cond.expressionList = list;
         return cond;
@@ -122,7 +123,7 @@ public class IndexCondition {
      * given parameters.
      *
      * @param column the column
-     * @param query  the select statement
+     * @param query the select statement
      * @return the index condition
      */
     public static IndexCondition getInQuery(ExpressionColumn column, Query query) {
@@ -189,39 +190,39 @@ public class IndexCondition {
         StatementBuilder buff = new StatementBuilder();
         buff.append(column.getSQL());
         switch (compareType) {
-            case Comparison.EQUAL:
-                buff.append(" = ");
-                break;
-            case Comparison.EQUAL_NULL_SAFE:
-                buff.append(" IS ");
-                break;
-            case Comparison.BIGGER_EQUAL:
-                buff.append(" >= ");
-                break;
-            case Comparison.BIGGER:
-                buff.append(" > ");
-                break;
-            case Comparison.SMALLER_EQUAL:
-                buff.append(" <= ");
-                break;
-            case Comparison.SMALLER:
-                buff.append(" < ");
-                break;
-            case Comparison.IN_LIST:
-                buff.append(" IN(");
-                for (Expression e : expressionList) {
-                    buff.appendExceptFirst(", ");
-                    buff.append(e.getSQL());
-                }
-                buff.append(')');
-                break;
-            case Comparison.IN_QUERY:
-                buff.append(" IN(");
-                buff.append(expressionQuery.getPlanSQL());
-                buff.append(')');
-                break;
-            default:
-                DbException.throwInternalError("type=" + compareType);
+        case Comparison.EQUAL:
+            buff.append(" = ");
+            break;
+        case Comparison.EQUAL_NULL_SAFE:
+            buff.append(" IS ");
+            break;
+        case Comparison.BIGGER_EQUAL:
+            buff.append(" >= ");
+            break;
+        case Comparison.BIGGER:
+            buff.append(" > ");
+            break;
+        case Comparison.SMALLER_EQUAL:
+            buff.append(" <= ");
+            break;
+        case Comparison.SMALLER:
+            buff.append(" < ");
+            break;
+        case Comparison.IN_LIST:
+            buff.append(" IN(");
+            for (Expression e : expressionList) {
+                buff.appendExceptFirst(", ");
+                buff.append(e.getSQL());
+            }
+            buff.append(')');
+            break;
+        case Comparison.IN_QUERY:
+            buff.append(" IN(");
+            buff.append(expressionQuery.getPlanSQL());
+            buff.append(')');
+            break;
+        default:
+            DbException.throwInternalError("type=" + compareType);
         }
         if (expression != null) {
             buff.append(expression.getSQL());
@@ -237,35 +238,35 @@ public class IndexCondition {
      */
     public int getMask(ArrayList<IndexCondition> indexConditions) {
         switch (compareType) {
-            case Comparison.FALSE:
-                return ALWAYS_FALSE;
-            case Comparison.EQUAL:
-            case Comparison.EQUAL_NULL_SAFE:
-                return EQUALITY;
-            case Comparison.IN_LIST:
-            case Comparison.IN_QUERY:
-                if (indexConditions.size() > 1) {
-                    if (!Table.TABLE.equals(column.getTable().getTableType())) {
-                        // if combined with other conditions,
-                        // IN(..) can only be used for regular tables
-                        // test case:
-                        // create table test(a int, b int, primary key(id, name));
-                        // create unique index c on test(b, a);
-                        // insert into test values(1, 10), (2, 20);
-                        // select * from (select * from test)
-                        // where a=1 and b in(10, 20);
-                        return 0;
-                    }
+        case Comparison.FALSE:
+            return ALWAYS_FALSE;
+        case Comparison.EQUAL:
+        case Comparison.EQUAL_NULL_SAFE:
+            return EQUALITY;
+        case Comparison.IN_LIST:
+        case Comparison.IN_QUERY:
+            if (indexConditions.size() > 1) {
+                if (!Table.TABLE.equals(column.getTable().getTableType())) {
+                    // if combined with other conditions,
+                    // IN(..) can only be used for regular tables
+                    // test case:
+                    // create table test(a int, b int, primary key(id, name));
+                    // create unique index c on test(b, a);
+                    // insert into test values(1, 10), (2, 20);
+                    // select * from (select * from test)
+                    // where a=1 and b in(10, 20);
+                    return 0;
                 }
-                return EQUALITY;
-            case Comparison.BIGGER_EQUAL:
-            case Comparison.BIGGER:
-                return START;
-            case Comparison.SMALLER_EQUAL:
-            case Comparison.SMALLER:
-                return END;
-            default:
-                throw DbException.throwInternalError("type=" + compareType);
+            }
+            return EQUALITY;
+        case Comparison.BIGGER_EQUAL:
+        case Comparison.BIGGER:
+            return START;
+        case Comparison.SMALLER_EQUAL:
+        case Comparison.SMALLER:
+            return END;
+        default:
+            throw DbException.throwInternalError("type=" + compareType);
         }
     }
 
@@ -286,13 +287,13 @@ public class IndexCondition {
      */
     public boolean isStart() {
         switch (compareType) {
-            case Comparison.EQUAL:
-            case Comparison.EQUAL_NULL_SAFE:
-            case Comparison.BIGGER_EQUAL:
-            case Comparison.BIGGER:
-                return true;
-            default:
-                return false;
+        case Comparison.EQUAL:
+        case Comparison.EQUAL_NULL_SAFE:
+        case Comparison.BIGGER_EQUAL:
+        case Comparison.BIGGER:
+            return true;
+        default:
+            return false;
         }
     }
 
@@ -304,13 +305,13 @@ public class IndexCondition {
      */
     public boolean isEnd() {
         switch (compareType) {
-            case Comparison.EQUAL:
-            case Comparison.EQUAL_NULL_SAFE:
-            case Comparison.SMALLER_EQUAL:
-            case Comparison.SMALLER:
-                return true;
-            default:
-                return false;
+        case Comparison.EQUAL:
+        case Comparison.EQUAL_NULL_SAFE:
+        case Comparison.SMALLER_EQUAL:
+        case Comparison.SMALLER:
+            return true;
+        default:
+            return false;
         }
     }
 
@@ -348,23 +349,22 @@ public class IndexCondition {
     }
 
     /**
-     * Check if the expression can be evaluated.
-     *
-     * @return true if it can be evaluated
+     * Get other join column without expression wrapper.
+     * @return the column
      */
-    public boolean isColumnEquality(Column left, Column right) {
-        if (compareType != Comparison.EQUAL) {
-            return false;
-        } else {
-            if (this.expression instanceof ExpressionColumn) {
-                ExpressionColumn expr = (ExpressionColumn) this.expression;
-                Column column = expr.getColumn();
-                boolean l = left == this.column && right == column;
-                boolean r = right == this.column && left == column;
-                return l || r;
-            }
-            return false;
+    public Column getCompareColumn() {
+        if (expression instanceof ExpressionColumn) {
+            ExpressionColumn expr = (ExpressionColumn) this.expression;
+            return expr.getColumn();
         }
+        if (expressionList != null && expressionList.size() == 1) {
+            Expression item = expressionList.get(0);
+            if (item instanceof ExpressionColumn) {
+                ExpressionColumn expr = (ExpressionColumn) item;
+                return expr.getColumn();
+            }
+        }
+        return null;
     }
 
 }

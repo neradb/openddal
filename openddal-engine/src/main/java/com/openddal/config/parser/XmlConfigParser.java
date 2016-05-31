@@ -490,8 +490,6 @@ public class XmlConfigParser {
         int level = 0;
         if ("unlimited".equals(scanLevel)) {
             level = ShardedTableRule.SCANLEVEL_UNLIMITED;
-        } else if ("filter".equals(scanLevel)) {
-            level = ShardedTableRule.SCANLEVEL_FILTER;
         } else if ("anyIndex".equals(scanLevel)) {
             level = ShardedTableRule.SCANLEVEL_ANYINDEX;
         } else if ("uniqueIndex".equals(scanLevel)) {

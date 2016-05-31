@@ -18,7 +18,6 @@ package com.openddal.dbobject.table;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionVisitor;
@@ -120,17 +119,21 @@ public class Plan {
     public double calculateCost(Session session) {
         Trace t = session.getTrace();
         if (t.isDebugEnabled()) {
-            t.debug("Plan: calculate cost for plan {0}", Arrays.toString(allFilters));
+            t.debug("Plan       : calculate cost for plan {0}", Arrays.toString(allFilters));
         }
         double cost = 1;
         boolean invalidPlan = false;
         for (int i = 0; i < allFilters.length; i++) {
             TableFilter tableFilter = allFilters[i];
             if (t.isDebugEnabled()) {
-                t.debug("Plan: for table filter {0}", tableFilter);
+                t.debug("Plan       :   for table filter {0}", tableFilter);
             }
             PlanItem item = tableFilter.getBestPlanItem(session, allFilters, i);
             planItems.put(tableFilter, item);
+            if (t.isDebugEnabled()) {
+                t.debug("Plan       :   plan item cost {0} scanning strategy is {1}",
+                        item.cost, item.getScanningStrategy());
+            }
             cost += cost * item.cost;
             setEvaluatable(tableFilter, true);
             Expression on = tableFilter.getJoinCondition();
@@ -145,7 +148,7 @@ public class Plan {
             cost = Double.POSITIVE_INFINITY;
         }
         if (t.isDebugEnabled()) {
-            session.getTrace().debug("Plan: plan cost {0}", cost);
+            session.getTrace().debug("Plan       : plan cost {0}", cost);
         }
         for (TableFilter f : allFilters) {
             setEvaluatable(f, false);
@@ -159,26 +162,4 @@ public class Plan {
             e.setEvaluatable(filter, b);
         }
     }
-    
-    
-    private List<PlanItem> prepareJoinFree(TableFilter[] filters) {
-        List<PlanItem> planItems = New.arrayList();
-        PlanItem planItem = new PlanItem();
-        planItems.add(planItem);
-        planItem.addTableFilter(filters[1]);
-        if(filters.length == 1) {
-            planItem.cost = 100;
-            return planItems;
-        }
-        for (int i = 1; i < filters.length; i++) {
-            TableFilter filter = filters[i];
-            if(!planItem.addJoinFilter(filter)) {
-                planItem = new PlanItem();
-                planItems.add(planItem);
-            }
-        }
-        return planItems;
-    }
-    
-    
 }

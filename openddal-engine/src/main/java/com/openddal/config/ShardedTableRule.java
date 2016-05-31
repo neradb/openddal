@@ -14,10 +14,9 @@ import com.openddal.util.StringUtils;
 public class ShardedTableRule extends GlobalTableRule implements Serializable {
 
     public static final int SCANLEVEL_UNLIMITED = 1;
-    public static final int SCANLEVEL_FILTER = 2;
-    public static final int SCANLEVEL_ANYINDEX = 3;
-    public static final int SCANLEVEL_UNIQUEINDEX = 4;
-    public static final int SCANLEVEL_SHARDINGKEY = 5;
+    public static final int SCANLEVEL_ANYINDEX = 2;
+    public static final int SCANLEVEL_UNIQUEINDEX = 3;
+    public static final int SCANLEVEL_SHARDINGKEY = 4;
 
     private static final long serialVersionUID = 1L;
     private int scanLevel = SCANLEVEL_ANYINDEX;

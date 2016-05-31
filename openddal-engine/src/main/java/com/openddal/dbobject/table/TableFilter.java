@@ -19,24 +19,20 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import com.openddal.command.Parser;
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.ConditionAndOr;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
 import com.openddal.command.expression.ExpressionVisitor;
-import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.index.IndexCondition;
-import com.openddal.dbobject.index.IndexCursor;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
+import com.openddal.excutor.cursor.SearchCursor;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
-import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 import com.openddal.value.ValueLong;
 import com.openddal.value.ValueNull;
@@ -55,7 +51,7 @@ public class TableFilter implements ColumnResolver {
     /**
      * The filter used to walk through the index.
      */
-    private final IndexCursor cursor;
+    private final SearchCursor cursor;
     /**
      * The index conditions used for direct index lookup (start or end).
      */
@@ -67,7 +63,6 @@ public class TableFilter implements ColumnResolver {
     protected boolean joinOuterIndirect;
     private Session session;
     private String alias;
-    private Index index;
     private int scanCount;
     private boolean evaluatable;
     /**
@@ -118,7 +113,7 @@ public class TableFilter implements ColumnResolver {
         this.table = table;
         this.alias = alias;
         this.select = select;
-        this.cursor = new IndexCursor(this);
+        this.cursor = new SearchCursor(this);
         hashCode = session.nextObjectId();
     }
 
@@ -155,14 +150,6 @@ public class TableFilter implements ColumnResolver {
      * @return the best plan item
      */
     public PlanItem getBestPlanItem(Session s, TableFilter[] filters, int filter) {
-        PlanItem item1 = null;
-        if (indexConditions.size() == 0) {
-            /*
-            item1 = new PlanItem();
-            item1.setIndex(table.getScanIndex(s, null, filters, filter, sortOrder));
-            item1.cost = item1.getIndex().getCost(s, null, filters, filter, sortOrder);
-            */
-        }
         int len = table.getColumns().length;
         int[] masks = new int[len];
         for (IndexCondition condition : indexConditions) {
@@ -177,22 +164,10 @@ public class TableFilter implements ColumnResolver {
                 }
             }
         }
-        PlanItem item = null;//table.getBestPlanItem(s, masks, filters, filter, sortOrder);
-        //item.setMasks(masks);
-        // The more index conditions, the earlier the table.
-        // This is to ensure joins without indexes run quickly:
-        // x (x.a=10); y (x.b=y.b) - see issue 113
-        item.cost -= item.cost * indexConditions.size() / 100 / (filter + 1);
-
-        if (item1 != null && item1.cost < item.cost) {
-            item = item1;
-        }
-
+        PlanItem item = table.getBestPlanItem(s, masks, filters, filter);
         if (nestedJoin != null) {
             setEvaluatable(nestedJoin);
             item.setNestedJoinPlan(nestedJoin.getBestPlanItem(s, filters, filter));
-            // TODO optimizer: calculate cost of a join: should use separate
-            // expected row number and lookup cost
             item.cost += item.cost * item.getNestedJoinPlan().cost;
         }
         if (join != null) {
@@ -201,8 +176,6 @@ public class TableFilter implements ColumnResolver {
                 filter++;
             } while (filters[filter] != join);
             item.setJoinPlan(join.getBestPlanItem(s, filters, filter));
-            // TODO optimizer: calculate cost of a join: should use separate
-            // expected row number and lookup cost
             item.cost += item.cost * item.getJoinPlan().cost;
         }
         return item;
@@ -258,6 +231,7 @@ public class TableFilter implements ColumnResolver {
     public void prepare() {
         // forget all unused index conditions
         // the indexConditions list may be modified here
+        /*
         for (int i = 0; i < indexConditions.size(); i++) {
             IndexCondition condition = indexConditions.get(i);
             if (!condition.isAlwaysFalse()) {
@@ -270,6 +244,7 @@ public class TableFilter implements ColumnResolver {
                 }
             }
         }
+        */
         if (nestedJoin != null) {
             if (SysProperties.CHECK && nestedJoin == this) {
                 DbException.throwInternalError("self join");
@@ -630,93 +605,6 @@ public class TableFilter implements ColumnResolver {
     }
 
     /**
-     * Get the query execution plan text to use for this table filter.
-     *
-     * @param isJoin if this is a joined table
-     * @return the SQL statement snippet
-     */
-    public String getPlanSQL(boolean isJoin) {
-        StringBuilder buff = new StringBuilder();
-        if (isJoin) {
-            if (joinOuter) {
-                buff.append("LEFT OUTER JOIN ");
-            } else {
-                buff.append("INNER JOIN ");
-            }
-        }
-        if (nestedJoin != null) {
-            StringBuffer buffNested = new StringBuffer();
-            TableFilter n = nestedJoin;
-            do {
-                buffNested.append(n.getPlanSQL(n != nestedJoin));
-                buffNested.append('\n');
-                n = n.getJoin();
-            } while (n != null);
-            String nested = buffNested.toString();
-            boolean enclose = !nested.startsWith("(");
-            if (enclose) {
-                buff.append("(\n");
-            }
-            buff.append(StringUtils.indent(nested, 4, false));
-            if (enclose) {
-                buff.append(')');
-            }
-            if (isJoin) {
-                buff.append(" ON ");
-                if (joinCondition == null) {
-                    // need to have a ON expression,
-                    // otherwise the nesting is unclear
-                    buff.append("1=1");
-                } else {
-                    buff.append(StringUtils.unEnclose(joinCondition.getSQL()));
-                }
-            }
-            return buff.toString();
-        }
-        buff.append(table.getSQL());
-        if (alias != null) {
-            buff.append(' ').append(Parser.quoteIdentifier(alias));
-        }
-        if (index != null) {
-            buff.append('\n');
-            StatementBuilder planBuff = new StatementBuilder();
-            planBuff.append(index.getSQL());
-            if (indexConditions.size() > 0) {
-                planBuff.append(": ");
-                for (IndexCondition condition : indexConditions) {
-                    planBuff.appendExceptFirst("\n    AND ");
-                    planBuff.append(condition.getSQL());
-                }
-            }
-            String plan = StringUtils.quoteRemarkSQL(planBuff.toString());
-            if (plan.indexOf('\n') >= 0) {
-                plan += "\n";
-            }
-            buff.append(StringUtils.indent("/* " + plan + " */", 4, false));
-        }
-        if (isJoin) {
-            buff.append("\n    ON ");
-            if (joinCondition == null) {
-                // need to have a ON expression, otherwise the nesting is
-                // unclear
-                buff.append("1=1");
-            } else {
-                buff.append(StringUtils.unEnclose(joinCondition.getSQL()));
-            }
-        }
-        if (filterCondition != null) {
-            buff.append('\n');
-            String condition = StringUtils.unEnclose(filterCondition.getSQL());
-            condition = "/* WHERE " + StringUtils.quoteRemarkSQL(condition) + "\n*/";
-            buff.append(StringUtils.indent(condition, 4, false));
-        }
-        if (scanCount > 0) {
-            buff.append("\n    /* scanCount: ").append(scanCount).append(" */");
-        }
-        return buff.toString();
-    }
-
-    /**
      * Remove all index conditions that are not used by the current index.
      */
     void removeUnusableIndexConditions() {
@@ -727,15 +615,6 @@ public class TableFilter implements ColumnResolver {
                 indexConditions.remove(i--);
             }
         }
-    }
-
-    public Index getIndex() {
-        return index;
-    }
-
-    public void setIndex(Index index) {
-        this.index = index;
-        cursor.setIndex(index);
     }
 
     public boolean isUsed() {

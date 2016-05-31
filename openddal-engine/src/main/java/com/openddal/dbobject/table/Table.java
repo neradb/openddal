@@ -35,7 +35,6 @@ import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.result.SimpleRow;
 import com.openddal.result.SimpleRowValue;
-import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
@@ -301,8 +300,9 @@ public abstract class Table extends SchemaObject {
      * @return the plan item
      */
     public PlanItem getBestPlanItem(Session session, int[] masks,
-                                    TableFilter filter, SortOrder sortOrder) {
+            TableFilter[] filters, int filter) {
         PlanItem item = new PlanItem();
+        item.cost = 1;
         return item;
     }
 

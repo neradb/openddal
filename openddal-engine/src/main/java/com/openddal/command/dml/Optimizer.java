@@ -15,6 +15,8 @@
  */
 package com.openddal.command.dml;
 
+import java.util.Random;
+
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.Plan;
 import com.openddal.dbobject.table.PlanItem;
@@ -23,34 +25,34 @@ import com.openddal.engine.Session;
 import com.openddal.util.BitField;
 import com.openddal.util.Permutations;
 
-import java.util.Random;
-
 /**
- * The optimizer is responsible to find the best execution plan
- * for a given query.
+ * The optimizer is responsible to find the best execution plan for a given
+ * query.
  */
 class Optimizer {
 
     private static final int MAX_BRUTE_FORCE_FILTERS = 7;
     private static final int MAX_BRUTE_FORCE = 2000;
     private static final int MAX_GENETIC = 500;
-    private final TableFilter[] filters;
-    private final Expression condition;
-
-    //  possible plans for filters, if using brute force:
-    //  1 filter 1 plan
-    //  2 filters 2 plans
-    //  3 filters 6 plans
-    //  4 filters 24 plans
-    //  5 filters 120 plans
-    //  6 filters 720 plans
-    //  7 filters 5040 plans
-    //  8 filters 40320 plan
-    //  9 filters 362880 plans
-    // 10 filters 3628800 filters
-    private final Session session;
     private long start;
     private BitField switched;
+
+    // possible plans for filters, if using brute force:
+    // 1 filter 1 plan
+    // 2 filters 2 plans
+    // 3 filters 6 plans
+    // 4 filters 24 plans
+    // 5 filters 120 plans
+    // 6 filters 720 plans
+    // 7 filters 5040 plans
+    // 8 filters 40320 plan
+    // 9 filters 362880 plans
+    // 10 filters 3628800 filters
+
+    private final TableFilter[] filters;
+    private final Expression condition;
+    private final Session session;
+
     private Plan bestPlan;
     private TableFilter topFilter;
     private double cost;
@@ -83,16 +85,18 @@ class Optimizer {
     }
 
     private void calculateBestPlan() {
-        start = System.currentTimeMillis();
         cost = -1;
         if (filters.length == 1) {
             testPlan(filters);
-        } else if (filters.length <= MAX_BRUTE_FORCE_FILTERS) {
-            calculateBruteForceAll();
         } else {
-            calculateBruteForceSome();
-            random = new Random(0);
-            calculateGenetic();
+            start = System.currentTimeMillis();
+            if (filters.length <= MAX_BRUTE_FORCE_FILTERS) {
+                calculateBruteForceAll();
+            } else {
+                calculateBruteForceSome();
+                random = new Random(0);
+                calculateGenetic();
+            }
         }
     }
 

@@ -15,16 +15,16 @@
  */
 package com.openddal.util;
 
-import com.openddal.engine.Constants;
-import com.openddal.engine.SysProperties;
-import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
-
 import java.lang.ref.SoftReference;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import com.openddal.engine.Constants;
+import com.openddal.engine.SysProperties;
+import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 
 /**
  * A few String utility functions.
@@ -122,6 +122,17 @@ public class StringUtils {
      */
     public static boolean startsWithIgnoreCase(String s, String start) {
         return s.length() >= start.length() && s.substring(0, start.length()).equalsIgnoreCase(start);
+    }
+    
+    /**
+     * Check is a string starts with another string, ignoring the case.
+     *
+     * @param s     the string to check (must be longer than start)
+     * @param start the prefix of s
+     * @return true if start is a prefix of s
+     */
+    public static boolean startsWith(String s, String start) {
+        return s == null || start == null ? false : s.startsWith(start);
     }
 
     /**

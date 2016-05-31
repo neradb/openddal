@@ -15,6 +15,8 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
@@ -23,8 +25,6 @@ import com.openddal.message.DbException;
 import com.openddal.value.Value;
 import com.openddal.value.ValueBoolean;
 import com.openddal.value.ValueNull;
-
-import java.util.List;
 
 /**
  * An 'and' or 'or' condition as in WHERE ID=1 AND NAME=?
@@ -222,38 +222,38 @@ public class ConditionAndOr extends Condition {
             return ValueExpression.get(getValue(session));
         }
         switch (andOrType) {
-            case AND:
-                if (l != null) {
-                    if (Boolean.FALSE.equals(l.getBoolean())) {
-                        return ValueExpression.get(l);
-                    } else if (Boolean.TRUE.equals(l.getBoolean())) {
-                        return right;
-                    }
-                } else if (r != null) {
-                    if (Boolean.FALSE.equals(r.getBoolean())) {
-                        return ValueExpression.get(r);
-                    } else if (Boolean.TRUE.equals(r.getBoolean())) {
-                        return left;
-                    }
+        case AND:
+            if (l != null) {
+                if (Boolean.FALSE.equals(l.getBoolean())) {
+                    return ValueExpression.get(l);
+                } else if (Boolean.TRUE.equals(l.getBoolean())) {
+                    return right;
                 }
-                break;
-            case OR:
-                if (l != null) {
-                    if (Boolean.TRUE.equals(l.getBoolean())) {
-                        return ValueExpression.get(l);
-                    } else if (Boolean.FALSE.equals(l.getBoolean())) {
-                        return right;
-                    }
-                } else if (r != null) {
-                    if (Boolean.TRUE.equals(r.getBoolean())) {
-                        return ValueExpression.get(r);
-                    } else if (Boolean.FALSE.equals(r.getBoolean())) {
-                        return left;
-                    }
+            } else if (r != null) {
+                if (Boolean.FALSE.equals(r.getBoolean())) {
+                    return ValueExpression.get(r);
+                } else if (Boolean.TRUE.equals(r.getBoolean())) {
+                    return left;
                 }
-                break;
-            default:
-                DbException.throwInternalError("type=" + andOrType);
+            }
+            break;
+        case OR:
+            if (l != null) {
+                if (Boolean.TRUE.equals(l.getBoolean())) {
+                    return ValueExpression.get(l);
+                } else if (Boolean.FALSE.equals(l.getBoolean())) {
+                    return right;
+                }
+            } else if (r != null) {
+                if (Boolean.TRUE.equals(r.getBoolean())) {
+                    return ValueExpression.get(r);
+                } else if (Boolean.FALSE.equals(r.getBoolean())) {
+                    return left;
+                }
+            }
+            break;
+        default:
+            DbException.throwInternalError("type=" + andOrType);
         }
         return this;
     }

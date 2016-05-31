@@ -32,8 +32,6 @@ import com.openddal.result.ResultInterface;
 import com.openddal.result.Row;
 import com.openddal.result.RowList;
 import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
-import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
 
@@ -140,18 +138,7 @@ public class Update extends Prepared {
 
     @Override
     public String getPlanSQL() {
-        StatementBuilder buff = new StatementBuilder("UPDATE ");
-        buff.append(tableFilter.getPlanSQL(false)).append("\nSET\n    ");
-        for (int i = 0, size = columns.size(); i < size; i++) {
-            Column c = columns.get(i);
-            Expression e = expressionMap.get(c);
-            buff.appendExceptFirst(",\n    ");
-            buff.append(c.getName()).append(" = ").append(e.getSQL());
-        }
-        if (condition != null) {
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(condition.getSQL()));
-        }
-        return buff.toString();
+        return null;
     }
 
     @Override

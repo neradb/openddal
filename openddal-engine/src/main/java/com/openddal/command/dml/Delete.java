@@ -21,7 +21,6 @@ import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.result.ResultInterface;
-import com.openddal.util.StringUtils;
 
 /**
  * This class represents the statement
@@ -43,18 +42,7 @@ public class Delete extends Prepared {
 
     @Override
     public String getPlanSQL() {
-        StringBuilder buff = new StringBuilder();
-        buff.append("DELETE ");
-        buff.append("FROM ").append(tableFilter.getPlanSQL(false));
-        if (condition != null) {
-            buff.append("\nWHERE ").append(StringUtils.unEnclose(
-                    condition.getSQL()));
-        }
-        if (limitExpr != null) {
-            buff.append("\nLIMIT (").append(StringUtils.unEnclose(
-                    limitExpr.getSQL())).append(')');
-        }
-        return buff.toString();
+        return null;
     }
 
     @Override
