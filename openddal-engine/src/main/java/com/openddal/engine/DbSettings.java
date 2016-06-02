@@ -213,8 +213,11 @@ public class DbSettings extends SettingsBase {
      * The default time to execute validation sql.
      */
     public int validationQueryTimeout = get("VALIDATION_QUERYT_IMEOUT", -1);
-    
-    
+    /**
+     * Database setting <code>OPTIMIZE_MERGING</code> (default: false).<br />
+     * Use union select for query multi-table in same shard.
+     */
+    public final boolean optimizeMerging = get("OPTIMIZE_MERGING", true);
     
 
 

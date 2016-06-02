@@ -16,6 +16,8 @@ import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 
@@ -25,10 +27,23 @@ public class DirectLookupCursor implements Cursor {
     private final Select select;
 
     private Cursor cursor;
+    private RoutingResult routingResult;
 
     public DirectLookupCursor(Session session, Select select) {
         this.session = session;
         this.select = select;
+    }
+    
+    public void prepare() {
+        
+    }
+    
+    public double getCost() {
+        ObjectNode[] selectNodes = routingResult.getSelectNodes();
+        if(session.getDatabase().getSettings().optimizeMerging) {
+            selectNodes = routingResult.group();
+        }
+        return selectNodes.length * Constants.COST_ROW_OFFSET;
     }
 
     @Override
@@ -68,6 +83,7 @@ public class DirectLookupCursor implements Cursor {
     public boolean previous() {
         throw DbException.throwInternalError();
     }
+    
 
     public static boolean isDirectLookupQuery(Select select) {
         DirectLookupEstimator estimator = new DirectLookupEstimator(select.getTopFilters());

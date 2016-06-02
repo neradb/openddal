@@ -6,7 +6,6 @@
 package com.openddal.command.dml;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
@@ -17,7 +16,6 @@ import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
 import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.command.expression.Parameter;
-import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.Table;
@@ -25,12 +23,14 @@ import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
+import com.openddal.excutor.cursor.DirectLookupCursor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.LocalResult;
 import com.openddal.result.ResultInterface;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
+import com.openddal.result.SearchRow;
 import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.util.ValueHashMap;
@@ -65,14 +65,13 @@ public class Select extends Query {
     private boolean[] groupByExpression;
     private HashMap<Expression, Object> currentGroup;
     private int havingIndex;
-    private boolean isGroupQuery, isGroupSortedQuery;
+    private boolean isGroupQuery;
     private boolean isForUpdate, isForUpdateMvcc;
     private double cost;
-    private boolean isQuickAggregateQuery, isDistinctQuery;
     private boolean isPrepared, checkInit;
-    private boolean sortUsingIndex;
     private SortOrder sort;
     private int currentGroupRowId;
+    private DirectLookupCursor lookupCursor;
 
     public Select(Session session) {
         super(session);
@@ -147,65 +146,6 @@ public class Select extends Query {
         }
     }
 
-    private void queryGroupSorted(int columnCount, ResultTarget result) {
-        int rowNumber = 0;
-        setCurrentRowNumber(0);
-        currentGroup = null;
-        Value[] previousKeyValues = null;
-        while (topTableFilter.next()) {
-            setCurrentRowNumber(rowNumber + 1);
-            if (condition == null || Boolean.TRUE.equals(condition.getBooleanValue(session))) {
-                rowNumber++;
-                Value[] keyValues = new Value[groupIndex.length];
-                // update group
-                for (int i = 0; i < groupIndex.length; i++) {
-                    int idx = groupIndex[i];
-                    Expression expr = expressions.get(idx);
-                    keyValues[i] = expr.getValue(session);
-                }
-
-                if (previousKeyValues == null) {
-                    previousKeyValues = keyValues;
-                    currentGroup = New.hashMap();
-                } else if (!Arrays.equals(previousKeyValues, keyValues)) {
-                    addGroupSortedRow(previousKeyValues, columnCount, result);
-                    previousKeyValues = keyValues;
-                    currentGroup = New.hashMap();
-                }
-                currentGroupRowId++;
-
-                for (int i = 0; i < columnCount; i++) {
-                    if (groupByExpression == null || !groupByExpression[i]) {
-                        Expression expr = expressions.get(i);
-                        expr.updateAggregate(session);
-                    }
-                }
-            }
-        }
-        if (previousKeyValues != null) {
-            addGroupSortedRow(previousKeyValues, columnCount, result);
-        }
-    }
-
-    private void addGroupSortedRow(Value[] keyValues, int columnCount, ResultTarget result) {
-        Value[] row = new Value[columnCount];
-        for (int j = 0; groupIndex != null && j < groupIndex.length; j++) {
-            row[groupIndex[j]] = keyValues[j];
-        }
-        for (int j = 0; j < columnCount; j++) {
-            if (groupByExpression != null && groupByExpression[j]) {
-                continue;
-            }
-            Expression expr = expressions.get(j);
-            row[j] = expr.getValue(session);
-        }
-        if (isHavingNullOrFalse(row)) {
-            return;
-        }
-        row = keepOnlyDistinct(row, columnCount);
-        result.addRow(row);
-    }
-
     private Value[] keepOnlyDistinct(Value[] row, int columnCount) {
         if (columnCount == distinctColumnCount) {
             return row;
@@ -227,66 +167,6 @@ public class Select extends Query {
             }
         }
         return false;
-    }
-
-    private Index getGroupSortedIndex() {
-        if (groupIndex == null || groupByExpression == null) {
-            return null;
-        }
-        ArrayList<Index> indexes = topTableFilter.getTable().getIndexes();
-        if (indexes != null) {
-            for (int i = 0, size = indexes.size(); i < size; i++) {
-                Index index = indexes.get(i);
-                if (index.getIndexType().isScan()) {
-                    continue;
-                }
-                if (index.getIndexType().isHash()) {
-                    // does not allow scanning entries
-                    continue;
-                }
-                if (isGroupSortedIndex(topTableFilter, index)) {
-                    return index;
-                }
-            }
-        }
-        return null;
-    }
-
-    private boolean isGroupSortedIndex(TableFilter tableFilter, Index index) {
-        // check that all the GROUP BY expressions are part of the index
-        Column[] indexColumns = index.getColumns();
-        // also check that the first columns in the index are grouped
-        boolean[] grouped = new boolean[indexColumns.length];
-        outerLoop: for (int i = 0, size = expressions.size(); i < size; i++) {
-            if (!groupByExpression[i]) {
-                continue;
-            }
-            Expression expr = expressions.get(i).getNonAliasExpression();
-            if (!(expr instanceof ExpressionColumn)) {
-                return false;
-            }
-            ExpressionColumn exprCol = (ExpressionColumn) expr;
-            for (int j = 0; j < indexColumns.length; ++j) {
-                if (tableFilter == exprCol.getTableFilter()) {
-                    if (indexColumns[j].equals(exprCol.getColumn())) {
-                        grouped[j] = true;
-                        continue outerLoop;
-                    }
-                }
-            }
-            // We didn't find a matching index column
-            // for one group by expression
-            return false;
-        }
-        // check that the first columns in the index are grouped
-        // good: index(a, b, c); group by b, a
-        // bad: index(a, b, c); group by a, c
-        for (int i = 1; i < grouped.length; i++) {
-            if (!grouped[i - 1] && grouped[i]) {
-                return false;
-            }
-        }
-        return true;
     }
 
     private int getGroupByExpressionCount() {
@@ -371,12 +251,6 @@ public class Select extends Query {
             result.addRow(row);
         }
     }
-    
-    
-
-    private void queryDistinct(ResultTarget result, long limitRows) {
-        
-    }
 
     private void queryFlat(int columnCount, ResultTarget result, long limitRows) {
         // limitRows must be long, otherwise we get an int overflow
@@ -408,7 +282,7 @@ public class Select extends Query {
                 }
                 result.addRow(row);
                 rowNumber++;
-                if ((sort == null || sortUsingIndex) && limitRows > 0 && result.getRowCount() >= limitRows) {
+                if (sort == null && limitRows > 0 && result.getRowCount() >= limitRows) {
                     break;
                 }
                 if (sampleSize > 0 && rowNumber >= sampleSize) {
@@ -422,12 +296,25 @@ public class Select extends Query {
     }
 
     private void queryQuick(int columnCount, ResultTarget result) {
+        DirectLookupCursor cursor = new DirectLookupCursor(session, this);
+
         Value[] row = new Value[columnCount];
         for (int i = 0; i < columnCount; i++) {
             Expression expr = expressions.get(i);
             row[i] = expr.getValue(session);
         }
         result.addRow(row);
+    }
+
+    private void queryGroupQuick(int columnCount, ResultTarget result) {
+        DirectLookupCursor cursor = new DirectLookupCursor(session, this);
+        for (int i = 0; i < columnCount; i++) {
+            Expression expr = expressions.get(i);
+        }
+        while (cursor.next()) {
+            SearchRow searchRow = cursor.getSearchRow();
+        }
+        // result.addRow(row);
     }
 
     @Override
@@ -454,18 +341,18 @@ public class Select extends Query {
         if (target == null || !session.getDatabase().getSettings().optimizeInsertFromSelect) {
             result = createLocalResult(result);
         }
-        if (sort != null && (!sortUsingIndex || distinct)) {
+        if (sort != null) {
             result = createLocalResult(result);
             result.setSortOrder(sort);
         }
-        if (distinct && !isDistinctQuery) {
+        if (distinct) {
             result = createLocalResult(result);
             result.setDistinct();
         }
         if (randomAccessResult) {
             result = createLocalResult(result);
         }
-        if (isGroupQuery && !isGroupSortedQuery) {
+        if (isGroupQuery) {
             result = createLocalResult(result);
         }
         if (limitRows >= 0 || offsetExpr != null) {
@@ -479,8 +366,6 @@ public class Select extends Query {
                 throw DbException.getUnsupportedException("MVCC=TRUE && FOR UPDATE && GROUP");
             } else if (distinct) {
                 throw DbException.getUnsupportedException("MVCC=TRUE && FOR UPDATE && DISTINCT");
-            } else if (isQuickAggregateQuery) {
-                throw DbException.getUnsupportedException("MVCC=TRUE && FOR UPDATE && AGGREGATE");
             } else if (topTableFilter.getJoin() != null) {
                 throw DbException.getUnsupportedException("MVCC=TRUE && FOR UPDATE && JOIN");
             }
@@ -488,16 +373,14 @@ public class Select extends Query {
         topTableFilter.lock(session, exclusive, exclusive);
         ResultTarget to = result != null ? result : target;
         if (limitRows != 0) {
-            if (isQuickAggregateQuery) {
-                queryQuick(columnCount, to);
-            } else if (isGroupQuery) {
-                if (isGroupSortedQuery) {
-                    queryGroupSorted(columnCount, to);
+            if (lookupCursor != null) {
+                if (isGroupQuery) {
+                    queryGroupQuick(columnCount, to);
                 } else {
-                    queryGroup(columnCount, result);
+                    queryQuick(columnCount, to);
                 }
-            } else if (isDistinctQuery) {
-                queryDistinct(to, limitRows);
+            } else if (isGroupQuery) {
+                queryGroup(columnCount, result);
             } else {
                 queryFlat(columnCount, to, limitRows);
             }
@@ -702,19 +585,14 @@ public class Select extends Query {
                 }
             }
         }
-        if (isGroupQuery && groupIndex == null && havingIndex < 0 && filters.size() == 1) {
-            // TODO isQuickAggregateQuery
-        }
+
         cost = preparePlan();
-        if (distinct && session.getDatabase().getSettings().optimizeDistinct && !isGroupQuery && filters.size() == 1
-                && expressions.size() == 1 && condition == null) {
-            // TODO distinct
+
+        if (sort != null && !isGroupQuery) {
+
         }
-        if (sort != null && !isQuickAggregateQuery && !isGroupQuery) {
-            
-        }
-        if (!isQuickAggregateQuery && isGroupQuery && getGroupByExpressionCount() > 0) {
-            
+        if (isGroupQuery && getGroupByExpressionCount() > 0) {
+
         }
         expressionArray = new Expression[expressions.size()];
         expressions.toArray(expressionArray);
@@ -736,6 +614,12 @@ public class Select extends Query {
     }
 
     private double preparePlan() {
+        if(DirectLookupCursor.isDirectLookupQuery(this)) {
+            lookupCursor = new DirectLookupCursor(session, this);
+            lookupCursor.prepare();
+            return lookupCursor.getCost();
+        }
+        
         TableFilter[] topArray = topFilters.toArray(new TableFilter[topFilters.size()]);
         for (TableFilter t : topArray) {
             t.setFullCondition(condition);
@@ -802,11 +686,6 @@ public class Select extends Query {
         }
     }
 
-    @Override
-    public String getPlanSQL() {
-        return null;
-    }
-
     public void setHaving(Expression having) {
         this.having = having;
     }
@@ -852,16 +731,6 @@ public class Select extends Query {
         if (condition != null) {
             condition.setEvaluatable(tableFilter, b);
         }
-    }
-
-    /**
-     * Check if this is an aggregate query with direct lookup, for example a
-     * query of the type SELECT COUNT(*) FROM TEST or SELECT MAX(ID) FROM TEST.
-     *
-     * @return true if a direct lookup is possible
-     */
-    public boolean isQuickAggregateQuery() {
-        return isQuickAggregateQuery;
     }
 
     @Override
