@@ -21,12 +21,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.TimeUnit;
 
 import javax.sql.DataSource;
@@ -170,27 +167,6 @@ public class DataSourceRepository {
         return shardMaping.get(defaultShardName);
     }
 
-    /**
-     * TODO configurable
-     *
-     * @return the jdbcExecutor
-     */
-    public ThreadPoolExecutor getJdbcExecutor() {
-        if (jdbcExecutor == null) {
-            int corePoolSize = Runtime.getRuntime().availableProcessors();
-            int maximumPoolSize = 200;// TODO configurable
-            int capacity = maximumPoolSize * 1;
-            int keepAliveTime = database.getSettings().queryTimeout;
-            if (keepAliveTime <= 0) {
-                keepAliveTime = 15 * 60000; // 15 MINUTES
-            }
-            BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>(capacity);
-            jdbcExecutor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.MILLISECONDS,
-                    workQueue, Threads.newThreadFactory("jdbc-worker"), new AbortPolicy());
-            jdbcExecutor.allowCoreThreadTimeOut(true);
-        }
-        return jdbcExecutor;
-    }
 
     public void close() {
         if (scheduledExecutor != null) {

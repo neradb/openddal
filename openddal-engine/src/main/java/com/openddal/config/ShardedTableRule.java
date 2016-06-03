@@ -102,4 +102,8 @@ public class ShardedTableRule extends GlobalTableRule implements Serializable {
         } 
         return o.isNodeComparable(this);
     }
+    
+    public int getType() {
+        return SHARDED_NODE_TABLE;
+    }
 }

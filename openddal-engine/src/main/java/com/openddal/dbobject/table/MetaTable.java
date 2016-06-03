@@ -764,7 +764,7 @@ public class MetaTable extends Table {
                             // STATEMENT_START
                             new Timestamp(start).toString(),
                             // CONTAINS_UNCOMMITTED
-                            "" + s.containsUncommitted()
+                            "" 
                     );
                 }
             }

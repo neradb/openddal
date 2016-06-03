@@ -56,14 +56,12 @@ import com.openddal.command.ddl.DropTrigger;
 import com.openddal.command.ddl.DropUser;
 import com.openddal.command.ddl.DropUserDataType;
 import com.openddal.command.ddl.DropView;
-import com.openddal.command.ddl.PrepareProcedure;
 import com.openddal.command.ddl.TruncateTable;
 import com.openddal.command.dml.AlterSequence;
 import com.openddal.command.dml.AlterTableSet;
 import com.openddal.command.dml.BackupCommand;
 import com.openddal.command.dml.Call;
 import com.openddal.command.dml.Delete;
-import com.openddal.command.dml.ExecuteProcedure;
 import com.openddal.command.dml.Explain;
 import com.openddal.command.dml.Insert;
 import com.openddal.command.dml.Merge;
@@ -115,7 +113,6 @@ import com.openddal.dbobject.table.TableView;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Database;
 import com.openddal.engine.DbSettings;
-import com.openddal.engine.Procedure;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
@@ -740,24 +737,7 @@ public class Parser {
             command.setTransactionName(readUniqueIdentifier());
             return command;
         }
-        String procedureName = readAliasIdentifier();
-        if (readIf("(")) {
-            ArrayList<Column> list = New.arrayList();
-            for (int i = 0; ; i++) {
-                Column column = parseColumnForTable("C" + i, true);
-                list.add(column);
-                if (readIf(")")) {
-                    break;
-                }
-                read(",");
-            }
-        }
-        read("AS");
-        Prepared prep = parsePrepared();
-        PrepareProcedure command = new PrepareProcedure(session);
-        command.setProcedureName(procedureName);
-        command.setPrepared(prep);
-        return command;
+        throw getSyntaxError();
     }
 
     private TransactionCommand parseSavepoint() {
@@ -1648,24 +1628,7 @@ public class Parser {
     }
 
     private Prepared parseExecute() {
-        ExecuteProcedure command = new ExecuteProcedure(session);
-        String procedureName = readAliasIdentifier();
-        Procedure p = session.getProcedure(procedureName);
-        if (p == null) {
-            throw DbException.get(ErrorCode.FUNCTION_ALIAS_NOT_FOUND_1,
-                    procedureName);
-        }
-        command.setProcedure(p);
-        if (readIf("(")) {
-            for (int i = 0; ; i++) {
-                command.setExpression(i, readExpression());
-                if (readIf(")")) {
-                    break;
-                }
-                read(",");
-            }
-        }
-        return command;
+        throw getSyntaxError();
     }
 
     private DeallocateProcedure parseDeallocate() {

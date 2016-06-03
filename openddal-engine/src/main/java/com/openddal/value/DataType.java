@@ -15,6 +15,24 @@
  */
 package com.openddal.value;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.UUID;
+
 import com.openddal.engine.Constants;
 import com.openddal.engine.SessionInterface;
 import com.openddal.engine.SysProperties;
@@ -24,18 +42,8 @@ import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.SimpleResultSet;
-import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.Utils;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
 
 /**
  * This class contains meta data information about data types,
@@ -1093,7 +1101,7 @@ public class DataType {
             return new JdbcClob(conn, v, 0);
         }
         if (v.getType() == Value.JAVA_OBJECT) {
-            Object o = SysProperties.serializeJavaObject ? JdbcUtils.deserialize(v.getBytes()) : v.getObject();
+            Object o = v.getObject();
             if (paramClass.isAssignableFrom(o.getClass())) {
                 return o;
             }

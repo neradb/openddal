@@ -18,11 +18,13 @@ package com.openddal.excutor;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.openddal.engine.Constants;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
+import com.openddal.message.DbException;
 import com.openddal.route.RoutingHandler;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
-import com.openddal.util.New;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -33,10 +35,13 @@ public abstract class ExecutionFramework {
     protected final Session session;
     protected final Database database;
     protected final ThreadPoolExecutor workExecutor;
-    protected final List<QueryRunner<?>> runingWorkers;
     protected final RoutingHandler routingHandler;
+    
+    protected List<QueryRunner<?>> queryRunners;
 
-    protected RoutingResult routingResult;
+    private ObjectNode[] selectNodes;
+    
+    private boolean prepared;
 
     /**
      * @param prepared
@@ -44,11 +49,36 @@ public abstract class ExecutionFramework {
     public ExecutionFramework(Session session) {
         this.session = session;
         this.database = session.getDatabase();
-        this.workExecutor = session.getDataSourceRepository().getJdbcExecutor();
-        this.runingWorkers = New.linkedList();
+        this.workExecutor = database.getQueryExecutor();
         this.routingHandler = database.getRoutingHandler();
 
     }
 
-    public abstract void prepare();
+    public final void prepare() {
+        if (prepared) {
+            return;
+        }
+        RoutingResult routingResult = doRoute();
+        selectNodes = routingResult.getSelectNodes();
+        if(session.getDatabase().getSettings().optimizeMerging) {
+            selectNodes = routingResult.group();
+        }
+        
+        prepared = true; 
+    }
+
+    protected abstract RoutingResult doRoute();    
+    
+    public double getCost() {
+        checkPrepared();
+        return selectNodes.length * Constants.COST_ROW_OFFSET;
+    }
+    
+    public void checkPrepared() {
+        if(!prepared) {
+            DbException.throwInternalError("Not prepared.");
+        }
+    }
+    
+    
 }

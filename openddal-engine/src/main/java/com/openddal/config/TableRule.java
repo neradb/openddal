@@ -8,10 +8,15 @@ import com.openddal.route.rule.ObjectNode;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class TableRule implements Serializable {
+    
+    public static final int FIXED_NODE_TABLE = 1;
+    public static final int GLOBAL_NODE_TABLE = 2;
+    public static final int SHARDED_NODE_TABLE = 3;
+    
     private static final long serialVersionUID = 1L;
-    private final String name;
-    private ObjectNode metadataNode;
-    private TableRuleGroup ownerGroup;
+    protected final String name;
+    protected ObjectNode metadataNode;
+    protected TableRuleGroup ownerGroup;
 
     public TableRule(String name) {
         this.name = name;
@@ -26,13 +31,13 @@ public class TableRule implements Serializable {
     public ObjectNode getMetadataNode() {
         return metadataNode;
     }
-    
-    public ObjectNode randomMetadataNodeIfNeeded() {
-        return getMetadataNode();
-    } 
 
     public String getName() {
         return name;
+    }
+    
+    public int getType() {
+        return FIXED_NODE_TABLE;
     }
 
     public void setMetadataNode(ObjectNode metadataNode) {

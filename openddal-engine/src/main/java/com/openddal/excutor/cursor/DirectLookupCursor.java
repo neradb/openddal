@@ -13,38 +13,38 @@ import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
+import com.openddal.excutor.ExecutionFramework;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
-import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 
-public class DirectLookupCursor implements Cursor {
+public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
-    private Session session;
     private final Select select;
-
     private Cursor cursor;
-    private RoutingResult routingResult;
 
     public DirectLookupCursor(Session session, Select select) {
-        this.session = session;
+        super(session);
         this.select = select;
     }
-    
-    public void prepare() {
-        
-    }
-    
-    public double getCost() {
-        ObjectNode[] selectNodes = routingResult.getSelectNodes();
-        if(session.getDatabase().getSettings().optimizeMerging) {
-            selectNodes = routingResult.group();
+
+    @Override
+    public RoutingResult doRoute() {
+        ArrayList<TableFilter> topFilters = select.getTopFilters();
+        for (TableFilter tf : topFilters) {
+            TableMate table = (TableMate) tf.getTable();
+            TableRule tableRule = table.getTableRule();
+            if (tableRule.getType() != TableRule.GLOBAL_NODE_TABLE) {
+                continue;
+            }
+
         }
-        return selectNodes.length * Constants.COST_ROW_OFFSET;
+        return null;
     }
+
 
     @Override
     public Row get() {
@@ -83,7 +83,6 @@ public class DirectLookupCursor implements Cursor {
     public boolean previous() {
         throw DbException.throwInternalError();
     }
-    
 
     public static boolean isDirectLookupQuery(Select select) {
         DirectLookupEstimator estimator = new DirectLookupEstimator(select.getTopFilters());
@@ -219,4 +218,5 @@ public class DirectLookupCursor implements Cursor {
         }
 
     }
+
 }

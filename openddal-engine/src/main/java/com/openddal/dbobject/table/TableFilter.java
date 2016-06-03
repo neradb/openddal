@@ -110,7 +110,7 @@ public class TableFilter implements ColumnResolver {
         this.table = table;
         this.alias = alias;
         this.select = select;
-        this.cursor = new SearchCursor(this);
+        this.cursor = new SearchCursor(session, this);
         hashCode = session.nextObjectId();
     }
 

@@ -20,6 +20,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.openddal.config.Configuration;
 import com.openddal.config.TableRule;
@@ -41,9 +43,11 @@ import com.openddal.route.RoutingHandler;
 import com.openddal.route.RoutingHandlerImpl;
 import com.openddal.shards.DataSourceRepository;
 import com.openddal.util.BitField;
+import com.openddal.util.ExtendableThreadPoolExecutor;
+import com.openddal.util.ExtendableThreadPoolExecutor.TaskQueue;
 import com.openddal.util.New;
-import com.openddal.util.SourceCompiler;
 import com.openddal.util.StringUtils;
+import com.openddal.util.Threads;
 import com.openddal.value.CaseInsensitiveMap;
 import com.openddal.value.CompareMode;
 import com.openddal.value.Value;
@@ -77,8 +81,9 @@ public class Database {
     private boolean queryStatistics;
     private int queryStatisticsMaxEntries = Constants.QUERY_STATISTICS_MAX_ENTRIES;
     private QueryStatisticsData queryStatisticsData;
-    private SourceCompiler compiler;
     private RoutingHandler routingHandler;
+    private ThreadPoolExecutor queryExecutor;
+
     private PreparedExecutorFactory peFactory;
 
     public Database(Configuration configuration) {
@@ -116,32 +121,29 @@ public class Database {
                 }
                 this.addSchemaObject(tableMate);
             }
-            
+
             for (int type = 0, count = MetaTable.getMetaTableTypeCount(); type < count; type++) {
                 MetaTable m = new MetaTable(infoSchema, type);
                 infoSchema.add(m);
             }
-            
-            
+
             /*
-            for (TableRule tableRule : tableMates) {
-                String identifier = tableRule.getName();
-                identifier = identifier(identifier);
-                Index index = new Index(getTableOrViewByName(name), identifier, newIndexColumns, newIndexType);
-                this.addSchemaObject(index);
-            }*/
-            
+             * for (TableRule tableRule : tableMates) { String identifier =
+             * tableRule.getName(); identifier = identifier(identifier); Index
+             * index = new Index(getTableOrViewByName(name), identifier,
+             * newIndexColumns, newIndexType); this.addSchemaObject(index); }
+             */
+
             for (TableRule tableRule : configuration.sequnces) {
                 String identifier = tableRule.getName();
                 identifier = identifier(identifier);
                 Sequence sequence = new Sequence(mainSchema, identifier, 1L, 1L, null, null, null, false, false);
                 this.addSchemaObject(sequence);
             }
-            
+
         } finally {
             sysSession.close();
         }
-        
 
     }
 
@@ -525,15 +527,6 @@ public class Database {
     }
 
     /**
-     * Commit the current transaction of the given session.
-     *
-     * @param session the session
-     */
-    synchronized void commit(Session session) {
-        session.setAllCommitted();
-    }
-
-    /**
      * Check if the database is in the process of closing.
      *
      * @return true if the database is closing
@@ -662,13 +655,6 @@ public class Database {
         return configuration;
     }
 
-    public SourceCompiler getCompiler() {
-        if (compiler == null) {
-            compiler = new SourceCompiler();
-        }
-        return compiler;
-    }
-
     public RoutingHandler getRoutingHandler() {
         if (routingHandler == null) {
             routingHandler = new RoutingHandlerImpl(this);
@@ -688,6 +674,18 @@ public class Database {
             peFactory = new ExecutorFactory();
         }
         return peFactory;
+    }
+
+    public ThreadPoolExecutor getQueryExecutor() {
+        if (queryExecutor == null) {
+            TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
+            int poolCoreSize = SysProperties.THREAD_POOL_SIZE_CORE;
+            int poolMaxSize = SysProperties.THREAD_POOL_SIZE_MAX;
+            poolMaxSize = poolMaxSize > poolCoreSize ? poolMaxSize : poolCoreSize;
+            queryExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 5L, TimeUnit.MINUTES, queue,
+                    Threads.newThreadFactory("query-executor"));
+        }
+        return queryExecutor;
     }
 
 }

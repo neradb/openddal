@@ -58,11 +58,6 @@ import com.openddal.value.ValueString;
 public class Session implements SessionInterface {
 
     /**
-     * This special log position means that the log entry has been written.
-     */
-    public static final int LOG_WRITTEN = -1;
-
-    /**
      * The prefix of generated identifiers. It may not have letters, because
      * they are case sensitive.
      */
@@ -80,8 +75,6 @@ public class Session implements SessionInterface {
     private Random random;
     private Value lastIdentity = ValueLong.get(0);
     private Value lastScopeIdentity = ValueLong.get(0);
-    private int firstUncommittedLog = Session.LOG_WRITTEN;
-    private int firstUncommittedPos = Session.LOG_WRITTEN;
     private HashMap<String, Savepoint> savepoints;
     private HashMap<String, Table> localTempTables;
     private HashMap<String, Index> localTempTableIndexes;
@@ -93,7 +86,6 @@ public class Session implements SessionInterface {
     private Trace trace;
     private HashMap<String, Value> unlinkLobMap;
     private int systemIdentifier;
-    private HashMap<String, Procedure> procedures;
     private boolean autoCommitAtTransactionEnd;
     private String currentTransactionName;
     private volatile long cancelAt;
@@ -360,11 +352,7 @@ public class Session implements SessionInterface {
     public void commit(boolean ddl) {
         currentTransactionName = null;
         transactionStart = 0;
-        if (containsUncommitted()) {
-            // need to commit even if rollback is not possible
-            // (create/drop table and so on)
-            database.commit(this);
-        }
+        
         if (temporaryLobs != null) {
             for (Value v : temporaryLobs) {
                 v.close();
@@ -516,11 +504,6 @@ public class Session implements SessionInterface {
             synchronized (database) {
                 for (Table table : New.arrayList(localTempTables.values())) {
                     localTempTables.remove(table.getName());
-                    if (closeSession) {
-                        // need to commit, otherwise recovery might
-                        // ignore the table removal
-                        database.commit(this);
-                    }
                 }
             }
         }
@@ -561,43 +544,6 @@ public class Session implements SessionInterface {
 
     public void setLastScopeIdentity(Value last) {
         this.lastScopeIdentity = last;
-    }
-
-    /**
-     * Called when a log entry for this session is added. The session keeps
-     * track of the first entry in the transaction log that is not yet
-     * committed.
-     *
-     * @param logId the transaction log id
-     * @param pos   the position of the log entry in the transaction log
-     */
-    public void addLogPos(int logId, int pos) {
-        if (firstUncommittedLog == Session.LOG_WRITTEN) {
-            firstUncommittedLog = logId;
-            firstUncommittedPos = pos;
-        }
-    }
-
-    public int getFirstUncommittedLog() {
-        return firstUncommittedLog;
-    }
-
-    /**
-     * This method is called after the transaction log has written the commit
-     * entry for this session.
-     */
-    void setAllCommitted() {
-        firstUncommittedLog = Session.LOG_WRITTEN;
-        firstUncommittedPos = Session.LOG_WRITTEN;
-    }
-
-    /**
-     * Whether the session contains any uncommitted changes.
-     *
-     * @return true if yes
-     */
-    public boolean containsUncommitted() {
-        return firstUncommittedLog != Session.LOG_WRITTEN;
     }
 
     /**
@@ -761,42 +707,6 @@ public class Session implements SessionInterface {
         return identifier;
     }
 
-    /**
-     * Add a procedure to this session.
-     *
-     * @param procedure the procedure to add
-     */
-    public void addProcedure(Procedure procedure) {
-        if (procedures == null) {
-            procedures = database.newStringMap();
-        }
-        procedures.put(procedure.getName(), procedure);
-    }
-
-    /**
-     * Remove a procedure from this session.
-     *
-     * @param name the name of the procedure to remove
-     */
-    public void removeProcedure(String name) {
-        if (procedures != null) {
-            procedures.remove(name);
-        }
-    }
-
-    /**
-     * Get the procedure with the given name, or null if none exists.
-     *
-     * @param name the procedure name
-     * @return the procedure or null
-     */
-    public Procedure getProcedure(String name) {
-        if (procedures == null) {
-            return null;
-        }
-        return procedures.get(name);
-    }
-
     public String[] getSchemaSearchPath() {
         return schemaSearchPath;
     }
@@ -912,7 +822,7 @@ public class Session implements SessionInterface {
     }
 
     public Value getTransactionId() {
-        return ValueString.get(firstUncommittedLog + "-" + firstUncommittedPos + "-" + id);
+        return ValueString.get("" + id);
     }
 
     /**

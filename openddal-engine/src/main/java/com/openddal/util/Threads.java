@@ -55,19 +55,14 @@ public class Threads {
         }
     }
     
-    /**
-     * Create a new CopyOnWriteArraySet.
-     *
-     * @param <T> the type
-     * @return the object
-     */
+
     public static ThreadFactory newThreadFactory(String namePrefix) {
         return new CustomThreadFactory(namePrefix);
     }
     
     
     private static final class CustomThreadFactory implements ThreadFactory {
-        private final AtomicInteger index = new AtomicInteger(1);
+        private final static AtomicInteger index = new AtomicInteger(1);
         private final String prefix;
         private final boolean daemon;
         private final ThreadGroup group;
@@ -95,5 +90,4 @@ public class Threads {
             return t;
         }
     }
-
 }

@@ -26,16 +26,22 @@ public class GlobalTableRule extends TableRule {
         }
         return objectNodes;
     }
-
-    @Override
-    public ObjectNode randomMetadataNodeIfNeeded() {
-        ObjectNode metadataNode = this.getMetadataNode();
-        if (metadataNode == null) {
-            ObjectNode[] objectNodes = getObjectNodes();
-            int bound = objectNodes.length - 1;
-            return objectNodes[random.nextInt(bound)];
+    
+    public ObjectNode getMetadataNode() {
+        if(this.metadataNode == null) {
+            this.metadataNode = randomMetadataNode();
         }
-        return metadataNode;
+        return this.metadataNode;
+    }
+
+    private ObjectNode randomMetadataNode() {
+        ObjectNode[] objectNodes = getObjectNodes();
+        int bound = objectNodes.length - 1;
+        return objectNodes[random.nextInt(bound)];
+    }
+    
+    public int getType() {
+        return GLOBAL_NODE_TABLE;
     }
     
     @Override

@@ -16,51 +16,33 @@
 package com.openddal.excutor.cursor;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
-import com.openddal.command.dml.Select;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
+import com.openddal.excutor.ExecutionFramework;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
-import com.openddal.value.Value;
-import com.openddal.value.ValueNull;
+import com.openddal.route.rule.RoutingResult;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class SearchCursor implements Cursor {
+public class SearchCursor extends ExecutionFramework implements Cursor {
 
 
-    private Session session;
-    private final Select select;
-    private final TableFilter topFilters;
+    private final TableFilter tableFilter;
     private boolean alwaysFalse;
 
     private Cursor cursor;
 
-    public SearchCursor(TableFilter topFilters) {
-        this.topFilters = topFilters;
-        this.select = topFilters.getSelect();
+    public SearchCursor(Session session, TableFilter tableFilter) {
+        super(session);
+        this.tableFilter = tableFilter;
     }
 
-    /**
-     * Prepare this index cursor to make a lookup in index.
-     *
-     * @param s Session.
-     * @param indexConditions Index conditions.
-     */
-    public void prepare(Session s, ArrayList<IndexCondition> indexConditions) {
-        this.session = s;
-        alwaysFalse = false;
-    
-        // don't use enhanced for loop to avoid creating objects
-        for (int i = 0, size = indexConditions.size(); i < size; i++) {
-            
-        }
-    }
+
 
     /**
      * Re-evaluate the start and end values of the index search for rows.
@@ -69,7 +51,6 @@ public class SearchCursor implements Cursor {
      * @param indexConditions the index conditions
      */
     public void find(Session s, ArrayList<IndexCondition> indexConditions) {
-        prepare(s, indexConditions);
         if (!alwaysFalse) {
             
         }
@@ -123,6 +104,12 @@ public class SearchCursor implements Cursor {
     @Override
     public boolean previous() {
         throw DbException.throwInternalError();
+    }
+
+    @Override
+    protected RoutingResult doRoute() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 

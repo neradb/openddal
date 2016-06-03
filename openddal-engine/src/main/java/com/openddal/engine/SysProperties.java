@@ -84,6 +84,12 @@ public class SysProperties {
 
     public static final String JAVA_OBJECT_SERIALIZER = Utils.getProperty("ddal.javaObjectSerializer", null);
     
+    public static final int THREAD_QUEUE_SIZE = Integer.getInteger("ddal.threadqueue.size", 20480);
+    
+    public static final int THREAD_POOL_SIZE_CORE = Utils.getProperty("ddal.threadpool.size.core", Runtime.getRuntime().availableProcessors() * 2);
+    
+    public static final int THREAD_POOL_SIZE_MAX = Utils.getProperty("ddal.threadpool.size.max", Runtime.getRuntime().availableProcessors() * 20);
+    
     public static boolean serializeJavaObject = Utils.getProperty("ddal.serializeJavaObject", true);
 
     public static String ENGINE_CONFIG_LOCATION = Utils.getProperty("ddal.engineConfigLocation", "ddal-engine.xml");

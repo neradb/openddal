@@ -216,7 +216,7 @@ public class TableMate extends Table {
     }
 
     public void loadMataData(Session session) {
-        ObjectNode node = tableRule.randomMetadataNodeIfNeeded();
+        ObjectNode node = tableRule.getMetadataNode();
         String tableName = node.getCompositeObjectName();
         String shardName = node.getShardName();
         try {

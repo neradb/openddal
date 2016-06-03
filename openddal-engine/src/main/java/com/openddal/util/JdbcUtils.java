@@ -15,17 +15,27 @@
  */
 package com.openddal.util;
 
-import com.openddal.engine.SysProperties;
-import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
-
-import javax.naming.Context;
-import javax.sql.DataSource;
-import java.io.*;
-import java.sql.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Properties;
+
+import javax.naming.Context;
+import javax.sql.DataSource;
+
+import com.openddal.engine.SysProperties;
+import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 
 /**
  * This is a utility class with JDBC helper functions.
@@ -59,10 +69,6 @@ public class JdbcUtils {
             "sqlserver:", "com.microsoft.sqlserver.jdbc.SQLServerDriver",
             "teradata:", "com.ncr.teradata.TeraDriver",
     };
-    /**
-     * The serializer to use.
-     */
-    public static JavaObjectSerializer serializer;
     private static boolean allowAllClasses;
     private static HashSet<String> allowedClassNames;
 
@@ -74,16 +80,6 @@ public class JdbcUtils {
 
     private static String[] allowedClassNamePrefixes;
 
-    static {
-        String clazz = SysProperties.JAVA_OBJECT_SERIALIZER;
-        if (clazz != null) {
-            try {
-                serializer = (JavaObjectSerializer) loadUserClass(clazz).newInstance();
-            } catch (Exception e) {
-                throw DbException.convert(e);
-            }
-        }
-    }
 
     private JdbcUtils() {
         // utility class
@@ -339,9 +335,6 @@ public class JdbcUtils {
      */
     public static byte[] serialize(Object obj) {
         try {
-            if (serializer != null) {
-                return serializer.serialize(obj);
-            }
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             ObjectOutputStream os = new ObjectOutputStream(out);
             os.writeObject(obj);
@@ -362,9 +355,6 @@ public class JdbcUtils {
      */
     public static Object deserialize(byte[] data) {
         try {
-            if (serializer != null) {
-                return serializer.deserialize(data);
-            }
             ByteArrayInputStream in = new ByteArrayInputStream(data);
             ObjectInputStream is;
             if (SysProperties.USE_THREAD_CONTEXT_CLASS_LOADER) {
