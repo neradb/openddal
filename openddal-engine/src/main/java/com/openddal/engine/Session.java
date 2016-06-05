@@ -34,14 +34,12 @@ import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
-import com.openddal.excutor.PreparedExecutorFactory;
 import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
 import com.openddal.result.LocalResult;
-import com.openddal.shards.DataSourceRepository;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.SmallLRUCache;
@@ -876,7 +874,7 @@ public class Session implements SessionInterface {
         this.readOnly = readOnly;
     }
 
-    public Connection applyConnection(DataSource ds, com.openddal.excutor.Optional optional) throws SQLException {
+    public Connection applyConnection(DataSource ds, com.openddal.repo.ShardSelector optional) throws SQLException {
         Connection conn = ds.getConnection();
         if (conn.getAutoCommit() != getAutoCommit()) {
             conn.setAutoCommit(getAutoCommit());
@@ -891,14 +889,6 @@ public class Session implements SessionInterface {
         }
 
         return conn;
-    }
-
-    public DataSourceRepository getDataSourceRepository() {
-        return database.getDataSourceRepository();
-    }
-
-    public PreparedExecutorFactory getPreparedExecutorFactory() {
-        return database.getPreparedExecutorFactory();
     }
 
 

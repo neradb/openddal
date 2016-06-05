@@ -15,19 +15,17 @@
  */
 package com.openddal.command;
 
+import java.util.ArrayList;
+
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.Parameter;
 import com.openddal.engine.Session;
-import com.openddal.excutor.PreparedExecutor;
-import com.openddal.excutor.PreparedExecutorFactory;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.result.ResultInterface;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
-
-import java.util.ArrayList;
 
 /**
  * A prepared statement.
@@ -213,13 +211,7 @@ public abstract class Prepared {
      * @throws DbException if it is a query
      */
     public int update() {
-        session.checkCanceled();
-        PreparedExecutorFactory pef = session.getPreparedExecutorFactory();
-        PreparedExecutor executor = pef.newExecutor(this);
-        if (executor == null) {
-            throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
-        }
-        return executor.executeUpdate();
+        throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
     }
 
     /**

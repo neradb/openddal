@@ -39,7 +39,7 @@ public interface PreparedExecutor {
      * Execute the query, writing the result to the target result.
      *
      * @param maxRows the maximum number of rows to return
-     * @param target  the target result (null will return the result)
+     * @param target the target result (null will return the result)
      * @return the result set (if the target is not set).
      */
     LocalResult executeQuery(int maxRows, ResultTarget target);
@@ -53,9 +53,8 @@ public interface PreparedExecutor {
     int executeUpdate();
 
     /**
-     * kill a currently running PreparedExecutor.
-     * This operation will cancel all opened JDBC statements
-     * and close all opened JDBC connections
+     * kill a currently running PreparedExecutor. This operation will cancel all
+     * opened JDBC statements and close all opened JDBC connections
      */
     void kill();
 }

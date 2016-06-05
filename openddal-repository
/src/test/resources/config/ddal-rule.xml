@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ddal-rule PUBLIC "-//wplatform.com//DTD ddal-rule//EN" "http://wplatform.com/dtd/ddal-rule.dtd">
+<ddal-rule>
+
+    <tableRouter id="order_group">
+        <partition>
+            <table shard="shard0" suffix="_01,_02,_03,_04"/>
+            <table shard="shard1" suffix="_01,_02,_03,_04"/>
+            <table shard="shard2" suffix="_01,_02,_03,_04"/>
+            <table shard="shard3" suffix="_01,_02,_03,_04"/>
+        </partition>
+        <tableRule>
+            <columns>order_id</columns>
+            <algorithm>order_partitioner</algorithm>
+        </tableRule>
+    </tableRouter>
+
+    <tableRouter id="customer_group">
+        <partition>
+            <table shard="shard0" suffix="_01,_02"/>
+            <table shard="shard1" suffix="_01,_02"/>
+            <table shard="shard2" suffix="_01,_02"/>
+            <table shard="shard3" suffix="_01,_02"/>
+        </partition>
+        <tableRule>
+            <columns>customer_id</columns>
+            <algorithm>customer_partitioner</algorithm>
+        </tableRule>
+
+    </tableRouter>
+
+    <partitioner name="customer_partitioner" class="com.openddal.route.algorithm.HashBucketPartitioner">
+        <property name="partitionCount" value="8"/>
+        <property name="partitionLength" value="128"/>
+    </partitioner>
+
+
+    <partitioner name="order_partitioner" class="com.openddal.route.algorithm.HashBucketPartitioner">
+        <property name="partitionCount" value="16"/>
+        <property name="partitionLength" value="64"/>
+    </partitioner>
+
+</ddal-rule>

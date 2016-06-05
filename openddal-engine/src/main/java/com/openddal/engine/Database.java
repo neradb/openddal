@@ -33,15 +33,14 @@ import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.MetaTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
-import com.openddal.excutor.ExecutorFactory;
-import com.openddal.excutor.PreparedExecutorFactory;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
+import com.openddal.repo.JdbcRepository;
+import com.openddal.repo.Repository;
 import com.openddal.route.RoutingHandler;
 import com.openddal.route.RoutingHandlerImpl;
-import com.openddal.shards.DataSourceRepository;
 import com.openddal.util.BitField;
 import com.openddal.util.ExtendableThreadPoolExecutor;
 import com.openddal.util.ExtendableThreadPoolExecutor.TaskQueue;
@@ -66,8 +65,6 @@ public class Database {
 
     private final BitField objectIds = new BitField();
     private final DbSettings dbSettings;
-    private final DataSourceRepository dsRepository;
-    private final Configuration configuration;
     private int nextSessionId;
     private TraceSystem traceSystem;
     private Trace trace;
@@ -82,9 +79,9 @@ public class Database {
     private int queryStatisticsMaxEntries = Constants.QUERY_STATISTICS_MAX_ENTRIES;
     private QueryStatisticsData queryStatisticsData;
     private RoutingHandler routingHandler;
-    private ThreadPoolExecutor queryExecutor;
-
-    private PreparedExecutorFactory peFactory;
+    private final ThreadPoolExecutor queryExecutor;
+    private final Repository repository;
+    private final Configuration configuration;
 
     public Database(Configuration configuration) {
         this.configuration = configuration;
@@ -94,7 +91,15 @@ public class Database {
         this.mode = Mode.getInstance(dbSettings.compatibilityMode);
         traceSystem = new TraceSystem();
         trace = traceSystem.getTrace(Trace.DATABASE);
-        dsRepository = new DataSourceRepository(this);
+
+        TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
+        int poolCoreSize = SysProperties.THREAD_POOL_SIZE_CORE;
+        int poolMaxSize = SysProperties.THREAD_POOL_SIZE_MAX;
+        poolMaxSize = poolMaxSize > poolCoreSize ? poolMaxSize : poolCoreSize;
+        queryExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 5L, TimeUnit.MINUTES, queue,
+                Threads.newThreadFactory("ddal-query-executor"));
+
+        repository = new JdbcRepository(this);
         openDatabase();
     }
 
@@ -112,8 +117,7 @@ public class Database {
         Session sysSession = createSession(systemUser);
         try {
             for (TableRule tableRule : configuration.tableRules) {
-                String identifier = tableRule.getName();
-                identifier = identifier(identifier);
+                String identifier = identifier(tableRule.getName());
                 TableMate tableMate = new TableMate(mainSchema, identifier, tableRule);
                 tableMate.loadMataData(sysSession);
                 if (configuration.forceLoadTableMate) {
@@ -313,15 +317,11 @@ public class Database {
         if (closing) {
             return;
         }
-        closing = true;
         if (userSessions.size() > 0) {
             Session[] all = new Session[userSessions.size()];
             userSessions.toArray(all);
             for (Session s : all) {
                 try {
-                    // must roll back, otherwise the session is removed and
-                    // the transaction log that contains its uncommitted
-                    // operations as well
                     s.rollback();
                     s.close();
                 } catch (DbException e) {
@@ -329,7 +329,11 @@ public class Database {
                 }
             }
         }
-        dsRepository.close();
+        repository.close();
+        if (queryExecutor != null) {
+            Threads.shutdownGracefully(queryExecutor, 1000, 1000, TimeUnit.MILLISECONDS);
+        }
+        closing = true;
     }
 
     /**
@@ -665,26 +669,11 @@ public class Database {
     /**
      * @return the dataSourceManager
      */
-    public DataSourceRepository getDataSourceRepository() {
-        return dsRepository;
-    }
-
-    public PreparedExecutorFactory getPreparedExecutorFactory() {
-        if (peFactory == null) {
-            peFactory = new ExecutorFactory();
-        }
-        return peFactory;
+    public Repository getRepository() {
+        return repository;
     }
 
     public ThreadPoolExecutor getQueryExecutor() {
-        if (queryExecutor == null) {
-            TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
-            int poolCoreSize = SysProperties.THREAD_POOL_SIZE_CORE;
-            int poolMaxSize = SysProperties.THREAD_POOL_SIZE_MAX;
-            poolMaxSize = poolMaxSize > poolCoreSize ? poolMaxSize : poolCoreSize;
-            queryExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 5L, TimeUnit.MINUTES, queue,
-                    Threads.newThreadFactory("query-executor"));
-        }
         return queryExecutor;
     }
 

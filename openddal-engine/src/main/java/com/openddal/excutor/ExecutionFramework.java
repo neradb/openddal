@@ -15,16 +15,15 @@
  */
 package com.openddal.excutor;
 
-import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import com.openddal.engine.Constants;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
+import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.message.DbException;
 import com.openddal.route.RoutingHandler;
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.route.rule.RoutingResult;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -34,14 +33,13 @@ public abstract class ExecutionFramework {
 
     protected final Session session;
     protected final Database database;
-    protected final ThreadPoolExecutor workExecutor;
+    protected final ThreadPoolExecutor queryExecutor;
     protected final RoutingHandler routingHandler;
-    
-    protected List<QueryRunner<?>> queryRunners;
+    protected final QueryHandlerFactory queryHandlerFactory;
 
-    private ObjectNode[] selectNodes;
-    
-    private boolean prepared;
+    protected ObjectNode[] selectNodes;
+
+    private boolean isPrepared;
 
     /**
      * @param prepared
@@ -49,36 +47,31 @@ public abstract class ExecutionFramework {
     public ExecutionFramework(Session session) {
         this.session = session;
         this.database = session.getDatabase();
-        this.workExecutor = database.getQueryExecutor();
+        this.queryExecutor = database.getQueryExecutor();
         this.routingHandler = database.getRoutingHandler();
+        this.queryHandlerFactory = database.getRepository().getQueryHandlerFactory();
 
     }
 
     public final void prepare() {
-        if (prepared) {
+        if (isPrepared) {
             return;
         }
-        RoutingResult routingResult = doRoute();
-        selectNodes = routingResult.getSelectNodes();
-        if(session.getDatabase().getSettings().optimizeMerging) {
-            selectNodes = routingResult.group();
-        }
-        
-        prepared = true; 
+        doPrepare();
+        isPrepared = true;
     }
 
-    protected abstract RoutingResult doRoute();    
-    
+    public abstract void doPrepare();
+
     public double getCost() {
         checkPrepared();
         return selectNodes.length * Constants.COST_ROW_OFFSET;
     }
-    
+
     public void checkPrepared() {
-        if(!prepared) {
+        if (!isPrepared) {
             DbException.throwInternalError("Not prepared.");
         }
     }
-    
-    
+
 }

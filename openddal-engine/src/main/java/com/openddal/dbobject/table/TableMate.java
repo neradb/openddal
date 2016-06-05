@@ -40,11 +40,11 @@ import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.PlanItem.ScanningStrategy;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
-import com.openddal.excutor.Optional;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
+import com.openddal.repo.JdbcRepository;
+import com.openddal.repo.ShardSelector;
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.shards.DataSourceRepository;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.MathUtils;
 import com.openddal.util.New;
@@ -243,9 +243,9 @@ public class TableMate extends Table {
                 String tableName = matadataNode.getCompositeObjectName();
                 String shardName = matadataNode.getShardName();
                 try {
-                    DataSourceRepository dsRepository = session.getDataSourceRepository();
+                    JdbcRepository dsRepository = (JdbcRepository) database.getRepository();
                     DataSource dataSource = dsRepository.getDataSourceByShardName(shardName);
-                    Optional optional = Optional.build().shardName(shardName).readOnly(false);
+                    ShardSelector optional = ShardSelector.build().shardName(shardName).readOnly(false);
                     conn = session.applyConnection(dataSource, optional);
                     tableName = database.identifier(tableName);
                     tryReadMetaData(conn, tableName);

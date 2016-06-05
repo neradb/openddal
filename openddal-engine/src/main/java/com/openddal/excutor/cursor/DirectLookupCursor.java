@@ -31,9 +31,18 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         this.select = select;
     }
 
+
     @Override
-    public RoutingResult doRoute() {
-        ArrayList<TableFilter> topFilters = select.getTopFilters();
+    public void doPrepare() {
+        RoutingResult routingResult = doRoute(select);
+        selectNodes = routingResult.getSelectNodes();
+        if (session.getDatabase().getSettings().optimizeMerging) {
+            selectNodes = routingResult.group();
+        }
+    }
+
+    protected RoutingResult doRoute(Select prepare) {
+        ArrayList<TableFilter> topFilters = prepare.getTopFilters();
         for (TableFilter tf : topFilters) {
             TableMate table = (TableMate) tf.getTable();
             TableRule tableRule = table.getTableRule();
@@ -218,5 +227,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         }
 
     }
+
+
 
 }

@@ -24,18 +24,15 @@ import com.openddal.excutor.ExecutionFramework;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
-import com.openddal.route.rule.RoutingResult;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class SearchCursor extends ExecutionFramework implements Cursor {
 
-
     private final TableFilter tableFilter;
-    private boolean alwaysFalse;
-
     private Cursor cursor;
+    private boolean alwaysFalse;
 
     public SearchCursor(Session session, TableFilter tableFilter) {
         super(session);
@@ -43,7 +40,15 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     }
 
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.openddal.excutor.ExecutionFramework#doPrepare()
+     */
+    @Override
+    public void doPrepare() {
 
+    }
     /**
      * Re-evaluate the start and end values of the index search for rows.
      *
@@ -104,12 +109,6 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     @Override
     public boolean previous() {
         throw DbException.throwInternalError();
-    }
-
-    @Override
-    protected RoutingResult doRoute() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 
