@@ -40,42 +40,44 @@ import com.openddal.route.rule.ObjectNode;
  */
 public interface QueryHandlerFactory {
 
-    QueryHandler createQueryHandler(Select select, ObjectNode executionOn);
+    QueryHandler createQueryHandler(Select select, ObjectNode node);
+    
+    QueryHandler createQueryHandler(Select select, ObjectNode node, int limit, int offset);
 
-    QueryHandler createQueryHandler(TableFilter filter, ObjectNode executionOn);
+    QueryHandler createQueryHandler(TableFilter filter, ObjectNode node);
 
-    QueryHandler createQueryHandler(Call call, ObjectNode executionOn);
+    QueryHandler createQueryHandler(Call call, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Insert insert, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(Insert insert, ObjectNode node);
 
-    BatchUpdateHandler createBatchUpdateHandler(Insert insert, ObjectNode executionOn);
+    BatchUpdateHandler createBatchUpdateHandler(Insert insert, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Update update, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(Update update, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Delete delete, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(Delete delete, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Replace replace, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(Replace replace, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Merge merge, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(Merge merge, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Call call, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(Call call, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(DropTable dropTable, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(DropTable dropTable, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(TruncateTable truncateTable, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(TruncateTable truncateTable, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(AlterTableAddConstraint alterTableAddConstraint, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(AlterTableAddConstraint alterTableAddConstraint, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(AlterTableAlterColumn alterTableAlterColumn, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(AlterTableAlterColumn alterTableAlterColumn, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(AlterTableRename alterTableRename, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(AlterTableRename alterTableRename, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(AlterTableDropConstraint alterTableRename, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(AlterTableDropConstraint alterTableRename, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(CreateIndex createIndex, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(CreateIndex createIndex, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(DropIndex dropIndex, ObjectNode executionOn);
+    UpdateHandler createUpdateHandler(DropIndex dropIndex, ObjectNode node);
 
 }

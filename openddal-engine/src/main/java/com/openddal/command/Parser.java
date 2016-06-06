@@ -41,7 +41,6 @@ import com.openddal.command.ddl.CreateTableData;
 import com.openddal.command.ddl.CreateUser;
 import com.openddal.command.ddl.CreateUserDataType;
 import com.openddal.command.ddl.CreateView;
-import com.openddal.command.ddl.DeallocateProcedure;
 import com.openddal.command.ddl.DefineCommand;
 import com.openddal.command.ddl.DropAggregate;
 import com.openddal.command.ddl.DropConstant;
@@ -533,7 +532,7 @@ public class Parser {
                         // support for DECLARE GLOBAL TEMPORARY TABLE...
                         c = parseCreate();
                     } else if (readIf("DEALLOCATE")) {
-                        c = parseDeallocate();
+                        throw getSyntaxError();
                     }
                     break;
                 case 'e':
@@ -1629,14 +1628,6 @@ public class Parser {
 
     private Prepared parseExecute() {
         throw getSyntaxError();
-    }
-
-    private DeallocateProcedure parseDeallocate() {
-        readIf("PLAN");
-        String procedureName = readAliasIdentifier();
-        DeallocateProcedure command = new DeallocateProcedure(session);
-        command.setProcedureName(procedureName);
-        return command;
     }
 
     private Explain parseExplain() {

@@ -27,7 +27,7 @@ import com.openddal.engine.Session;
 import com.openddal.excutor.cursor.Cursor;
 import com.openddal.excutor.cursor.ResultCursor;
 import com.openddal.excutor.handle.QueryHandler;
-import com.openddal.repo.ShardSelector;
+import com.openddal.repo.ShardChooser;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
@@ -53,7 +53,7 @@ public class JdbcQueryHandler extends JdbcBasicHandler implements QueryHandler {
         PreparedStatement stmt = null;
         try {
             DataSource dataSource = getDataSource();
-            ShardSelector optional = ShardSelector.build().shardName(shardName).readOnly(true);
+            ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }

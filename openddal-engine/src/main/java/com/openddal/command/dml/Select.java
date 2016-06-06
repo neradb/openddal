@@ -145,6 +145,22 @@ public class Select extends Query {
             condition = new ConditionAndOr(ConditionAndOr.AND, cond, condition);
         }
     }
+    
+    public Expression getCondition() {
+        return condition;
+    }
+
+    public void setCondition(Expression condition) {
+        this.condition = condition;
+    }
+    
+    public int[] getGroupIndex() {
+        return groupIndex;
+    }
+
+    public boolean isForUpdate() {
+        return isForUpdate;
+    }
 
     private Value[] keepOnlyDistinct(Value[] row, int columnCount) {
         if (columnCount == distinctColumnCount) {
@@ -167,19 +183,6 @@ public class Select extends Query {
             }
         }
         return false;
-    }
-
-    private int getGroupByExpressionCount() {
-        if (groupByExpression == null) {
-            return 0;
-        }
-        int count = 0;
-        for (boolean b : groupByExpression) {
-            if (b) {
-                ++count;
-            }
-        }
-        return count;
     }
 
     private void queryGroup(int columnCount, LocalResult result) {
@@ -296,8 +299,7 @@ public class Select extends Query {
     }
 
     private void queryQuick(int columnCount, ResultTarget result) {
-        DirectLookupCursor cursor = new DirectLookupCursor(session, this);
-
+        //lookupCursor.
         Value[] row = new Value[columnCount];
         for (int i = 0; i < columnCount; i++) {
             Expression expr = expressions.get(i);
@@ -587,13 +589,6 @@ public class Select extends Query {
         }
 
         cost = preparePlan();
-
-        if (sort != null && !isGroupQuery) {
-
-        }
-        if (isGroupQuery && getGroupByExpressionCount() > 0) {
-
-        }
         expressionArray = new Expression[expressions.size()];
         expressions.toArray(expressionArray);
         isPrepared = true;
@@ -692,6 +687,10 @@ public class Select extends Query {
 
     public Expression getHaving() {
         return having;
+    }
+
+    public int getHavingIndex() {
+        return havingIndex;
     }
 
     @Override

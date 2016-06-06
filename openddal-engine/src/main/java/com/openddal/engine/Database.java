@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -37,7 +39,6 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
-import com.openddal.repo.JdbcRepository;
 import com.openddal.repo.Repository;
 import com.openddal.route.RoutingHandler;
 import com.openddal.route.RoutingHandlerImpl;
@@ -89,18 +90,41 @@ public class Database {
         this.dbSettings = DbSettings.getDefaultSettings();
 
         this.mode = Mode.getInstance(dbSettings.compatibilityMode);
-        traceSystem = new TraceSystem();
-        trace = traceSystem.getTrace(Trace.DATABASE);
+        this.traceSystem = new TraceSystem();
+        this.trace = traceSystem.getTrace(Trace.DATABASE);
 
+        this.queryExecutor = createQueryExecutor();
+        this.repository = loadRepositoryComponent();
+        openDatabase();
+    }
+
+    private ExtendableThreadPoolExecutor createQueryExecutor() {
         TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
         int poolCoreSize = SysProperties.THREAD_POOL_SIZE_CORE;
         int poolMaxSize = SysProperties.THREAD_POOL_SIZE_MAX;
         poolMaxSize = poolMaxSize > poolCoreSize ? poolMaxSize : poolCoreSize;
-        queryExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 5L, TimeUnit.MINUTES, queue,
-                Threads.newThreadFactory("ddal-query-executor"));
+        ExtendableThreadPoolExecutor queryExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 5L,
+                TimeUnit.MINUTES, queue, Threads.newThreadFactory("ddal-query-executor"));
+        return queryExecutor;
+    }
 
-        repository = new JdbcRepository(this);
-        openDatabase();
+    private Repository loadRepositoryComponent() {
+        List<Repository> repositories = New.arrayList();
+        ServiceLoader<Repository> serviceLoader = ServiceLoader.load(Repository.class);
+        for (Repository service : serviceLoader) {
+            trace.debug("load repository component {0}", service.getClass().getName());
+            repositories.add(service);
+        }
+        if (repositories.isEmpty()) {
+            DbException.throwInternalError(
+                    "No repository found. Please add repository jar package to project.");
+        }
+        if (repositories.size() > 1) {
+            DbException.throwInternalError("Too many repositories found.");
+        }
+        Repository repository = repositories.get(0);
+        repository.init(this);
+        return repository;
     }
 
     private synchronized void openDatabase() {

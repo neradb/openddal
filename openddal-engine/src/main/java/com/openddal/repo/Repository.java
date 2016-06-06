@@ -17,6 +17,7 @@ package com.openddal.repo;
 
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.TableMate;
+import com.openddal.engine.Database;
 import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.tx.Transaction;
 
@@ -25,14 +26,18 @@ import com.openddal.tx.Transaction;
  *
  */
 public interface Repository {
+    
+    void init(Database database);
 
+    String getName();
+    
     TableMate loadMataData(TableRule tableRule);
 
     Transaction beginTransaction();
 
     QueryHandlerFactory getQueryHandlerFactory();
-
-    SQLTranslator getSQLTranslator();
+    
+    boolean isAsyncSupported();
 
     void close();
 

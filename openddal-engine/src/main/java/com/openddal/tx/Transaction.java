@@ -22,6 +22,8 @@ import java.sql.SQLException;
  * its creation, preparation, commit/rollback and close.
  */
 public interface Transaction {
+        
+    long getId();
 
     /**
      * Commit inner database connection.

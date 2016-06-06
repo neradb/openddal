@@ -17,13 +17,11 @@ package com.openddal.excutor;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
-import com.openddal.engine.Constants;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.message.DbException;
 import com.openddal.route.RoutingHandler;
-import com.openddal.route.rule.ObjectNode;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -36,8 +34,6 @@ public abstract class ExecutionFramework {
     protected final ThreadPoolExecutor queryExecutor;
     protected final RoutingHandler routingHandler;
     protected final QueryHandlerFactory queryHandlerFactory;
-
-    protected ObjectNode[] selectNodes;
 
     private boolean isPrepared;
 
@@ -52,7 +48,13 @@ public abstract class ExecutionFramework {
         this.queryHandlerFactory = database.getRepository().getQueryHandlerFactory();
 
     }
-
+    
+    public void checkPrepared() {
+        if (!isPrepared) {
+            DbException.throwInternalError("Not prepared.");
+        }
+    }
+    
     public final void prepare() {
         if (isPrepared) {
             return;
@@ -62,16 +64,7 @@ public abstract class ExecutionFramework {
     }
 
     public abstract void doPrepare();
+    
 
-    public double getCost() {
-        checkPrepared();
-        return selectNodes.length * Constants.COST_ROW_OFFSET;
-    }
-
-    public void checkPrepared() {
-        if (!isPrepared) {
-            DbException.throwInternalError("Not prepared.");
-        }
-    }
 
 }

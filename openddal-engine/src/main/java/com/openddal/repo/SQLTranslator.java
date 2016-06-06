@@ -15,10 +15,24 @@
  */
 package com.openddal.repo;
 
+import java.util.List;
+
+import com.openddal.command.dml.Select;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.value.Value;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
 public interface SQLTranslator {
 
+    String identifier(String identifier);
+
+    Result translate(Select select, ObjectNode executionOn);
+    
+    class Result {
+        public String sql;
+        public List<Value> params;
+    }
 }

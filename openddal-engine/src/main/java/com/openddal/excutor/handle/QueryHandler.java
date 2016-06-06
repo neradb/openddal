@@ -23,7 +23,7 @@ import com.openddal.excutor.cursor.Cursor;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface QueryHandler extends Callable<Cursor> {
+public interface QueryHandler extends Callable<Cursor>, ReadWriteHandler {
 
     Cursor executeQuery();
 

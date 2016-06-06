@@ -874,7 +874,7 @@ public class Session implements SessionInterface {
         this.readOnly = readOnly;
     }
 
-    public Connection applyConnection(DataSource ds, com.openddal.repo.ShardSelector optional) throws SQLException {
+    public Connection applyConnection(DataSource ds, com.openddal.repo.ShardChooser optional) throws SQLException {
         Connection conn = ds.getConnection();
         if (conn.getAutoCommit() != getAutoCommit()) {
             conn.setAutoCommit(getAutoCommit());

@@ -26,7 +26,7 @@ import javax.sql.DataSource;
 import com.openddal.engine.Session;
 import com.openddal.excutor.handle.BatchUpdateHandler;
 import com.openddal.message.DbException;
-import com.openddal.repo.ShardSelector;
+import com.openddal.repo.ShardChooser;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -34,11 +34,11 @@ import com.openddal.value.Value;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class JdbcBatchUpdateWorker extends JdbcBasicHandler implements BatchUpdateHandler {
+public class JdbcBatchUpdateHandler extends JdbcBasicHandler implements BatchUpdateHandler {
 
     protected final List<List<Value>> array;
 
-    public JdbcBatchUpdateWorker(Session session, String shardName, String sql, List<List<Value>> array) {
+    public JdbcBatchUpdateHandler(Session session, String shardName, String sql, List<List<Value>> array) {
         super(session, shardName, sql, null);
         this.array = array;
     }
@@ -57,7 +57,7 @@ public class JdbcBatchUpdateWorker extends JdbcBasicHandler implements BatchUpda
                 throw new IllegalArgumentException();
             }
             DataSource dataSource = getDataSource();
-            ShardSelector optional = ShardSelector.build().shardName(shardName).readOnly(false);
+            ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(false);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }

@@ -35,7 +35,6 @@ import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
-import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.message.Trace;
 import com.openddal.repo.ha.DataSourceMarker;
 import com.openddal.repo.ha.Failover;
@@ -49,26 +48,24 @@ import com.openddal.util.Threads;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class JdbcRepository implements Repository {
+public abstract class JdbcRepository implements Repository {
 
-    private final Database database;
     private final List<DataSourceMarker> registered = New.arrayList();
     private final List<DataSourceMarker> abnormalList = New.copyOnWriteArrayList();
     private final List<DataSourceMarker> monitor = New.copyOnWriteArrayList();
 
     private final HashMap<String, DataSource> shardMaping = New.hashMap();
     private final HashMap<String, DataSource> idMapping = New.hashMap();
-    private final String defaultShardName;
-    private final DataSourceProvider dataSourceProvider;
-    private final Trace trace;
-    protected ScheduledExecutorService abnormalScheduler;
-    protected ScheduledExecutorService monitorScheduler;
+    
+    private String defaultShardName;
+    private DataSourceProvider dataSourceProvider;
+    private Trace trace;
     private String validationQuery;
     private int validationQueryTimeout;
     private ScheduledExecutorService scheduledExecutor;
 
-    public JdbcRepository(Database database) {
-        this.database = database;
+    public void init(Database database) {
+        //database not init completed
         Configuration configuration = database.getConfiguration();
         this.defaultShardName = configuration.defaultShardName;
         this.validationQuery = database.getSettings().validationQuery;
@@ -286,6 +283,11 @@ public class JdbcRepository implements Repository {
         }
 
     }
+    
+    @Override
+    public boolean isAsyncSupported() {
+        return false;
+    }
 
     /*
      * (non-Javadoc)
@@ -310,26 +312,7 @@ public class JdbcRepository implements Repository {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.engine.Repository#getQueryHandlerFactory()
-     */
-    @Override
-    public QueryHandlerFactory getQueryHandlerFactory() {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.repo.Repository#getSQLTranslator()
-     */
-    @Override
-    public SQLTranslator getSQLTranslator() {
-        // TODO Auto-generated method stub
-        return null;
-    }
+    public abstract SQLTranslator getSQLTranslator();
 
 }
