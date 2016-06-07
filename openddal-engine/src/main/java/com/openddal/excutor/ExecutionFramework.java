@@ -25,6 +25,7 @@ import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.route.RoutingHandler;
 import com.openddal.util.New;
 
@@ -66,6 +67,27 @@ public abstract class ExecutionFramework {
         }
         doPrepare();
         isPrepared = true;
+    }
+
+    /**
+     * Execute the statement.
+     *
+     * @return the update count
+     * @throws DbException if it is a query
+     */
+    public int update() {
+        throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
+    }
+
+    /**
+     * Execute the query.
+     *
+     * @param maxrows the maximum number of rows to return
+     * @return the result set
+     * @throws DbException if it is not a query
+     */
+    public void query(int maxrows) {
+        throw DbException.get(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY);
     }
 
     public abstract void doPrepare();
