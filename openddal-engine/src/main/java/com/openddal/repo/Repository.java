@@ -37,6 +37,8 @@ public interface Repository {
 
     QueryHandlerFactory getQueryHandlerFactory();
     
+    String getDefaultShardName();
+    
     boolean isAsyncSupported();
 
     void close();

@@ -18,7 +18,6 @@
 
 package com.openddal.route.rule;
 
-
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
@@ -26,14 +25,15 @@ public class GroupObjectNode extends ObjectNode {
 
     private static final long serialVersionUID = 1L;
 
+    private final ObjectNode[] items;
     private final String[] tableNames;
-
     private final String[] suffixes;
 
-    public GroupObjectNode(String shardName, String[] tableNames, String[] suffixes) {
+    public GroupObjectNode(String shardName, ObjectNode[] items, String[] tableNames, String[] suffixes) {
         super(shardName, null, null);
         this.tableNames = tableNames;
         this.suffixes = suffixes;
+        this.items = items;
     }
 
     @Override
@@ -60,5 +60,11 @@ public class GroupObjectNode extends ObjectNode {
         return suffixes;
     }
 
+    /**
+     * @return the items
+     */
+    public ObjectNode[] getItems() {
+        return items;
+    }
 
 }

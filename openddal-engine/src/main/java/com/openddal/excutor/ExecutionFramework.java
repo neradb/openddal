@@ -15,13 +15,18 @@
  */
 package com.openddal.excutor;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.openddal.dbobject.table.TableFilter;
+import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.message.DbException;
 import com.openddal.route.RoutingHandler;
+import com.openddal.util.New;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -64,6 +69,24 @@ public abstract class ExecutionFramework {
     }
 
     public abstract void doPrepare();
+    
+    
+    public static TableMate getTableMate(TableFilter filter) {
+        if(filter.isFromTableMate()) {
+            return (TableMate)filter.getTable();
+        }
+        return null;
+    }
+    
+    public static ArrayList<TableFilter> filterNotTableMate(List<TableFilter> filters) {
+        ArrayList<TableFilter> result = New.arrayList(filters.size());
+        for (TableFilter tf : result) {
+            if(tf.isFromTableMate()) {
+                result.add(tf);
+            }
+        }
+        return result;
+    }
     
 
 

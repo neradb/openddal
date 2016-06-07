@@ -18,17 +18,17 @@
 
 package com.openddal.route.rule;
 
-import com.openddal.util.New;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import com.openddal.util.New;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class RoutingResult implements Serializable {
+public class RoutingResult implements Comparable<RoutingResult>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -96,6 +96,7 @@ public class RoutingResult implements Serializable {
             Set<String> shards = shardNames();
             result = New.arrayList(shards.size());
             for (String shardName : shardNames()) {
+                List<ObjectNode> groupNodes = New.arrayList(10);
                 List<String> tables = New.arrayList();
                 List<String> suffixes = New.arrayList();
                 for (ObjectNode tableNode : selected) {
@@ -105,15 +106,19 @@ public class RoutingResult implements Serializable {
                     if (shardName.equals(nodeName)) {
                         tables.add(tableName);
                         suffixes.add(suffix);
+                        groupNodes.add(tableNode);
                     }
                 }
                 ObjectNode tableNode;
-                if (tables.size() > 1) {
+                if (groupNodes.size() > 1) {
                     String[] t = tables.toArray(new String[tables.size()]);
                     String[] s = suffixes.toArray(new String[suffixes.size()]);
-                    tableNode = new GroupObjectNode(shardName, t, s);
+                    ObjectNode[] items = groupNodes.toArray(new ObjectNode[groupNodes.size()]);
+                    GroupObjectNode groupNode = new GroupObjectNode(shardName, items, t, s);
+                    validateGroupNodeItem(groupNode);
+                    tableNode = groupNode;
                 } else {
-                    tableNode = new ObjectNode(shardName, tables.get(0), suffixes.get(0));
+                    tableNode = groupNodes.iterator().next();
                 }
                 result.add(tableNode);
             }
@@ -156,6 +161,36 @@ public class RoutingResult implements Serializable {
         } else if (!selected.equals(other.selected))
             return false;
         return true;
+    }
+
+    @Override
+    public int compareTo(RoutingResult o) {
+        Set<String> shards1 = shardNames();
+        Set<String> shards2 = o.shardNames();
+        int len1 = shards1.size();
+        int len2 = shards2.size();
+        if(len1 == len2) {
+            len1 = selected.size();
+            len2 = o.selected.size();
+        }
+        return len1 - len2;    
+    }
+
+    private void validateGroupNodeItem(GroupObjectNode node) {
+        Set<String> catalog = New.hashSet();
+        Set<String> schema = New.hashSet();
+        for (ObjectNode objectNode : node.getItems()) {
+            catalog.add(objectNode.getCatalog());
+            schema.add(objectNode.getSchema());
+        }
+        if (catalog.size() > 1) {
+            throw new IllegalStateException("Inconsistent object node " + catalog);
+        }
+        if (schema.size() > 1) {
+            throw new IllegalStateException("Inconsistent object node " + schema);
+        }
+        node.setCatalog(catalog.iterator().next());
+        node.setSchema(schema.iterator().next());
     }
 
 }

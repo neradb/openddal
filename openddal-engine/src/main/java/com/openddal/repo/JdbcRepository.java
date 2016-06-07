@@ -157,7 +157,7 @@ public abstract class JdbcRepository implements Repository {
     public int shardCount() {
         return this.shardMaping.size();
     }
-
+    @Override
     public String getDefaultShardName() {
         return defaultShardName;
     }

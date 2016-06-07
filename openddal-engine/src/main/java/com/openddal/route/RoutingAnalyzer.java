@@ -17,6 +17,10 @@
 // $Id$
 package com.openddal.route;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+
 import com.openddal.command.expression.Comparison;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
@@ -28,10 +32,6 @@ import com.openddal.route.rule.RoutingArgument;
 import com.openddal.util.New;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -71,7 +71,7 @@ public class RoutingAnalyzer {
                 break;
             }
             Column column = condition.getColumn();
-            if (ruleColumn != column) {
+            if (!condition.isEvaluatable() || ruleColumn != column) {
                 continue;
             }
             int compareType = condition.getCompareType();
@@ -118,7 +118,7 @@ public class RoutingAnalyzer {
                 }
             }
         }
-
+        
         if (inList != null) {
             return new RoutingArgument(New.arrayList(inList));
         } else if (start != null || end != null) {
