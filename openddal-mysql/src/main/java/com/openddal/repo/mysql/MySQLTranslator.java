@@ -53,8 +53,8 @@ public class MySQLTranslator implements SQLTranslator {
         int visibleColumnCount = select.getColumnCount();
         for (int i = 0; i < visibleColumnCount; i++) {
             buff.appendExceptFirst(",");
-            buff.append('\n');
-            buff.append(StringUtils.indent(exprList[i].getSQL(), 4, false));
+            buff.append(' ');
+            buff.append(exprList[i].getSQL());
         }
         buff.append(" FROM ");
         TableFilter filter = select.getTopTableFilter();

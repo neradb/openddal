@@ -1,10 +1,14 @@
 package com.openddal.excutor.cursor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.openddal.command.dml.Select;
+import com.openddal.config.GlobalTableRule;
+import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
@@ -26,35 +30,122 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
     private final Select select;
     private Cursor cursor;
+    private Map<ObjectNode,Map<TableFilter,ObjectNode>> consistencyTableNodes;
 
     public DirectLookupCursor(Session session, Select select) {
         super(session);
         this.select = select;
     }
 
-
     @Override
     public void doPrepare() {
-        RoutingResult routingResult = doRoute(select);
-        ObjectNode[] selectNodes = routingResult.getSelectNodes();
-        if (session.getDatabase().getSettings().optimizeMerging) {
-            selectNodes = routingResult.group();
-        }
+        doRoute(select);
+        
     }
 
-    protected RoutingResult doRoute(Select prepare) {
-        ArrayList<TableFilter> topFilters = prepare.getTopFilters();
-        for (TableFilter tf : topFilters) {
-            TableMate table = (TableMate) tf.getTable();
-            TableRule tableRule = table.getTableRule();
-            if (tableRule.getType() != TableRule.GLOBAL_NODE_TABLE) {
-                continue;
+    private RoutingResult doRoute(Select prepare) {
+        List<TableFilter> filters = filterNotTableMate(prepare.getTopFilters());
+        List<TableFilter> shards = New.arrayList(filters.size());
+        List<TableFilter> globals = New.arrayList(filters.size());
+        List<TableFilter> fixeds = New.arrayList(filters.size());
+        for (TableFilter tf : filters) {
+            TableMate table = getTableMate(tf);
+            switch (table.getTableRule().getType()) {
+            case TableRule.SHARDED_NODE_TABLE:
+                shards.add(tf);
+                break;
+            case TableRule.GLOBAL_NODE_TABLE:
+                globals.add(tf);
+                break;
+            case TableRule.FIXED_NODE_TABLE:
+                fixeds.add(tf);
+                break;
+            default:
+                break;
             }
-
         }
-        return null;
+        RoutingResult result = null;
+        if (!shards.isEmpty()) {
+            for (TableFilter tf : shards) {
+                TableMate table = getTableMate(tf);
+                ArrayList<IndexCondition> routeConds = tf.getIndexConditions();
+                RoutingResult r = routingHandler.doRoute(session, table, routeConds);
+                result = (result == null || r.compareTo(result) < 0) ? r : result;
+            }
+        } else if (!fixeds.isEmpty()) {
+            for (TableFilter tf : shards) {
+                TableMate table = getTableMate(tf);
+                RoutingResult r = routingHandler.doRoute(table);
+                result = r;
+            }
+        } else if (!globals.isEmpty()) {
+            // 全部为全局表查询，取一个
+            for (TableFilter tf : shards) {
+                TableMate table = getTableMate(tf);
+                RoutingResult r = routingHandler.doRoute(table);
+                result = r;
+            }
+        } else {
+            throw DbException.throwInternalError("SQL_ROUTING_ERROR");
+        }
+        ObjectNode[] selectNodes = result.getSelectNodes();
+        if (session.getDatabase().getSettings().optimizeMerging) {
+            selectNodes = result.group();
+        }
+        if(selectNodes.length == 0) {
+            throw DbException.throwInternalError("SQL_ROUTING_ERROR,empty result");
+        }
+        setConsistencyTableNodes(selectNodes, filters);
+        return result;
     }
 
+    private void setConsistencyTableNodes(ObjectNode[] selectNodes, List<TableFilter> filters) {
+        this.consistencyTableNodes = New.hashMapNonRehash(selectNodes.length);
+        for (ObjectNode target : selectNodes) {
+            HashMap<TableFilter, ObjectNode> tableNodeMapping = New.hashMapNonRehash(filters.size());
+            for (TableFilter tf : filters) {
+                TableMate table = getTableMate(tf);
+                ObjectNode consistencyNode = getConsistencyNode(table.getTableRule(), target);
+                tableNodeMapping.put(tf, consistencyNode);
+            }
+            consistencyTableNodes.put(target, tableNodeMapping);
+        }
+    }
+
+    private ObjectNode getConsistencyNode(TableRule tableRule, ObjectNode target) {
+        switch (tableRule.getType()) {
+        case TableRule.SHARDED_NODE_TABLE:
+            ShardedTableRule shardTable = (ShardedTableRule) tableRule;
+            ObjectNode[] objectNodes = shardTable.getObjectNodes();
+            for (ObjectNode objectNode : objectNodes) {
+                if (StringUtils.equals(target.getShardName(), objectNode.getShardName())
+                        && StringUtils.equals(target.getSuffix(), objectNode.getSuffix())) {
+                    return objectNode;
+                }
+            }
+            throw DbException.throwInternalError("The sharding table " + shardTable.getName()
+                    + " not have the consistency TableNode for node " + target.toString());
+        case TableRule.GLOBAL_NODE_TABLE:
+            GlobalTableRule globalTable = (GlobalTableRule) tableRule;
+            objectNodes = globalTable.getObjectNodes();
+            for (ObjectNode objectNode : objectNodes) {
+                if (StringUtils.equals(target.getShardName(), objectNode.getShardName())) {
+                    return objectNode;
+                }
+            }
+            throw DbException.throwInternalError("The global table " + globalTable.getName()
+                    + " not have the TableNode on shard " + target.getShardName());
+        case TableRule.FIXED_NODE_TABLE:
+            ObjectNode objectNode = tableRule.getMetadataNode();
+            if (StringUtils.equals(target.getShardName(), objectNode.getShardName())) {
+                return objectNode;
+            }
+            throw DbException.throwInternalError(
+                    "The table " + tableRule.getName() + " not have the TableNode on shard " + target.getShardName());
+        default:
+            throw DbException.throwInternalError();
+        }
+    }
 
     @Override
     public Row get() {
@@ -93,7 +184,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
     public boolean previous() {
         throw DbException.throwInternalError();
     }
-    
+
     public double getCost() {
         // TODO Auto-generated method stub
         return 0;
@@ -233,9 +324,5 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         }
 
     }
-
-
-
-
 
 }

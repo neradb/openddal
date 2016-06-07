@@ -69,7 +69,7 @@ public class New {
      * Create a new ArrayList.
      *
      * @param <T> the type
-     * @param c   the collection
+     * @param c the collection
      * @return the object
      */
     public static <T> ArrayList<T> arrayList(Collection<T> c) {
@@ -79,7 +79,7 @@ public class New {
     /**
      * Create a new ArrayList.
      *
-     * @param <T>             the type
+     * @param <T> the type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -100,7 +100,7 @@ public class New {
     /**
      * Create a new CopyOnWriteArrayList.
      *
-     * @param <T>             the type
+     * @param <T> the type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -111,8 +111,8 @@ public class New {
     /**
      * Create a new HashMap.
      *
-     * @param <K>             the key type
-     * @param <V>             the value type
+     * @param <K> the key type
+     * @param <V> the value type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -123,8 +123,21 @@ public class New {
     /**
      * Create a new HashMap.
      *
-     * @param <K>             the key type
-     * @param <V>             the value type
+     * @param <K> the key type
+     * @param <V> the value type
+     * @param initialCapacity the initial capacity
+     * @return the object
+     */
+    public static <K, V> HashMap<K, V> hashMapNonRehash(int initialCapacity) {
+        int size = (int) (initialCapacity / 0.75) + 1;
+        return new HashMap<K, V>(size);
+    }
+
+    /**
+     * Create a new HashMap.
+     *
+     * @param <K> the key type
+     * @param <V> the value type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -135,8 +148,8 @@ public class New {
     /**
      * Create a new LinkedHashMap.
      *
-     * @param <K>             the key type
-     * @param <V>             the value type
+     * @param <K> the key type
+     * @param <V> the value type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -147,8 +160,8 @@ public class New {
     /**
      * Create a new LinkedHashMap.
      *
-     * @param <K>             the key type
-     * @param <V>             the value type
+     * @param <K> the key type
+     * @param <V> the value type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -170,8 +183,8 @@ public class New {
     /**
      * Create a new ConcurrentHashMap.
      *
-     * @param <K>             the key type
-     * @param <V>             the value type
+     * @param <K> the key type
+     * @param <V> the value type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -182,8 +195,8 @@ public class New {
     /**
      * Create a new ConcurrentHashMap.
      *
-     * @param <K>             the key type
-     * @param <V>             the value type
+     * @param <K> the key type
+     * @param <V> the value type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -205,8 +218,8 @@ public class New {
     /**
      * Create a new CaseInsensitiveMap.
      *
-     * @param <K>             the key type
-     * @param <V>             the value type
+     * @param <K> the key type
+     * @param <V> the value type
      * @param initialCapacity the initial capacity
      * @return the object
      */
@@ -244,7 +257,6 @@ public class New {
     public static <T> HashSet<T> linkedHashSet() {
         return new LinkedHashSet<T>();
     }
-
 
     /**
      * Create a new CopyOnWriteArraySet.

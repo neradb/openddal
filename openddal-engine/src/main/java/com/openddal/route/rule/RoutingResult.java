@@ -18,17 +18,17 @@
 
 package com.openddal.route.rule;
 
-import com.openddal.util.New;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import com.openddal.util.New;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class RoutingResult implements Serializable {
+public class RoutingResult implements Comparable<RoutingResult>, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -156,6 +156,19 @@ public class RoutingResult implements Serializable {
         } else if (!selected.equals(other.selected))
             return false;
         return true;
+    }
+
+    @Override
+    public int compareTo(RoutingResult o) {
+        Set<String> shards1 = shardNames();
+        Set<String> shards2 = o.shardNames();
+        int len1 = shards1.size();
+        int len2 = shards2.size();
+        if(len1 == len2) {
+            len1 = selected.size();
+            len2 = o.selected.size();
+        }
+        return len1 - len2;    
     }
 
 }
