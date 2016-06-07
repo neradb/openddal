@@ -184,10 +184,10 @@ public class RoutingResult implements Comparable<RoutingResult>, Serializable {
             schema.add(objectNode.getSchema());
         }
         if (catalog.size() > 1) {
-            throw new IllegalStateException("Inconsistent object node " + catalog);
+            throw new IllegalStateException("Inconsistent object node catalog " + catalog);
         }
         if (schema.size() > 1) {
-            throw new IllegalStateException("Inconsistent object node " + schema);
+            throw new IllegalStateException("Inconsistent object node schema " + schema);
         }
         node.setCatalog(catalog.iterator().next());
         node.setSchema(schema.iterator().next());
