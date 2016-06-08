@@ -34,6 +34,8 @@ import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
+import com.openddal.excutor.handle.HandlerTraceProxy;
+import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
@@ -101,6 +103,7 @@ public class Session implements SessionInterface {
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
     private int transactionIsolation;
+    private final HandlerTraceProxy resourceTrace; 
 
     public Session(Database database, User user, int id) {
         this.database = database;
@@ -109,6 +112,7 @@ public class Session implements SessionInterface {
         this.user = user;
         this.id = id;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
+        this.resourceTrace = new HandlerTraceProxy(database.getRepository().getQueryHandlerFactory());
     }
 
     public boolean setCommitOrRollbackDisabled(boolean x) {
@@ -488,6 +492,7 @@ public class Session implements SessionInterface {
                 for (Connection conn : connectionHolder.values()) {
                     JdbcUtils.closeSilently(conn);
                 }
+                resourceTrace.closeAllCreatedHandlers();
                 connectionHolder.clear();
                 cleanTempTables(true);
                 database.removeSession(this);
@@ -837,6 +842,7 @@ public class Session implements SessionInterface {
      * set, and deletes all temporary files held by the result sets.
      */
     public void endStatement() {
+        resourceTrace.closeAllCreatedHandlers();
         closeTemporaryResults();
     }
 
@@ -889,6 +895,10 @@ public class Session implements SessionInterface {
         }
 
         return conn;
+    }
+    
+    public QueryHandlerFactory getQueryHandlerFactory() {
+        return resourceTrace;
     }
 
 

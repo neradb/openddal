@@ -49,7 +49,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         }
         queryHandlers = New.arrayList(selectNodes.length);
         for (ObjectNode node : selectNodes) {
-            QueryHandler queryHandler = queryHandlerFactory.createQueryHandler(select, node, consistencyTableNodes);
+            QueryHandler queryHandler = traceProxy.createQueryHandler(select, node, consistencyTableNodes);
             queryHandlers.add(queryHandler);
         }
 
@@ -152,6 +152,11 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         default:
             throw DbException.throwInternalError();
         }
+    }
+    
+    @Override
+    public boolean isQuery() {
+        return true;
     }
 
     @Override
@@ -331,5 +336,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         }
 
     }
+
+
 
 }

@@ -21,7 +21,7 @@ import java.util.concurrent.Callable;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface UpdateHandler extends Callable<Integer> {
+public interface UpdateHandler extends Callable<Integer>, ReadWriteHandler {
 
     int executeUpdate();
 

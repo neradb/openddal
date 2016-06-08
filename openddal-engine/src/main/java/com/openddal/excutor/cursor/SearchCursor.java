@@ -49,6 +49,11 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     public void doPrepare() {
 
     }
+    
+    @Override
+    public boolean isQuery() {
+        return true;
+    }
     /**
      * Re-evaluate the start and end values of the index search for rows.
      *

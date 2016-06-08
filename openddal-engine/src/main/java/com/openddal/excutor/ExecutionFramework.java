@@ -24,12 +24,14 @@ import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
+import com.openddal.excutor.handle.HandlerTraceProxy;
 import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.excutor.handle.ReadWriteHandler;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.RoutingHandler;
 import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -41,11 +43,9 @@ public abstract class ExecutionFramework implements PreparedExecutor {
     protected final Database database;
     protected final ThreadPoolExecutor queryExecutor;
     protected final RoutingHandler routingHandler;
-    protected final QueryHandlerFactory queryHandlerFactory;
+    protected final HandlerTraceProxy traceProxy;
 
     private boolean isPrepared;
-    private List<ReadWriteHandler> handlers = New.arrayList();
-
     /**
      * @param prepared
      */
@@ -54,7 +54,7 @@ public abstract class ExecutionFramework implements PreparedExecutor {
         this.database = session.getDatabase();
         this.queryExecutor = database.getQueryExecutor();
         this.routingHandler = database.getRoutingHandler();
-        this.queryHandlerFactory = database.getRepository().getQueryHandlerFactory();
+        this.traceProxy = new HandlerTraceProxy(database.getRepository().getQueryHandlerFactory());
 
     }
 
@@ -79,6 +79,7 @@ public abstract class ExecutionFramework implements PreparedExecutor {
      * @throws DbException if it is a query
      */
     public int update() {
+        checkPrepared();
         throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
     }
 
@@ -90,19 +91,47 @@ public abstract class ExecutionFramework implements PreparedExecutor {
      * @throws DbException if it is not a query
      */
     public void query() {
+        checkPrepared();
         throw DbException.get(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY);
+    }
+    
+    /**
+     * Get the PreparedExecutor with the execution explain.
+     *
+     * @return the execution explain
+     */
+    public String explain() {
+        checkPrepared();
+        List<ReadWriteHandler> handlers = traceProxy.getCreatedHandlers();
+        if(handlers.size() == 1) {
+            return handlers.iterator().next().explain();
+        }
+        StringBuilder explain = new StringBuilder();
+        if(isQuery()) {
+            explain.append("MERGE_RESULT");
+        } else {
+            explain.append("MULTINODES_EXECUTION");
+        }
+        explain.append('\n');
+        for (ReadWriteHandler handler : handlers) {
+            String subexplain = handler.explain();
+            explain.append(StringUtils.indent(subexplain, 4, false));
+        }
+        return explain.toString();
+    }
+    
+    @Override
+    public boolean isQuery() {
+        return false;
     }
 
     public abstract void doPrepare();
 
-    public void cancel() {
-        for (ReadWriteHandler op : handlers) {
-            try {
-                op.cancel();
-            } catch (Throwable e) {
+    
+    
 
-            }
-        }
+    public QueryHandlerFactory getQueryHandlerFactory() {
+        return traceProxy;
     }
 
     public static TableMate getTableMate(TableFilter filter) {

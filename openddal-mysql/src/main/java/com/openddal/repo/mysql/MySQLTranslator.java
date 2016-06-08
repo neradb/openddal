@@ -47,6 +47,10 @@ public class MySQLTranslator implements SQLTranslator {
         // can not use the field sqlStatement because the parameter
         // indexes may be incorrect: ? may be in fact ?2 for a subquery
         // but indexes may be set manually as well
+        if (executionOn instanceof GroupObjectNode) {
+            return translate(select, (GroupObjectNode) executionOn, consistencyTableNodes);
+        }
+        Map<TableFilter, ObjectNode> nodeMapping = consistencyTableNodes.get(executionOn);
         List<Value> params = New.arrayList(10);
         ArrayList<Expression> expressions = select.getExpressions();
         Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
@@ -67,7 +71,7 @@ public class MySQLTranslator implements SQLTranslator {
             int i = 0;
             do {
                 buff.appendExceptFirst(" ");
-                buff.append(getPlanSQL(filter, i++ > 0));
+                buff.append(getPlanSQL(filter, i++ > 0, nodeMapping));
                 filter = filter.getJoin();
             } while (filter != null);
         } else {
@@ -76,7 +80,7 @@ public class MySQLTranslator implements SQLTranslator {
             for (TableFilter f : select.getTopFilters()) {
                 do {
                     buff.appendExceptFirst(" ");
-                    buff.append(getPlanSQL(f, i++ > 0));
+                    buff.append(getPlanSQL(f, i++ > 0, nodeMapping));
                     f = f.getJoin();
                 } while (f != null);
             }
@@ -142,7 +146,7 @@ public class MySQLTranslator implements SQLTranslator {
      * @param isJoin if this is a joined table
      * @return the SQL statement snippet
      */
-    public String getPlanSQL(TableFilter filter, boolean isJoin) {
+    private String getPlanSQL(TableFilter filter, boolean isJoin, Map<TableFilter, ObjectNode> nodeMapping) {
         StringBuilder buff = new StringBuilder();
         if (isJoin) {
             if (filter.isJoinOuter()) {
@@ -155,7 +159,7 @@ public class MySQLTranslator implements SQLTranslator {
             StringBuffer buffNested = new StringBuffer();
             TableFilter n = filter.getNestedJoin();
             do {
-                buffNested.append(getPlanSQL(n, n != filter.getNestedJoin()));
+                buffNested.append(getPlanSQL(n, n != filter.getNestedJoin(), nodeMapping));
                 buffNested.append('\n');
                 n = n.getJoin();
             } while (n != null);
@@ -180,7 +184,8 @@ public class MySQLTranslator implements SQLTranslator {
             }
             return buff.toString();
         }
-        buff.append(filter.getTable().getSQL());
+        ObjectNode tableNode = nodeMapping.get(filter);
+        buff.append(identifier(tableNode.getCompositeObjectName()));
         if (filter.getTableAlias() != null) {
             buff.append(' ').append(Parser.quoteIdentifier(filter.getTableAlias()));
         }

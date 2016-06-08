@@ -21,6 +21,6 @@ import java.util.concurrent.Callable;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface BatchUpdateHandler extends Callable<Integer[]> {
+public interface BatchUpdateHandler extends Callable<Integer[]>, ReadWriteHandler {
     Integer[] executeBatchUpdate();
 }
