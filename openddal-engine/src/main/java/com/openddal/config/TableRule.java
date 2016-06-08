@@ -16,7 +16,6 @@ public class TableRule implements Serializable {
     private static final long serialVersionUID = 1L;
     protected final String name;
     protected ObjectNode metadataNode;
-    protected TableRuleGroup ownerGroup;
 
     public TableRule(String name) {
         this.name = name;
@@ -55,20 +54,12 @@ public class TableRule implements Serializable {
         return new TableRule(name, metadataNode);
     }
     
-    public static GlobalTableRule newGlobalNodeTable(String name, ObjectNode metadataNode) {
-        return new GlobalTableRule(name, metadataNode);
+    public static GlobalTableRule newGlobalNodeTable(String name, ObjectNode metadataNode,ObjectNode[] objectNodes) {
+        return new GlobalTableRule(name, metadataNode, objectNodes);
     }
     
     public static ShardedTableRule newShardedTable(String name, ObjectNode metadataNode, ObjectNode[] objectNodes) {
         return new ShardedTableRule(name, metadataNode, objectNodes);
-    }
-
-    protected TableRuleGroup getOwnerGroup() {
-        return ownerGroup;
-    }
-
-    protected void setOwnerGroup(TableRuleGroup ownerGroup) {
-        this.ownerGroup = ownerGroup;
     }
 
 }

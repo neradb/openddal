@@ -1,4 +1,4 @@
-package com.openddal.repo;
+package com.openddal.excutor.handle;
 
 import java.util.Map;
 
@@ -19,117 +19,122 @@ import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.Update;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.excutor.handle.BatchUpdateHandler;
-import com.openddal.excutor.handle.QueryHandler;
-import com.openddal.excutor.handle.QueryHandlerFactory;
-import com.openddal.excutor.handle.UpdateHandler;
-import com.openddal.repo.handle.JdbcQueryHandler;
 import com.openddal.route.rule.ObjectNode;
 
-public class JdbcQueryHandlerFactory implements QueryHandlerFactory {
-
-    private final JdbcRepository repo;
-
-    public JdbcQueryHandlerFactory(JdbcRepository repo) {
-        this.repo = repo;
-    }
+public class TraceHandlerFactory implements QueryHandlerFactory {
 
     @Override
     public QueryHandler createQueryHandler(Select select, ObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
-        SQLTranslated translated = repo.getSQLTranslator().translate(select, node, consistencyTableNodes);
-        JdbcQueryHandler handler = new JdbcQueryHandler(select.getSession(), node.getShardName(), translated.sql,
-                translated.params);
-        return handler;
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @Override
     public QueryHandler createQueryHandler(TableFilter filter, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public QueryHandler createQueryHandler(Call call, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(Insert insert, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public BatchUpdateHandler createBatchUpdateHandler(Insert insert, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(Update update, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(Delete delete, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(Replace replace, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(Merge merge, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(Call call, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(DropTable dropTable, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(TruncateTable truncateTable, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(AlterTableAddConstraint alterTableAddConstraint, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(AlterTableAlterColumn alterTableAlterColumn, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(AlterTableRename alterTableRename, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(AlterTableDropConstraint alterTableRename, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(CreateIndex createIndex, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 
     @Override
     public UpdateHandler createUpdateHandler(DropIndex dropIndex, ObjectNode node) {
+        // TODO Auto-generated method stub
         return null;
     }
 

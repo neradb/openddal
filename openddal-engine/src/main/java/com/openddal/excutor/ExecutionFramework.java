@@ -19,11 +19,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.excutor.handle.QueryHandlerFactory;
+import com.openddal.excutor.handle.ReadWriteHandler;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.RoutingHandler;
@@ -33,7 +35,7 @@ import com.openddal.util.New;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public abstract class ExecutionFramework {
+public abstract class ExecutionFramework implements PreparedExecutor {
 
     protected final Session session;
     protected final Database database;
@@ -42,6 +44,7 @@ public abstract class ExecutionFramework {
     protected final QueryHandlerFactory queryHandlerFactory;
 
     private boolean isPrepared;
+    private List<ReadWriteHandler> handlers = New.arrayList();
 
     /**
      * @param prepared
@@ -54,13 +57,13 @@ public abstract class ExecutionFramework {
         this.queryHandlerFactory = database.getRepository().getQueryHandlerFactory();
 
     }
-    
+
     public void checkPrepared() {
         if (!isPrepared) {
-            DbException.throwInternalError("Not prepared.");
+            DbException.throwInternalError("Executor not prepared.");
         }
     }
-    
+
     public final void prepare() {
         if (isPrepared) {
             return;
@@ -86,30 +89,43 @@ public abstract class ExecutionFramework {
      * @return the result set
      * @throws DbException if it is not a query
      */
-    public void query(int maxrows) {
+    public void query() {
         throw DbException.get(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY);
     }
 
     public abstract void doPrepare();
-    
-    
+
+    public void cancel() {
+        for (ReadWriteHandler op : handlers) {
+            try {
+                op.cancel();
+            } catch (Throwable e) {
+
+            }
+        }
+    }
+
     public static TableMate getTableMate(TableFilter filter) {
-        if(filter.isFromTableMate()) {
-            return (TableMate)filter.getTable();
+        if (filter.isFromTableMate()) {
+            return (TableMate) filter.getTable();
         }
         return null;
     }
-    
+
+    public static TableRule getTableRule(TableFilter filter) throws NullPointerException {
+        TableMate tableMate = getTableMate(filter);
+        TableRule tableRule = tableMate.getTableRule();
+        return tableRule;
+    }
+
     public static ArrayList<TableFilter> filterNotTableMate(List<TableFilter> filters) {
         ArrayList<TableFilter> result = New.arrayList(filters.size());
         for (TableFilter tf : result) {
-            if(tf.isFromTableMate()) {
+            if (tf.isFromTableMate()) {
                 result.add(tf);
             }
         }
         return result;
     }
-    
-
 
 }

@@ -11,7 +11,7 @@ import com.openddal.util.StringUtils;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class ShardedTableRule extends GlobalTableRule implements Serializable {
+public class ShardedTableRule extends TableRule implements Serializable {
 
     public static final int SCANLEVEL_UNLIMITED = 1;
     public static final int SCANLEVEL_ANYINDEX = 2;
@@ -22,8 +22,9 @@ public class ShardedTableRule extends GlobalTableRule implements Serializable {
     private int scanLevel = SCANLEVEL_ANYINDEX;
     private ObjectNode[] objectNodes;
     private List<String> ruleColumns;
-    private Partitioner partitioner;    
-    
+    private Partitioner partitioner; 
+    private TableRuleGroup ownerGroup;
+
 
     public ShardedTableRule(String name) {
         super(name);
@@ -98,12 +99,21 @@ public class ShardedTableRule extends GlobalTableRule implements Serializable {
     @Override
     public boolean isNodeComparable(TableRule o) {
         if (o instanceof ShardedTableRule) {
-            return getOwnerGroup() == o.getOwnerGroup();
+            ShardedTableRule other = (ShardedTableRule)o;
+            return getOwnerGroup() == other.getOwnerGroup();
         } 
         return o.isNodeComparable(this);
     }
     
     public int getType() {
         return SHARDED_NODE_TABLE;
+    }
+    
+    public TableRuleGroup getOwnerGroup() {
+        return ownerGroup;
+    }
+
+    public void setOwnerGroup(TableRuleGroup ownerGroup) {
+        this.ownerGroup = ownerGroup;
     }
 }

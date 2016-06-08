@@ -3,7 +3,6 @@ package com.openddal.engine;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceProvider;
@@ -16,7 +15,6 @@ import com.openddal.config.TableRule;
 import com.openddal.config.TableRuleGroup;
 import com.openddal.config.parser.XmlConfigParser;
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.util.Utils;
 
@@ -76,7 +74,7 @@ public final class SessionFactoryBuilder {
 
     public SessionFactoryBuilder addTableRuleGrop(TableRuleGroup group) {
         validateTableRule(group);
-        List<TableRule> tableRules = group.getTableRules();
+        List<ShardedTableRule> tableRules = group.getTableRules();
         configuration.tableRules.addAll(tableRules);
         return this;
     }
@@ -88,7 +86,6 @@ public final class SessionFactoryBuilder {
     }
 
     public SessionFactoryBuilder addTableRule(GlobalTableRule table) {
-        table.config(configuration);
         validateTableRule(table);
         configuration.tableRules.add(table);
         return this;
@@ -124,15 +121,16 @@ public final class SessionFactoryBuilder {
         return engine;
     }
 
-    private void validateTableRule(TableRule oject) {
-        if (oject == null) {
+    private void validateTableRule(TableRule object) {
+        if (object == null) {
             throw new IllegalArgumentException();
         }
-        if (StringUtils.isNullOrEmpty(oject.getName())) {
+        if (StringUtils.isNullOrEmpty(object.getName())) {
             throw new IllegalArgumentException();
         }
-        if (oject instanceof ShardedTableRule) {
-            ShardedTableRule shardingTable = (ShardedTableRule) oject;
+        switch (object.getType()) {
+        case TableRule.SHARDED_NODE_TABLE:
+            ShardedTableRule shardingTable = (ShardedTableRule) object;
             List<String> ruleColumns = shardingTable.getRuleColumns();
             if (ruleColumns == null || ruleColumns.isEmpty()) {
                 throw new IllegalArgumentException();
@@ -145,52 +143,74 @@ public final class SessionFactoryBuilder {
             if (shardingTable.getPartitioner() == null) {
                 throw new IllegalArgumentException();
             }
-        }
-        if (oject instanceof GlobalTableRule) {
-            GlobalTableRule multiNodeObject = (GlobalTableRule) oject;
-            ObjectNode[] objectNodes = multiNodeObject.getObjectNodes();
+            ObjectNode[] objectNodes = shardingTable.getObjectNodes();
             if (objectNodes == null) {
                 throw new IllegalArgumentException();
             }
-        }
-        if (TableRule.class == oject.getClass()) {
-            if (oject.getMetadataNode() == null) {
+            validateTableNode(object, objectNodes);
+            break;
+        case TableRule.GLOBAL_NODE_TABLE:
+            GlobalTableRule multiNodeObject = (GlobalTableRule) object;
+            objectNodes = multiNodeObject.getBroadcasts();
+            if (objectNodes == null) {
                 throw new IllegalArgumentException();
+            }
+            validateTableNode(object, objectNodes);
+            break;
+        case TableRule.FIXED_NODE_TABLE:
+            if (object.getMetadataNode() == null) {
+                throw new IllegalArgumentException();
+            }
+            validateTableNode(object, object.getMetadataNode());
+            break;
+
+        default:
+            throw new IllegalArgumentException("invalid table type");
+        }
+
+    }
+
+    private void validateTableNode(TableRule object, ObjectNode... nodes) {
+        for (ObjectNode objectNode : nodes) {
+            String shardName = objectNode.getShardName();
+            boolean matched = false;
+            for (Shard shard : configuration.cluster) {
+                if (StringUtils.equals(shardName, shard.getName())) {
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched) {
+                throw new IllegalArgumentException(
+                        "table " + object.getName() + " has invalid node " + objectNode.toString());
             }
         }
     }
 
     private void validateTableRule(TableRuleGroup tableGroup) {
-        List<TableRule> tables = tableGroup.getTableRules();
+        List<ShardedTableRule> tables = tableGroup.getTableRules();
         if (tables == null || tables.isEmpty()) {
             throw new IllegalArgumentException();
         }
         int columns = -1;
-        Set<String> typeFilter = New.hashSet();
-        for (TableRule tableRule : tables) {
+        for (ShardedTableRule tableRule : tables) {
             if (tableRule == null) {
                 throw new IllegalArgumentException();
             }
-            typeFilter.add(typeFilter.getClass().getName());
             if (StringUtils.isNullOrEmpty(tableRule.getName())) {
                 throw new IllegalArgumentException();
             }
-            tableGroup.isUseTableRuleColumns();
-            if (tableRule instanceof ShardedTableRule) {
-                ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
-                List<String> ruleColumns = shardedTableRule.getRuleColumns();
-                if (ruleColumns == null || ruleColumns.isEmpty()) {
-                    throw new IllegalArgumentException("The TableRule columns is required if use table rule columns");
-                }
-                if (columns == -1) {
-                    columns = ruleColumns.size();
-                } else if (columns != ruleColumns.size()) {
-                    throw new IllegalArgumentException("The length of TableRule columns must be equal");
-                }
+            ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
+            List<String> ruleColumns = shardedTableRule.getRuleColumns();
+            if (ruleColumns == null || ruleColumns.isEmpty()) {
+                throw new IllegalArgumentException("The TableRule columns is required if use table rule columns");
             }
-        }
-        if (typeFilter.size() > 1) {
-            throw new IllegalArgumentException("The type of TableRule in table group must be same.");
+            if (columns == -1) {
+                columns = ruleColumns.size();
+            } else if (columns != ruleColumns.size()) {
+                throw new IllegalArgumentException("The length of TableRule columns must be equal");
+            }
+
         }
 
     }
@@ -221,12 +241,7 @@ public final class SessionFactoryBuilder {
     private void beforeBuild() {
         vaildateCluster(configuration.cluster);
         for (TableRule table : configuration.tableRules) {
-            if (table instanceof ShardedTableRule)
-                validateTableRule((ShardedTableRule) table);
-            else if (table instanceof GlobalTableRule)
-                validateTableRule((GlobalTableRule) table);
-            else
-                validateTableRule(table);
+            validateTableRule(table);
         }
         if (configuration.provider == null) {
             throw new IllegalArgumentException("DataSourceProvider is required.");

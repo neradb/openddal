@@ -52,17 +52,11 @@ public class RoutingResult implements Comparable<RoutingResult>, Serializable {
         return new RoutingResult(nodes, nodes);
     }
 
-    public static RoutingResult fixedResult(ObjectNode tableNode) {
-        List<ObjectNode> nodes = New.arrayList(1);
-        nodes.add(tableNode);
-        return new RoutingResult(nodes, nodes);
-    }
-
     public static RoutingResult fixedResult(List<ObjectNode> nodes) {
         return new RoutingResult(nodes, nodes);
     }
 
-    public static RoutingResult fixedResult(ObjectNode[] tableNode) {
+    public static RoutingResult fixedResult(ObjectNode ... tableNode) {
         List<ObjectNode> nodes = Arrays.asList(tableNode);
         return new RoutingResult(nodes, nodes);
     }

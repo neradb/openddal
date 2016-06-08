@@ -20,7 +20,6 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -261,30 +260,13 @@ public class XmlConfigParser {
      */
     private void parseTableGroup(XNode tableNode) {
         TableRuleGroup group = new TableRuleGroup();
-        List<XNode> nodeNodes = tableNode.evalNodes("nodes/node");
-        XNode tableRule = tableNode.evalNode("tableRule");
-        TableRule templete;
-        if (tableRule != null) {
-            templete = parseShardedTableRule(tableNode);
-        } else if (!nodeNodes.isEmpty()) {
-            templete = parseGlobalTableRule(tableNode);
-        } else {
-            templete = parseSingleNodeTableRule(tableNode);
-        }
-        if (templete instanceof ShardedTableRule) {
-            ShardedTableRule shardedTableRule = (ShardedTableRule) templete;
-            group.setRuleColumns(shardedTableRule.getRuleColumns());
-            group.setScanLevel(shardedTableRule.getScanLevel());
-            group.setPartitioner(shardedTableRule.getPartitioner());
-            group.setObjectNodes(shardedTableRule.getObjectNodes());
-            group.setMetadataNode(shardedTableRule.getMetadataNode());
-        } else if (templete instanceof GlobalTableRule) {
-            GlobalTableRule multiNodeTableRule = (GlobalTableRule) templete;
-            group.setObjectNodes(multiNodeTableRule.getObjectNodes());
-            group.setMetadataNode(multiNodeTableRule.getMetadataNode());
-        } else {
-            group.setMetadataNode(templete.getMetadataNode());
-        }
+        ShardedTableRule templete = parseShardedTableRule(tableNode);
+        group.setRuleColumns(templete.getRuleColumns());
+        group.setScanLevel(templete.getScanLevel());
+        group.setPartitioner(templete.getPartitioner());
+        group.setObjectNodes(templete.getObjectNodes());
+        group.setMetadataNode(templete.getMetadataNode());
+        
         List<XNode> tableNodes = tableNode.evalNodes("tables/table");
         for (XNode xNode : tableNodes) {
             String tableName = xNode.getStringAttribute("name");
@@ -294,16 +276,8 @@ public class XmlConfigParser {
                 throw new ParsingException(
                         "table attribute ruleColumns is required if tableGroup use table.ruleColumns");
             }
-            TableRule item;
-            if (templete instanceof ShardedTableRule) {
-                ShardedTableRule shardedTableRule = new ShardedTableRule(tableName);
-                shardedTableRule.setRuleColumns(columns);
-                item = shardedTableRule;
-            } else if (templete instanceof GlobalTableRule) {
-                item = new GlobalTableRule(tableName);
-            } else {
-                item = new TableRule(tableName);
-            }
+            ShardedTableRule item = new ShardedTableRule(tableName);
+            item.setRuleColumns(columns);
             group.addTableRules(item);
         }
         for (TableRule rule : group.getTableRules()) {
@@ -323,12 +297,12 @@ public class XmlConfigParser {
             throw new ParsingException("table attribute 'name' is required.");
         }
 
+        XNode broadcast = tableNode.evalNode("broadcast");
         List<XNode> nodeNodes = tableNode.evalNodes("nodes/node");
-        XNode tableRule = tableNode.evalNode("tableRule");
         TableRule table;
-        if (tableRule != null) {
+        if (!nodeNodes.isEmpty()) {
             table = parseShardedTableRule(tableNode);
-        } else if (!nodeNodes.isEmpty()) {
+        } else if (broadcast != null) {
             table = parseGlobalTableRule(tableNode);
         } else {
             table = parseSingleNodeTableRule(tableNode);
@@ -343,6 +317,9 @@ public class XmlConfigParser {
         String metaNodeIndex = tableNode.getStringAttribute("metaNodeIndex");
         String scanLevel = tableNode.getStringAttribute("scanLevel");
         setTableScanLevel(shardTable, scanLevel);
+        if(tableRule == null) {
+            throw new ParsingException("tableRule is required for sharding table " + tableName);
+        }
         for (XNode child : tableRule.getChildren()) {
             String name = child.getName();
             String text = getStringBody(child);
@@ -374,9 +351,21 @@ public class XmlConfigParser {
 
     private GlobalTableRule parseGlobalTableRule(XNode tableNode) {
         String tableName = tableNode.getStringAttribute("name");
-        GlobalTableRule globalTableRule = new GlobalTableRule(tableName);
+        GlobalTableRule globalTableRule = new GlobalTableRule(tableName, null);
         String metaNodeIndex = tableNode.getStringAttribute("metaNodeIndex");
-        //parseNodes(shardTable, tableNode.evalNodes("nodes/node"));
+        XNode broadcast = tableNode.evalNode("broadcast");
+        String text = getStringBody(broadcast);
+        text = text.replaceAll("\\s", "");
+        if (!StringUtils.isNullOrEmpty(text)) {
+            HashSet<String> shards = new HashSet<String>(StringUtils.split(text, ","));
+            List<ObjectNode> objectNodes = New.arrayList(shards.size());
+            for (String shard : shards) {
+                objectNodes.add(new ObjectNode(shard, tableName));
+            }
+            globalTableRule.setBroadcasts(objectNodes.toArray(new ObjectNode[objectNodes.size()]));
+        } else {
+            parseNodes(globalTableRule, tableNode.evalNodes("broadcast/node"));
+        }
         // alter object node init.
         setMetaNodeIndex(globalTableRule, metaNodeIndex);
         return globalTableRule;
@@ -406,7 +395,7 @@ public class XmlConfigParser {
         return tableRule;
     }
 
-    private void parseNodes(ShardedTableRule table, List<XNode> list) {
+    private void parseNodes(TableRule table, List<XNode> list) {
         if (list.isEmpty()) {
             throw new ParsingException("Table 'nodes' element is required.");
         }
@@ -446,8 +435,18 @@ public class XmlConfigParser {
                 }
             }
         }
-        table.setObjectNodes(tableNodes.toArray(new ObjectNode[tableNodes.size()]));
-
+        switch (table.getType()) {
+        case TableRule.GLOBAL_NODE_TABLE:
+            GlobalTableRule global = (GlobalTableRule) table;
+            global.setBroadcasts(tableNodes.toArray(new ObjectNode[tableNodes.size()]));
+            break;
+        case TableRule.SHARDED_NODE_TABLE:
+            ShardedTableRule shard = (ShardedTableRule) table;
+            shard.setObjectNodes(tableNodes.toArray(new ObjectNode[tableNodes.size()]));
+            break;
+        default:
+            throw new ParsingException("parseNodes support GLOBAL_NODE_TABLE or SHARDED_NODE_TABLE");
+        }
     }
 
     private String getStringBody(XNode xNode) {
@@ -502,20 +501,26 @@ public class XmlConfigParser {
         }
     }
 
-    private void setMetaNodeIndex(GlobalTableRule table, String metaNodeIndex) {
+    private void setMetaNodeIndex(TableRule table, String metaNodeIndex) {
         if (StringUtils.isNullOrEmpty(metaNodeIndex)) {
             return;
         }
         int index = 0;
         try {
             index = Integer.parseInt(metaNodeIndex);
-            ObjectNode metaNode = table.getObjectNodes()[index];
-            table.setMetadataNode(metaNode);
+            if (table.getType() == TableRule.GLOBAL_NODE_TABLE) {
+                ShardedTableRule tr = (ShardedTableRule) table;
+                ObjectNode metaNode = tr.getObjectNodes()[index];
+                table.setMetadataNode(metaNode);
+            } else if (table.getType() == TableRule.SHARDED_NODE_TABLE) {
+                GlobalTableRule tr = (GlobalTableRule) table;
+                ObjectNode metaNode = tr.getBroadcasts()[index];
+                table.setMetadataNode(metaNode);
+            }
         } catch (NumberFormatException e) {
             throw new ParsingException("table 's attribute metaNodeIndex must be integer.");
         } catch (IndexOutOfBoundsException e) {
-            throw new ParsingException(
-                    "table metaNodeIndex out of bounds " + index + " array " + Arrays.toString(table.getObjectNodes()));
+            throw new ParsingException("table metaNodeIndex out of bounds " + index + "nodes array ");
         }
     }
 

@@ -50,7 +50,7 @@
                 class CDATA #REQUIRED
                 > 
 
-        <!ELEMENT table ((nodes|node)?, tableRule?)>
+        <!ELEMENT table ((nodes|node|broadcast)?, tableRule?)>
         <!ATTLIST table
                 name CDATA #REQUIRED
                 ruleColumns CDATA #IMPLIED
@@ -58,7 +58,7 @@
                 scanLevel (unlimited|anyIndex|uniqueIndex|shardingKey) #IMPLIED
                 >
 
-        <!ELEMENT tableGroup (tables, (nodes|node)?, tableRule?)>
+        <!ELEMENT tableGroup (tables, nodes, tableRule)>
         <!ATTLIST tableGroup
                 metaNodeIndex CDATA #IMPLIED
                 scanLevel (unlimited|anyIndex|uniqueIndex|shardingKey) #IMPLIED
@@ -85,6 +85,7 @@
                 > 
 
         <!ELEMENT nodes (node+)>
+        <!ELEMENT broadcast (#PCDATA|node+)>
         <!ELEMENT tableRule (columns,algorithm)>
 
         <!ELEMENT node (#PCDATA)>

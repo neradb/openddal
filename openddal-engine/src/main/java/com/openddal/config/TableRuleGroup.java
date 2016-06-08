@@ -14,38 +14,27 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
 
     private static final long serialVersionUID = 1L;
     public static final String RULECOLUMNS_QUOTE = "${table.ruleColumns}";
-    private List<TableRule> tableRules = New.arrayList();
+    private List<ShardedTableRule> tableRules = New.arrayList();
 
-    public List<TableRule> getTableRules() {
-        for (TableRule tableRule : tableRules) {
+    public List<ShardedTableRule> getTableRules() {
+        for (ShardedTableRule tableRule : tableRules) {
             tableRule.setOwnerGroup(this);
-            if (tableRule instanceof ShardedTableRule) {
-                ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
-                shardedTableRule.setPartitioner(getPartitioner());
-                if (!isUseTableRuleColumns()) {
-                    shardedTableRule.setRuleColumns(getRuleColumns());
-                }
-                if (shardedTableRule.getScanLevel() == 0) {
-                    shardedTableRule.setScanLevel(getScanLevel());
-                }
-                shardedTableRule.cloneObjectNodes(getObjectNodes());
-
+            tableRule.setPartitioner(getPartitioner());
+            if (!isUseTableRuleColumns()) {
+                tableRule.setRuleColumns(getRuleColumns());
             }
+            if (tableRule.getScanLevel() == 0) {
+                tableRule.setScanLevel(getScanLevel());
+            }
+            tableRule.cloneObjectNodes(getObjectNodes());
             tableRule.setMetadataNode(getMetadataNode());
 
         }
         return tableRules;
     }
 
-    public void setTableRules(List<TableRule> tableRules) {
-        this.tableRules = tableRules;
-    }
 
-    public void setTableRules(TableRule... tableRules) {
-        this.tableRules = Arrays.asList(tableRules);
-    }
-
-    public void addTableRules(TableRule... tableRules) {
+    public void addTableRules(ShardedTableRule... tableRules) {
         this.tableRules.addAll(Arrays.asList(tableRules));
     }
 

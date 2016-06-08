@@ -128,6 +128,12 @@ public class ObjectNode implements Serializable {
 
     public String getCompositeObjectName() {
         StringBuilder fullName = new StringBuilder();
+        if (!StringUtils.isNullOrEmpty(catalog)) {
+            fullName.append(catalog).append(".");
+        }
+        if (!StringUtils.isNullOrEmpty(schema)) {
+            fullName.append(schema).append(".");
+        }
         fullName.append(objectName);
         if (!StringUtils.isNullOrEmpty(suffix)) {
             fullName.append(suffix);
@@ -184,8 +190,11 @@ public class ObjectNode implements Serializable {
         return true;
     }
 
+    @Override
     public String toString() {
-        return getCompositeObjectName();
+        return "ObjectNode [shardName=" + shardName + ", objectName=" + getCompositeObjectName() + "]";
     }
+
+    
 
 }

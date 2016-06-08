@@ -19,30 +19,23 @@
 package com.openddal.excutor;
 
 import com.openddal.message.DbException;
-import com.openddal.result.LocalResult;
-import com.openddal.result.ResultTarget;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public interface PreparedExecutor {
+    
+    /**
+     * Prepare this executor.
+     */
+    void prepare();
     /**
      * Execute the query.
      *
-     * @param maxRows the maximum number of rows to return
-     * @return the result set
+     * @return the result cursor
      * @throws DbException if it is not a query
      */
-    LocalResult executeQuery(int maxRows);
-
-    /**
-     * Execute the query, writing the result to the target result.
-     *
-     * @param maxRows the maximum number of rows to return
-     * @param target the target result (null will return the result)
-     * @return the result set (if the target is not set).
-     */
-    LocalResult executeQuery(int maxRows, ResultTarget target);
+    void query();
 
     /**
      * Execute the statement.
@@ -50,11 +43,6 @@ public interface PreparedExecutor {
      * @return the update count
      * @throws DbException if it is a query
      */
-    int executeUpdate();
-
-    /**
-     * kill a currently running PreparedExecutor. This operation will cancel all
-     * opened JDBC statements and close all opened JDBC connections
-     */
-    void kill();
+    int update();
+    
 }

@@ -2,14 +2,17 @@ package com.openddal.repo.mysql;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.openddal.command.Parser;
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Database;
+import com.openddal.repo.SQLTranslated;
 import com.openddal.repo.SQLTranslator;
 import com.openddal.result.SortOrder;
+import com.openddal.route.rule.GroupObjectNode;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
@@ -39,7 +42,8 @@ public class MySQLTranslator implements SQLTranslator {
      * @see http://dev.mysql.com/doc/refman/5.7/en/select.html
      */
     @Override
-    public Result translate(Select select, ObjectNode executionOn) {
+    public SQLTranslated translate(Select select, ObjectNode executionOn,
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
         // can not use the field sqlStatement because the parameter
         // indexes may be incorrect: ? may be in fact ?2 for a subquery
         // but indexes may be set manually as well
@@ -129,10 +133,7 @@ public class MySQLTranslator implements SQLTranslator {
         if (select.isForUpdate()) {
             buff.append(" FOR UPDATE");
         }
-        Result result = new Result();
-        result.sql = buff.toString();
-        result.params = params;
-        return result;
+        return SQLTranslated.build().sql(buff.toString()).sqlParams(params);
     }
 
     /**
@@ -194,6 +195,22 @@ public class MySQLTranslator implements SQLTranslator {
             }
         }
         return buff.toString();
+    }
+
+    @Override
+    public SQLTranslated translate(Select select, GroupObjectNode node,
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
+        ObjectNode[] items = node.getItems();
+        List<Value> params = New.arrayList(10 * items.length);
+        StatementBuilder sql = new StatementBuilder("SELECT * FROM (");
+        for (ObjectNode objectNode : items) {
+            SQLTranslated translated = translate(select, objectNode, consistencyTableNodes);
+            sql.appendExceptFirst(" UNION ALL ");
+            sql.append(translated.sql);
+            params.addAll(translated.params);
+        }
+        sql.append(" ) ");
+        return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
     }
 
 }

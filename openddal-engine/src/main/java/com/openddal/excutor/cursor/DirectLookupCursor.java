@@ -32,8 +32,9 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
     private final Select select;
     private Cursor cursor;
     private RoutingResult result = null;
-    private Map<ObjectNode,Map<TableFilter,ObjectNode>> consistencyTableNodes;
+    private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryHandler> queryHandlers;
+
     public DirectLookupCursor(Session session, Select select) {
         super(session);
         this.select = select;
@@ -48,10 +49,10 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         }
         queryHandlers = New.arrayList(selectNodes.length);
         for (ObjectNode node : selectNodes) {
-            QueryHandler queryHandler = queryHandlerFactory.createQueryHandler(select, node);
+            QueryHandler queryHandler = queryHandlerFactory.createQueryHandler(select, node, consistencyTableNodes);
             queryHandlers.add(queryHandler);
         }
-        
+
     }
 
     private RoutingResult doRoute(Select prepare) {
@@ -90,17 +91,15 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
                 result = r;
             }
         } else if (!globals.isEmpty()) {
-            // 全部为全局表查询，取一个
-            for (TableFilter tf : shards) {
-                TableMate table = getTableMate(tf);
-                RoutingResult r = routingHandler.doRoute(table);
-                result = r;
-            }
+            // 全部为全局表查询，随机取一个第一个表结点
+            GlobalTableRule tableRule = (GlobalTableRule) getTableRule(globals.iterator().next());
+            RoutingResult r = tableRule.getRandomRoutingResult();
+            result = r;
         } else {
             throw DbException.throwInternalError("SQL_ROUTING_ERROR");
         }
         ObjectNode[] selectNodes = result.getSelectNodes();
-        if(selectNodes.length == 0) {
+        if (selectNodes.length == 0) {
             throw DbException.throwInternalError("SQL_ROUTING_ERROR,empty result");
         }
         setConsistencyTableNodes(selectNodes, filters);
@@ -135,7 +134,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
                     + " not have the consistency TableNode for node " + target.toString());
         case TableRule.GLOBAL_NODE_TABLE:
             GlobalTableRule globalTable = (GlobalTableRule) tableRule;
-            objectNodes = globalTable.getObjectNodes();
+            objectNodes = globalTable.getBroadcasts();
             for (ObjectNode objectNode : objectNodes) {
                 if (StringUtils.equals(target.getShardName(), objectNode.getShardName())) {
                     return objectNode;
@@ -194,8 +193,8 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
     }
 
     public double getCost() {
-        // TODO Auto-generated method stub
-        return 0;
+        checkPrepared();
+        return queryHandlers.size() * Constants.COST_ROW_OFFSET;
     }
 
     public static boolean isDirectLookupQuery(Select select) {

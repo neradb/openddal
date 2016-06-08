@@ -29,6 +29,7 @@ import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.repo.JdbcRepository;
 import com.openddal.util.JdbcUtils;
+import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
 /**
@@ -146,6 +147,22 @@ public abstract class JdbcBasicHandler {
         JdbcUtils.closeSilently(rtRs);
         JdbcUtils.closeSilently(rtStmt);
         JdbcUtils.closeSilently(rtConn);
+    }
+    
+    public String explain() {
+        StatementBuilder buff = new StatementBuilder();
+        buff.append("execute on ").append(shardName);
+        buff.append(": ").append(sql);
+        if (params != null && params.size() > 0) {
+            buff.append(" params: {");
+            int i = 1;
+            for (Value v : params) {
+                buff.appendExceptFirst(", ");
+                buff.append(i++).append(": ").append(v.getSQL());
+            }
+            buff.append('}');
+        }
+        return buff.toString();
     }
 
     protected void applyQueryTimeout(Statement stmt) throws SQLException {

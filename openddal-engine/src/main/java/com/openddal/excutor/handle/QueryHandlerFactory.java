@@ -15,6 +15,8 @@
  */
 package com.openddal.excutor.handle;
 
+import java.util.Map;
+
 import com.openddal.command.ddl.AlterTableAddConstraint;
 import com.openddal.command.ddl.AlterTableAlterColumn;
 import com.openddal.command.ddl.AlterTableDropConstraint;
@@ -39,10 +41,8 @@ import com.openddal.route.rule.ObjectNode;
  *
  */
 public interface QueryHandlerFactory {
-
-    QueryHandler createQueryHandler(Select select, ObjectNode node);
     
-    QueryHandler createQueryHandler(Select select, ObjectNode node, int limit, int offset);
+    QueryHandler createQueryHandler(Select select, ObjectNode node, Map<ObjectNode,Map<TableFilter,ObjectNode>> consistencyTableNodes);
 
     QueryHandler createQueryHandler(TableFilter filter, ObjectNode node);
 

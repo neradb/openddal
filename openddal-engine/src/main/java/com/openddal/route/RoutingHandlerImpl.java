@@ -46,21 +46,25 @@ public class RoutingHandlerImpl implements RoutingHandler {
     public RoutingHandlerImpl(Database database) {
         this.trc = new RoutingCalculatorImpl();
     }
-    
+
     @Override
     public RoutingResult doRoute(TableMate table) {
         TableRule tr = table.getTableRule();
-        if (tr instanceof ShardedTableRule)
+        switch (tr.getType()) {
+        case TableRule.SHARDED_NODE_TABLE:
             return fixedRoutingResult(((ShardedTableRule) tr).getObjectNodes());
-        else
+        case TableRule.FIXED_NODE_TABLE:
             return fixedRoutingResult(tr.getMetadataNode());
+        default:
+            throw new TableRoutingException(table.getName() + " does not support routing");
+        }
     }
-    
 
     @Override
     public RoutingResult doRoute(TableMate table, SearchRow row) {
         TableRule tr = table.getTableRule();
-        if (tr instanceof ShardedTableRule)
+        switch (tr.getType()) {
+        case TableRule.SHARDED_NODE_TABLE:
             try {
                 return getRoutingResult(table, row);
             } catch (TableRoutingException e) {
@@ -68,11 +72,11 @@ public class RoutingHandlerImpl implements RoutingHandler {
             } catch (Exception e) {
                 throw new TableRoutingException(table.getName() + " routing error.");
             }
-        else if (tr instanceof ShardedTableRule)
-            return fixedRoutingResult(((ShardedTableRule) tr).getObjectNodes());
-        else
+        case TableRule.FIXED_NODE_TABLE:
             return fixedRoutingResult(tr.getMetadataNode());
-
+        default:
+            throw new TableRoutingException(table.getName() + " does not support routing");
+        }
     }
 
     private RoutingResult getRoutingResult(TableMate table, SearchRow row) {
@@ -117,9 +121,9 @@ public class RoutingHandlerImpl implements RoutingHandler {
                 RoutingResult rr;
                 if (args.size() == 1) {
                     RoutingArgument argument = args.get(0);
-                    rr = trc.calculate((ShardedTableRule)tr, argument);
+                    rr = trc.calculate((ShardedTableRule) tr, argument);
                 } else {
-                    rr = trc.calculate((ShardedTableRule)tr, args);
+                    rr = trc.calculate((ShardedTableRule) tr, args);
                 }
                 return rr;
             } catch (TableRoutingException e) {
