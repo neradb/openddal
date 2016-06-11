@@ -15,6 +15,8 @@
  */
 package com.openddal.command.expression;
 
+import java.util.ArrayList;
+
 import com.openddal.command.dml.Query;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -25,8 +27,6 @@ import com.openddal.result.ResultInterface;
 import com.openddal.value.Value;
 import com.openddal.value.ValueArray;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
 
 /**
  * A query returning a single value.
@@ -106,7 +106,7 @@ public class Subquery extends Expression {
 
     @Override
     public String getSQL() {
-        return "(" + query.getPlanSQL() + ")";
+        return "(" + query.getSQL() + ")";
     }
 
     @Override

@@ -91,7 +91,7 @@ public class Insert extends Prepared {
     }
 
     @Override
-    public String getPlanSQL() {
+    public String explainPlan() {
         StatementBuilder buff = new StatementBuilder("INSERT INTO ");
         buff.append(table.getSQL()).append('(');
         for (Column c : columns) {
@@ -128,7 +128,7 @@ public class Insert extends Prepared {
                 buff.append(')');
             }
         } else {
-            buff.append(query.getPlanSQL());
+            buff.append(query.explainPlan());
         }
         return buff.toString();
     }

@@ -15,6 +15,13 @@
  */
 package com.openddal.jdbc;
 
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.Statement;
+import java.util.ArrayList;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.engine.SessionInterface;
 import com.openddal.engine.SysProperties;
@@ -23,9 +30,6 @@ import com.openddal.message.ErrorCode;
 import com.openddal.message.TraceObject;
 import com.openddal.result.ResultInterface;
 import com.openddal.util.New;
-
-import java.sql.*;
-import java.util.ArrayList;
 
 /**
  * Represents a statement.
@@ -126,7 +130,7 @@ public class JdbcStatement extends TraceObject implements Statement {
     }
 
     private int executeUpdateInternal(String sql) throws SQLException {
-        checkClosedForWrite();
+        checkClosed();
         try {
             closeOldResultSet();
             sql = JdbcConnection.translateSQL(sql, escapeProcessing);
@@ -170,7 +174,7 @@ public class JdbcStatement extends TraceObject implements Statement {
 
     private boolean executeInternal(String sql) throws SQLException {
         int id = getNextId(TraceObject.RESULT_SET);
-        checkClosedForWrite();
+        checkClosed();
         try {
             closeOldResultSet();
             sql = JdbcConnection.translateSQL(sql, escapeProcessing);
@@ -651,7 +655,7 @@ public class JdbcStatement extends TraceObject implements Statement {
     public int[] executeBatch() throws SQLException {
         try {
             debugCodeCall("executeBatch");
-            checkClosedForWrite();
+            checkClosed();
             try {
                 if (batchCommands == null) {
                     // TODO batch: check what other database do if no commands
@@ -959,33 +963,10 @@ public class JdbcStatement extends TraceObject implements Statement {
      * @throws DbException if the connection or session is closed
      */
     boolean checkClosed() {
-        return checkClosed(false);
-    }
-
-    /**
-     * Check if this connection is closed.
-     * The next operation may be a write request.
-     *
-     * @return true if the session was re-connected
-     * @throws DbException if the connection or session is closed
-     */
-    boolean checkClosedForWrite() {
-        return checkClosed(true);
-    }
-
-    /**
-     * INTERNAL.
-     * Check if the statement is closed.
-     *
-     * @param write if the next operation is possibly writing
-     * @return true if a reconnect was required
-     * @throws DbException if it is closed
-     */
-    protected boolean checkClosed(boolean write) {
         if (conn == null) {
             throw DbException.get(ErrorCode.OBJECT_CLOSED);
         }
-        conn.checkClosed(write);
+        conn.checkClosed();
         SessionInterface s = conn.getSession();
         if (s != session) {
             session = s;
@@ -993,6 +974,7 @@ public class JdbcStatement extends TraceObject implements Statement {
             return true;
         }
         return false;
+
     }
 
     /**

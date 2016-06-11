@@ -9,6 +9,11 @@ public interface ReadWriteHandler {
      */
     void cancel();
     
+    /**
+     * Get the handler with the execution explain.
+     *
+     * @return the execution explain
+     */
     String explain();
 
 }

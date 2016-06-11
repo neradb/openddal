@@ -532,7 +532,7 @@ public class Parser {
                         // support for DECLARE GLOBAL TEMPORARY TABLE...
                         c = parseCreate();
                     } else if (readIf("DEALLOCATE")) {
-                        throw getSyntaxError();
+                    c = parseDeallocate();
                     }
                     break;
                 case 'e':
@@ -736,7 +736,21 @@ public class Parser {
             command.setTransactionName(readUniqueIdentifier());
             return command;
         }
-        throw getSyntaxError();
+        readAliasIdentifier();
+        if (readIf("(")) {
+            ArrayList<Column> list = New.arrayList();
+            for (int i = 0;; i++) {
+                Column column = parseColumnForTable("C" + i, true);
+                list.add(column);
+                if (readIf(")")) {
+                    break;
+                }
+                read(",");
+            }
+        }
+        read("AS");
+        parsePrepared();
+        return new NoOperation(session);
     }
 
     private TransactionCommand parseSavepoint() {
@@ -1627,7 +1641,13 @@ public class Parser {
     }
 
     private Prepared parseExecute() {
-        throw getSyntaxError();
+        return new NoOperation(session);
+    }
+
+    private Prepared parseDeallocate() {
+        readIf("PLAN");
+        readAliasIdentifier();
+        return new NoOperation(session);
     }
 
     private Explain parseExplain() {
@@ -4256,7 +4276,7 @@ public class Parser {
             Query withQuery = parseSelect();
             read(")");
             withQuery.prepare();
-            querySQL = StringUtils.fromCacheOrNew(withQuery.getPlanSQL());
+            querySQL = StringUtils.fromCacheOrNew(withQuery.getSQL());
         } finally {
             session.removeLocalTempTable(recursiveTable);
         }
@@ -4473,7 +4493,13 @@ public class Parser {
     }
 
     private Prepared parseSet() {
-        if (readIf("AUTOCOMMIT")) {
+        if (readIf("@")) {
+            Set command = new Set(session, SetTypes.VARIABLE);
+            command.setString(readAliasIdentifier());
+            readIfEqualOrTo();
+            command.setExpression(readExpression());
+            return command;
+        } else if (readIf("AUTOCOMMIT")) {
             readIfEqualOrTo();
             boolean value = readBooleanSetting();
             int setting = value ? CommandInterface.SET_AUTOCOMMIT_TRUE
@@ -4484,6 +4510,27 @@ public class Parser {
             boolean value = readBooleanSetting();
             Set command = new Set(session, SetTypes.IGNORECASE);
             command.setInt(value ? 1 : 0);
+            return command;
+        } else if (readIf("PASSWORD")) {
+            readIfEqualOrTo();
+            AlterUser command = new AlterUser(session);
+            command.setType(CommandInterface.ALTER_USER_SET_PASSWORD);
+            command.setUser(session.getUser());
+            command.setPassword(readExpression());
+            return command;
+        } else if (readIf("SALT")) {
+            readIfEqualOrTo();
+            AlterUser command = new AlterUser(session);
+            command.setType(CommandInterface.ALTER_USER_SET_PASSWORD);
+            command.setUser(session.getUser());
+            command.setSalt(readExpression());
+            read("HASH");
+            command.setHash(readExpression());
+            return command;
+        } else if (readIf("MODE")) {
+            readIfEqualOrTo();
+            Set command = new Set(session, SetTypes.MODE);
+            command.setString(readAliasIdentifier());
             return command;
         } else if (readIf("DATABASE")) {
             readIfEqualOrTo();
@@ -4589,9 +4636,18 @@ public class Parser {
                 }
             }
             return new NoOperation(session);
-        } else if (readIf("TRANSACTION")) {
+        } else if (readIf("SEARCH_PATH") || readIf(SetTypes.getTypeName(SetTypes.SCHEMA_SEARCH_PATH))) {
             readIfEqualOrTo();
-            return parseTransactionCommand();
+            Set command = new Set(session, SetTypes.SCHEMA_SEARCH_PATH);
+            ArrayList<String> list = New.arrayList();
+            list.add(readAliasIdentifier());
+            while (readIf(",")) {
+                list.add(readAliasIdentifier());
+            }
+            String[] schemaNames = new String[list.size()];
+            list.toArray(schemaNames);
+            command.setStringArray(schemaNames);
+            return command;
         } else {
             int type = SetTypes.getType(currentToken);
             if (type < 0) {
@@ -5315,28 +5371,5 @@ public class Parser {
         initialize(sql);
         read();
         return readTableOrView();
-    }
-
-    /**
-     * added method. parse MySQL style TRANSACTION statements
-     *
-     * @return
-     */
-    private TransactionCommand parseTransactionCommand() {
-        TransactionCommand command;
-        if (readIf("ISOLATION")) {
-            read("LEVEL");
-            Expression expr = readExpression();
-            command = new TransactionCommand(session, CommandInterface.TRANSACTION_ISOLATION);
-            command.setExpression(expr);
-            return command;
-        } else if (readIf("READ")) {
-            if (readIf("WRITE")) {
-                return new TransactionCommand(session, CommandInterface.TRANSACTION_READONLY_FALSE);
-            } else if (readIf("ONLY")) {
-                return new TransactionCommand(session, CommandInterface.COMMIT_TRANSACTION);
-            }
-        }
-        throw getSyntaxError();
     }
 }

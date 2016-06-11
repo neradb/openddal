@@ -74,9 +74,9 @@ public class Explain extends Prepared {
                 } else {
                     command.update();
                 }
-                plan = command.getPlanSQL();
+                plan = command.explainPlan();
             } else {
-                plan = command.getPlanSQL();
+                plan = command.explainPlan();
             }
             add(plan);
         }

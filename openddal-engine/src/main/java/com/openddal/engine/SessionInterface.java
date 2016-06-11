@@ -15,12 +15,12 @@
  */
 package com.openddal.engine;
 
+import java.io.Closeable;
+import java.sql.SQLException;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.message.Trace;
 import com.openddal.value.Value;
-
-import java.io.Closeable;
-import java.sql.SQLException;
 
 /**
  * A local or remote session. A session represents a database connection.
@@ -29,7 +29,7 @@ public interface SessionInterface extends Closeable {
     /**
      * Parse a command and prepare it for execution.
      *
-     * @param sql       the SQL statement
+     * @param sql the SQL statement
      * @param fetchSize the number of rows to fetch in one step
      * @return the prepared command
      */
@@ -68,28 +68,12 @@ public interface SessionInterface extends Closeable {
     void cancel();
 
     /**
-     * Check if the database changed and therefore reconnecting is required.
-     *
-     * @param write if the next operation may be writing
-     * @return true if reconnecting is required
-     */
-    boolean isReconnectNeeded(boolean write);
-
-    /**
-     * Close the connection and open a new connection.
-     *
-     * @param write if the next operation may be writing
-     * @return the new connection
-     */
-    SessionInterface reconnect(boolean write);
-
-    /**
      * Add a temporary LOB, which is closed when the session commits.
      *
      * @param v the value
      */
     void addTemporaryLob(Value v);
-    
+
     /**
      * Check if this session is in auto-commit mode.
      *
@@ -104,21 +88,42 @@ public interface SessionInterface extends Closeable {
      * @param autoCommit the new value
      */
     void setAutoCommit(boolean autoCommit);
-    
+
     /**
      * Puts this connection in read-only mode as a hint to the driver to enable
-     * database optimizations. 
-     * This method cannot be called during a transaction.
+     * database optimizations. This method cannot be called during a
+     * transaction.
+     * 
      * @param readOnly true enables read-only mode false disables it
      */
     void setReadOnly(boolean readOnly);
 
     /**
-     * Retrieves whether this <code>Connection</code>
-     * object is in read-only mode.
-     * @return true if this session
-     *         is read-only; false otherwise 
+     * Retrieves whether this <code>Connection</code> object is in read-only
+     * mode.
+     * 
+     * @return true if this session is read-only; false otherwise
      */
     boolean isReadOnly() throws SQLException;
+
+    /**
+     * Changes the current transaction isolation level. Calling this method will
+     * commit an open transaction, even if the new level is the same as the old
+     * one,except if the level is not supported.
+     * 
+     * @param level the new transaction isolation level:
+     *            Connection.TRANSACTION_READ_UNCOMMITTED,
+     *            Connection.TRANSACTION_READ_COMMITTED, or
+     *            Connection.TRANSACTION_SERIALIZABLE
+     * @return
+     */
+    int getTransactionIsolation();
+
+    /**
+     * Returns the current transaction isolation level.
+     *
+     * @return the isolation level.
+     */
+    void setTransactionIsolation(int level);
 
 }

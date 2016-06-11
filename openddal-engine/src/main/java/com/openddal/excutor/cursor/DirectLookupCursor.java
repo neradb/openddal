@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.openddal.command.dml.Select;
+import com.openddal.command.expression.Parameter;
 import com.openddal.config.GlobalTableRule;
-import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
@@ -31,7 +31,6 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
     private final Select select;
     private Cursor cursor;
-    private RoutingResult result = null;
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryHandler> queryHandlers;
 
@@ -42,17 +41,16 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
     @Override
     public void doPrepare() {
-        this.result = doRoute(select);
-        ObjectNode[] selectNodes = result.getSelectNodes();
+        this.routingResult = doRoute(select);
+        ObjectNode[] selectNodes = routingResult.getSelectNodes();
         if (session.getDatabase().getSettings().optimizeMerging) {
-            selectNodes = result.group();
+            selectNodes = routingResult.group();
         }
         queryHandlers = New.arrayList(selectNodes.length);
         for (ObjectNode node : selectNodes) {
-            QueryHandler queryHandler = traceProxy.createQueryHandler(select, node, consistencyTableNodes);
+            QueryHandler queryHandler = queryHandlerFactory.createQueryHandler(select, node, consistencyTableNodes);
             queryHandlers.add(queryHandler);
         }
-
     }
 
     private RoutingResult doRoute(Select prepare) {
@@ -118,46 +116,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
             consistencyTableNodes.put(target, tableNodeMapping);
         }
     }
-
-    private ObjectNode getConsistencyNode(TableRule tableRule, ObjectNode target) {
-        switch (tableRule.getType()) {
-        case TableRule.SHARDED_NODE_TABLE:
-            ShardedTableRule shardTable = (ShardedTableRule) tableRule;
-            ObjectNode[] objectNodes = shardTable.getObjectNodes();
-            for (ObjectNode objectNode : objectNodes) {
-                if (StringUtils.equals(target.getShardName(), objectNode.getShardName())
-                        && StringUtils.equals(target.getSuffix(), objectNode.getSuffix())) {
-                    return objectNode;
-                }
-            }
-            throw DbException.throwInternalError("The sharding table " + shardTable.getName()
-                    + " not have the consistency TableNode for node " + target.toString());
-        case TableRule.GLOBAL_NODE_TABLE:
-            GlobalTableRule globalTable = (GlobalTableRule) tableRule;
-            objectNodes = globalTable.getBroadcasts();
-            for (ObjectNode objectNode : objectNodes) {
-                if (StringUtils.equals(target.getShardName(), objectNode.getShardName())) {
-                    return objectNode;
-                }
-            }
-            throw DbException.throwInternalError("The global table " + globalTable.getName()
-                    + " not have the TableNode on shard " + target.getShardName());
-        case TableRule.FIXED_NODE_TABLE:
-            ObjectNode objectNode = tableRule.getMetadataNode();
-            if (StringUtils.equals(target.getShardName(), objectNode.getShardName())) {
-                return objectNode;
-            }
-            throw DbException.throwInternalError(
-                    "The table " + tableRule.getName() + " not have the TableNode on shard " + target.getShardName());
-        default:
-            throw DbException.throwInternalError();
-        }
-    }
     
-    @Override
-    public boolean isQuery() {
-        return true;
-    }
 
     @Override
     public Row get() {
@@ -337,6 +296,27 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.openddal.excutor.ExecutionFramework#getPreparedParameters()
+     */
+    @Override
+    protected List<Parameter> getPreparedParameters() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.openddal.excutor.ExecutionFramework#isQuery()
+     */
+    @Override
+    protected boolean isQuery() {
+        // TODO Auto-generated method stubt
+        return true;
+    }
 
 
 }

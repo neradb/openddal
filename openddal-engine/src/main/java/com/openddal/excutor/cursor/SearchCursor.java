@@ -16,7 +16,9 @@
 package com.openddal.excutor.cursor;
 
 import java.util.ArrayList;
+import java.util.List;
 
+import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
@@ -116,5 +118,16 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
         throw DbException.throwInternalError();
     }
 
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.openddal.excutor.ExecutionFramework#getPreparedParameters()
+     */
+    @Override
+    protected List<Parameter> getPreparedParameters() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

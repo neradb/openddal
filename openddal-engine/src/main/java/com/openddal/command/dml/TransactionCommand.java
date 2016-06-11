@@ -16,9 +16,10 @@
 package com.openddal.command.dml;
 
 
+import com.openddal.command.CommandInterface;
 import com.openddal.command.Prepared;
-import com.openddal.command.expression.Expression;
 import com.openddal.engine.Session;
+import com.openddal.message.DbException;
 import com.openddal.result.ResultInterface;
 
 /**
@@ -29,11 +30,55 @@ public class TransactionCommand extends Prepared {
     private final int type;
     private String savepointName;
     private String transactionName;
-    private Expression expression;
 
     public TransactionCommand(Session session, int type) {
         super(session);
         this.type = type;
+    }
+
+    public void setSavepointName(String name) {
+        this.savepointName = name;
+    }
+
+    @Override
+    public int update() {
+        switch (type) {
+        case CommandInterface.SET_AUTOCOMMIT_TRUE:
+            session.setAutoCommit(true);
+            break;
+        case CommandInterface.SET_AUTOCOMMIT_FALSE:
+            session.setAutoCommit(false);
+            break;
+        case CommandInterface.BEGIN:
+            session.begin();
+            break;
+        case CommandInterface.COMMIT:
+            session.commit();
+            break;
+        case CommandInterface.ROLLBACK:
+            session.rollback();
+            break;
+        case CommandInterface.SAVEPOINT:
+            session.addSavepoint(savepointName);
+            break;
+        case CommandInterface.ROLLBACK_TO_SAVEPOINT:
+            session.rollbackToSavepoint(savepointName);
+            break;
+        case CommandInterface.PREPARE_COMMIT:
+            session.prepareCommit(transactionName);
+            break;
+        case CommandInterface.COMMIT_TRANSACTION:
+            session.getUser().checkAdmin();
+            session.setPreparedTransaction(transactionName, true);
+            break;
+        case CommandInterface.ROLLBACK_TRANSACTION:
+            session.getUser().checkAdmin();
+            session.setPreparedTransaction(transactionName, false);
+            break;
+        default:
+            DbException.throwInternalError("type=" + type);
+        }
+        return 0;
     }
 
     @Override
@@ -44,6 +89,10 @@ public class TransactionCommand extends Prepared {
     @Override
     public boolean needRecompile() {
         return false;
+    }
+
+    public void setTransactionName(String string) {
+        this.transactionName = string;
     }
 
     @Override
@@ -60,31 +109,5 @@ public class TransactionCommand extends Prepared {
     public boolean isCacheable() {
         return true;
     }
-
-    public String getSavepointName() {
-        return savepointName;
-    }
-
-    public void setSavepointName(String name) {
-        this.savepointName = name;
-    }
-    //getter
-
-    public String getTransactionName() {
-        return transactionName;
-    }
-
-    public void setTransactionName(String string) {
-        this.transactionName = string;
-    }
-
-    public Expression getExpression() {
-        return expression;
-    }
-
-    public void setExpression(Expression expression) {
-        this.expression = expression;
-    }
-
 
 }

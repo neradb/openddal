@@ -157,7 +157,7 @@ public class ConditionInSelect extends Condition {
                         append(" ANY");
             }
         }
-        buff.append("(\n").append(StringUtils.indent(query.getPlanSQL(), 4, false)).
+        buff.append("(\n").append(StringUtils.indent(query.explainPlan(), 4, false)).
                 append("))");
         return buff.toString();
     }

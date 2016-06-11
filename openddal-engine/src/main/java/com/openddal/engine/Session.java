@@ -34,7 +34,7 @@ import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
-import com.openddal.excutor.handle.HandlerTraceProxy;
+import com.openddal.excutor.handle.HandlerHolderProxy;
 import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.DbException;
@@ -86,7 +86,6 @@ public class Session implements SessionInterface {
     private Trace trace;
     private HashMap<String, Value> unlinkLobMap;
     private int systemIdentifier;
-    private boolean autoCommitAtTransactionEnd;
     private String currentTransactionName;
     private volatile long cancelAt;
     private boolean closed;
@@ -95,15 +94,12 @@ public class Session implements SessionInterface {
     private HashMap<String, Value> variables;
     private HashSet<LocalResult> temporaryResults;
     private int queryTimeout;
-    private boolean commitOrRollbackDisabled;
-    private Table waitForLock;
-    private Thread waitForLockThread;
     private int objectId;
     private SmallLRUCache<String, Command> queryCache;
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
     private int transactionIsolation;
-    private final HandlerTraceProxy resourceTrace; 
+    private final HandlerHolderProxy handlerHolder;
 
     public Session(Database database, User user, int id) {
         this.database = database;
@@ -112,14 +108,9 @@ public class Session implements SessionInterface {
         this.user = user;
         this.id = id;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
-        this.resourceTrace = new HandlerTraceProxy(database.getRepository().getQueryHandlerFactory());
+        this.handlerHolder = new HandlerHolderProxy(database.getRepository().getQueryHandlerFactory());
     }
 
-    public boolean setCommitOrRollbackDisabled(boolean x) {
-        boolean old = commitOrRollbackDisabled;
-        commitOrRollbackDisabled = x;
-        return old;
-    }
 
     private void initVariables() {
         if (variables == null) {
@@ -351,7 +342,7 @@ public class Session implements SessionInterface {
      *
      * @param ddl if the statement was a data definition statement
      */
-    public void commit(boolean ddl) {
+    public void commit() {
         currentTransactionName = null;
         transactionStart = 0;
         
@@ -361,15 +352,7 @@ public class Session implements SessionInterface {
             }
             temporaryLobs.clear();
         }
-        if (!ddl) {
-            // do not clean the temp tables if the last command was a
-            // create/drop
-            cleanTempTables(false);
-            if (autoCommitAtTransactionEnd) {
-                autoCommit = true;
-                autoCommitAtTransactionEnd = false;
-            }
-        }
+        cleanTempTables(false);
         endTransaction();
 
         boolean commit = true;
@@ -421,10 +404,6 @@ public class Session implements SessionInterface {
         currentTransactionName = null;
 
         cleanTempTables(false);
-        if (autoCommitAtTransactionEnd) {
-            autoCommit = true;
-            autoCommitAtTransactionEnd = false;
-        }
         endTransaction();
 
         List<SQLException> rollbackExceptions = New.arrayList();
@@ -492,7 +471,7 @@ public class Session implements SessionInterface {
                 for (Connection conn : connectionHolder.values()) {
                     JdbcUtils.closeSilently(conn);
                 }
-                resourceTrace.closeAllCreatedHandlers();
+                handlerHolder.closeAllCreatedHandlers();
                 connectionHolder.clear();
                 cleanTempTables(true);
                 database.removeSession(this);
@@ -596,7 +575,7 @@ public class Session implements SessionInterface {
     public void setPreparedTransaction(String transactionName, boolean commit) {
         if (currentTransactionName != null && currentTransactionName.equals(transactionName)) {
             if (commit) {
-                commit(false);
+                commit();
             } else {
                 rollback();
             }
@@ -621,8 +600,13 @@ public class Session implements SessionInterface {
         long time = System.currentTimeMillis();
         if (time >= cancelAt) {
             cancelAt = 0;
+            doCancel();
             throw DbException.get(ErrorCode.STATEMENT_WAS_CANCELED);
         }
+    }
+
+    public void doCancel() {
+        handlerHolder.cancelAllCreatedHandlers();
     }
 
     /**
@@ -732,7 +716,6 @@ public class Session implements SessionInterface {
      * Begin a transaction.
      */
     public void begin() {
-        autoCommitAtTransactionEnd = true;
         autoCommit = false;
     }
 
@@ -792,37 +775,6 @@ public class Session implements SessionInterface {
         this.cancelAt = 0;
     }
 
-    /**
-     * Set the table this session is waiting for, and the thread that is
-     * waiting.
-     *
-     * @param waitForLock       the table
-     * @param waitForLockThread the current thread (the one that is waiting)
-     */
-    public void setWaitForLock(Table waitForLock, Thread waitForLockThread) {
-        this.waitForLock = waitForLock;
-        this.waitForLockThread = waitForLockThread;
-    }
-
-    public Table getWaitForLock() {
-        return waitForLock;
-    }
-
-    public Thread getWaitForLockThread() {
-        return waitForLockThread;
-    }
-
-    @Override
-    public boolean isReconnectNeeded(boolean write) {
-        return false;
-    }
-
-    @Override
-    public SessionInterface reconnect(boolean write) {
-        close();
-        Session newSession = database.createSession(this.user);
-        return newSession;
-    }
 
     public Value getTransactionId() {
         return ValueString.get("" + id);
@@ -842,7 +794,7 @@ public class Session implements SessionInterface {
      * set, and deletes all temporary files held by the result sets.
      */
     public void endStatement() {
-        resourceTrace.closeAllCreatedHandlers();
+        handlerHolder.closeAllCreatedHandlers();
         closeTemporaryResults();
     }
 
@@ -898,7 +850,7 @@ public class Session implements SessionInterface {
     }
     
     public QueryHandlerFactory getQueryHandlerFactory() {
-        return resourceTrace;
+        return handlerHolder;
     }
 
 

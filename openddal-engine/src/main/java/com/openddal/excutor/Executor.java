@@ -23,7 +23,7 @@ import com.openddal.message.DbException;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public interface PreparedExecutor {
+public interface Executor {
 
     /**
      * Prepare this executor.
@@ -52,12 +52,5 @@ public interface PreparedExecutor {
      * @return the execution explain
      */
     String explain();
-    
-    /**
-     * Check if this object is a query executor.
-     *
-     * @return true if it is
-     */
-    boolean isQuery();
 
 }

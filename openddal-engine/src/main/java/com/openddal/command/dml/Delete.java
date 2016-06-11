@@ -41,7 +41,7 @@ public class Delete extends Prepared {
     }
 
     @Override
-    public String getPlanSQL() {
+    public String explainPlan() {
         return null;
     }
 

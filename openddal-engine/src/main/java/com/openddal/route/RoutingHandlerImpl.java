@@ -20,6 +20,7 @@ package com.openddal.route;
 
 import java.util.List;
 
+import com.openddal.config.GlobalTableRule;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.IndexCondition;
@@ -53,6 +54,8 @@ public class RoutingHandlerImpl implements RoutingHandler {
         switch (tr.getType()) {
         case TableRule.SHARDED_NODE_TABLE:
             return fixedRoutingResult(((ShardedTableRule) tr).getObjectNodes());
+        case TableRule.GLOBAL_NODE_TABLE:
+            return ((GlobalTableRule) tr).getBroadcastsRoutingResult();
         case TableRule.FIXED_NODE_TABLE:
             return fixedRoutingResult(tr.getMetadataNode());
         default:
@@ -72,8 +75,6 @@ public class RoutingHandlerImpl implements RoutingHandler {
             } catch (Exception e) {
                 throw new TableRoutingException(table.getName() + " routing error.");
             }
-        case TableRule.FIXED_NODE_TABLE:
-            return fixedRoutingResult(tr.getMetadataNode());
         default:
             throw new TableRoutingException(table.getName() + " does not support routing");
         }
@@ -131,10 +132,8 @@ public class RoutingHandlerImpl implements RoutingHandler {
             } catch (Exception e) {
                 throw new TableRoutingException(table.getName() + " routing error.");
             }
-        else if (tr instanceof ShardedTableRule)
-            return fixedRoutingResult(((ShardedTableRule) tr).getObjectNodes());
         else
-            return fixedRoutingResult(tr.getMetadataNode());
+            throw new TableRoutingException(table.getName() + " does not support routing");
 
     }
 

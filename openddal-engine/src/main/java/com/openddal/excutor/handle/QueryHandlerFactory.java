@@ -42,7 +42,8 @@ import com.openddal.route.rule.ObjectNode;
  */
 public interface QueryHandlerFactory {
     
-    QueryHandler createQueryHandler(Select select, ObjectNode node, Map<ObjectNode,Map<TableFilter,ObjectNode>> consistencyTableNodes);
+    QueryHandler createQueryHandler(Select select, ObjectNode node,
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
 
     QueryHandler createQueryHandler(TableFilter filter, ObjectNode node);
 
@@ -62,7 +63,7 @@ public interface QueryHandlerFactory {
 
     UpdateHandler createUpdateHandler(Call call, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node);
+    UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node, ObjectNode refNode);
 
     UpdateHandler createUpdateHandler(DropTable dropTable, ObjectNode node);
 

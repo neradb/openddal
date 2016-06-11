@@ -381,9 +381,9 @@ public class SelectUnion extends Query {
     }
 
     @Override
-    public String getPlanSQL() {
+    public String explainPlan() {
         StringBuilder buff = new StringBuilder();
-        buff.append('(').append(left.getPlanSQL()).append(')');
+        buff.append('(').append(left.explainPlan()).append(')');
         switch (unionType) {
             case UNION_ALL:
                 buff.append("\nUNION ALL\n");
@@ -400,7 +400,7 @@ public class SelectUnion extends Query {
             default:
                 DbException.throwInternalError("type=" + unionType);
         }
-        buff.append('(').append(right.getPlanSQL()).append(')');
+        buff.append('(').append(right.explainPlan()).append(')');
         Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
         if (sort != null) {
             buff.append("\nORDER BY ").append(sort.getSQL(exprList, exprList.length));

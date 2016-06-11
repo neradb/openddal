@@ -65,7 +65,7 @@ public class Replace extends Prepared {
     }
 
     @Override
-    public String getPlanSQL() {
+    public String explainPlan() {
         StatementBuilder buff = new StatementBuilder("REPLACE INTO ");
         buff.append(table.getSQL()).append('(');
         for (Column c : columns) {
@@ -94,7 +94,7 @@ public class Replace extends Prepared {
                 buff.append(')');
             }
         } else {
-            buff.append(query.getPlanSQL());
+            buff.append(query.explainPlan());
         }
         return buff.toString();
     }

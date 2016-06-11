@@ -17,6 +17,7 @@ package com.openddal.repo;
 
 import java.util.Map;
 
+import com.openddal.command.ddl.CreateTable;
 import com.openddal.command.dml.Select;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.route.rule.GroupObjectNode;
@@ -32,8 +33,10 @@ public interface SQLTranslator {
 
     SQLTranslated translate(Select select, ObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
-    
+
     SQLTranslated translate(Select select, GroupObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
+
+    SQLTranslated translate(CreateTable createTable, ObjectNode node, ObjectNode refNode);
 
 }

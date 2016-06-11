@@ -85,7 +85,7 @@ public class TableView extends Table {
      */
     public static TableView createTempView(Session session, User owner, String name, Query query, Query topQuery) {
         Schema mainSchema = session.getDatabase().getSchema(Constants.SCHEMA_MAIN);
-        String querySQL = query.getPlanSQL();
+        String querySQL = query.getSQL();
         TableView v = new TableView(mainSchema, 0, name, querySQL, query.getParameters(), null, session, false);
         if (v.createException != null) {
             throw v.createException;
@@ -109,7 +109,7 @@ public class TableView extends Table {
         // removeViewFromTables();
         try {
             Query query = compileViewQuery(session, querySQL);
-            this.querySQL = query.getPlanSQL();
+            this.querySQL = query.getSQL();
             tables = New.arrayList(query.getTables());
             ArrayList<Expression> expressions = query.getExpressions();
             ArrayList<Column> list = New.arrayList();

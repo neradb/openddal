@@ -4,11 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.openddal.command.CommandInterface;
 import com.openddal.command.Parser;
+import com.openddal.command.ddl.AlterTableAddConstraint;
+import com.openddal.command.ddl.CreateIndex;
+import com.openddal.command.ddl.CreateTable;
+import com.openddal.command.ddl.DefineCommand;
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Expression;
+import com.openddal.dbobject.table.Column;
+import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Database;
+import com.openddal.message.DbException;
 import com.openddal.repo.SQLTranslated;
 import com.openddal.repo.SQLTranslator;
 import com.openddal.result.SortOrder;
@@ -202,6 +210,7 @@ public class MySQLTranslator implements SQLTranslator {
         return buff.toString();
     }
 
+
     @Override
     public SQLTranslated translate(Select select, GroupObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
@@ -216,6 +225,134 @@ public class MySQLTranslator implements SQLTranslator {
         }
         sql.append(" ) ");
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
+    }
+
+    /**
+     * @see http://dev.mysql.com/doc/refman/5.7/en/create-table.html
+     */
+    @Override
+    public SQLTranslated translate(CreateTable prepared, ObjectNode node, ObjectNode refNode) {
+        StatementBuilder buff = new StatementBuilder("CREATE ");
+        if (prepared.isTemporary()) {
+            buff.append("TEMPORARY ");
+        }
+        buff.append("TABLE ");
+        if (prepared.isIfNotExists()) {
+            buff.append("IF NOT EXISTS ");
+        }
+        buff.append(identifier(node.getCompositeObjectName()));
+        if (prepared.getComment() != null) {
+            // buff.append(" COMMENT
+            // ").append(StringUtils.quoteStringSQL(prepared.getComment()));
+        }
+        buff.append("(");
+        for (Column column : prepared.getColumns()) {
+            buff.appendExceptFirst(", ");
+            buff.append(column.getCreateSQL());
+        }
+        for (DefineCommand command : prepared.getConstraintCommands()) {
+            buff.appendExceptFirst(", ");
+            int type = command.getType();
+            switch (type) {
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY: {
+                AlterTableAddConstraint stmt = (AlterTableAddConstraint) command;
+                buff.append(" CONSTRAINT PRIMARY KEY");
+                if (stmt.isPrimaryKeyHash()) {
+                    buff.append(" USING HASH");
+                }
+                buff.resetCount();
+                buff.append("(");
+                for (IndexColumn c : stmt.getIndexColumns()) {
+                    buff.appendExceptFirst(", ");
+                    buff.append(identifier(c.columnName));
+                }
+                buff.append(")");
+                break;
+            }
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE: {
+                AlterTableAddConstraint stmt = (AlterTableAddConstraint) command;
+                buff.append(" CONSTRAINT UNIQUE KEY");
+                buff.resetCount();
+                buff.append("(");
+                for (IndexColumn c : stmt.getIndexColumns()) {
+                    buff.appendExceptFirst(", ");
+                    buff.append(identifier(c.columnName));
+                }
+                buff.append(")");
+                break;
+            }
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
+                AlterTableAddConstraint stmt = (AlterTableAddConstraint) command;
+                String enclose = StringUtils.enclose(stmt.getCheckExpression().getSQL());
+                buff.append(" CHECK").append(enclose);
+                break;
+            }
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
+                AlterTableAddConstraint stmt = (AlterTableAddConstraint) command;
+                String refTableName = refNode.getCompositeObjectName();
+                IndexColumn[] cols = stmt.getIndexColumns();
+                IndexColumn[] refCols = stmt.getRefIndexColumns();
+                buff.resetCount();
+                buff.append(" CONSTRAINT FOREIGN KEY(");
+                for (IndexColumn c : cols) {
+                    buff.appendExceptFirst(", ");
+                    buff.append(c.columnName);
+                }
+                buff.append(")");
+                buff.append(" REFERENCES ");
+                buff.append(identifier(refTableName)).append("(");
+                buff.resetCount();
+                for (IndexColumn r : refCols) {
+                    buff.appendExceptFirst(", ");
+                    buff.append(r.columnName);
+                }
+                buff.append(")");
+                break;
+            }
+            case CommandInterface.CREATE_INDEX: {
+                CreateIndex stmt = (CreateIndex) command;
+                if (stmt.isSpatial()) {
+                    buff.append(" SPATIAL INDEX");
+                } else {
+                    buff.append(" INDEX");
+                    if (stmt.isHash()) {
+                        buff.append(" USING HASH");
+                    }
+                }
+                buff.resetCount();
+                buff.append("(");
+                for (IndexColumn c : stmt.getIndexColumns()) {
+                    buff.appendExceptFirst(", ");
+                    buff.append(identifier(c.columnName));
+                }
+                buff.append(")");
+                break;
+            }
+            default:
+                throw DbException.throwInternalError("type=" + type);
+            }
+        }
+        buff.append(")");
+        if (prepared.getTableEngine() != null) {
+            buff.append(" ENGINE = ");
+            buff.append(prepared.getTableEngine());
+
+        }
+        ArrayList<String> tableEngineParams = prepared.getTableEngineParams();
+        if (tableEngineParams != null && tableEngineParams.isEmpty()) {
+            buff.append("WITH ");
+            buff.resetCount();
+            for (String parameter : tableEngineParams) {
+                buff.appendExceptFirst(", ");
+                buff.append(StringUtils.quoteIdentifier(parameter));
+            }
+        }
+        if (prepared.getCharset() != null) {
+            buff.append(" DEFAULT CHARACTER SET = ");
+            buff.append(prepared.getCharset());
+        }
+        return SQLTranslated.build().sql(buff.toString()).sql(null);
+
     }
 
 }

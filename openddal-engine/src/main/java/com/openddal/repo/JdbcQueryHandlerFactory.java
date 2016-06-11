@@ -24,6 +24,7 @@ import com.openddal.excutor.handle.QueryHandler;
 import com.openddal.excutor.handle.QueryHandlerFactory;
 import com.openddal.excutor.handle.UpdateHandler;
 import com.openddal.repo.handle.JdbcQueryHandler;
+import com.openddal.repo.handle.JdbcUpdateHandler;
 import com.openddal.route.rule.ObjectNode;
 
 public class JdbcQueryHandlerFactory implements QueryHandlerFactory {
@@ -89,8 +90,11 @@ public class JdbcQueryHandlerFactory implements QueryHandlerFactory {
     }
 
     @Override
-    public UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node) {
-        return null;
+    public UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node, ObjectNode refNode) {
+        SQLTranslated translated = repo.getSQLTranslator().translate(createTable, node, refNode);
+        JdbcUpdateHandler handler = new JdbcUpdateHandler(createTable.getSession(), node.getShardName(), translated.sql,
+                translated.params);
+        return handler;
     }
 
     @Override

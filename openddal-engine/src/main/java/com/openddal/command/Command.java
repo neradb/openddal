@@ -15,6 +15,9 @@
  */
 package com.openddal.command;
 
+import java.sql.SQLException;
+import java.util.ArrayList;
+
 import com.openddal.command.expression.ParameterInterface;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Database;
@@ -23,9 +26,6 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.result.ResultInterface;
-
-import java.sql.SQLException;
-import java.util.ArrayList;
 
 /**
  * Represents a SQL statement. This object is only used on the server side.
@@ -146,11 +146,6 @@ public abstract class Command implements CommandInterface {
     private void stop() {
         session.endStatement();
         session.setCurrentCommand(null);
-        if (!isTransactional()) {
-            session.commit(true);
-        } else if (session.getAutoCommit()) {
-            session.commit(false);
-        }
         if (trace.isInfoEnabled() && startTime > 0) {
             long time = System.currentTimeMillis() - startTime;
             if (time > Constants.SLOW_QUERY_LIMIT_MS) {
@@ -265,6 +260,7 @@ public abstract class Command implements CommandInterface {
     @Override
     public void cancel() {
         this.cancel = true;
+        this.session.doCancel();
     }
 
     @Override

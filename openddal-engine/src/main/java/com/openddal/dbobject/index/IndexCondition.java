@@ -218,7 +218,7 @@ public class IndexCondition {
             break;
         case Comparison.IN_QUERY:
             buff.append(" IN(");
-            buff.append(expressionQuery.getPlanSQL());
+            buff.append(expressionQuery.explainPlan());
             buff.append(')');
             break;
         default:

@@ -15,6 +15,27 @@
  */
 package com.openddal.jdbc;
 
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.HashMap;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.command.expression.ParameterInterface;
 import com.openddal.message.DbException;
@@ -24,16 +45,22 @@ import com.openddal.result.ResultInterface;
 import com.openddal.util.DateTimeUtils;
 import com.openddal.util.IOUtils;
 import com.openddal.util.New;
-import com.openddal.value.*;
-
-import java.io.InputStream;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueBoolean;
+import com.openddal.value.ValueByte;
+import com.openddal.value.ValueBytes;
+import com.openddal.value.ValueDate;
+import com.openddal.value.ValueDecimal;
+import com.openddal.value.ValueDouble;
+import com.openddal.value.ValueFloat;
+import com.openddal.value.ValueInt;
+import com.openddal.value.ValueLong;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueShort;
+import com.openddal.value.ValueString;
+import com.openddal.value.ValueTime;
+import com.openddal.value.ValueTimestamp;
 
 /**
  * Represents a prepared statement.
@@ -121,7 +148,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
     public int executeUpdate() throws SQLException {
         try {
             debugCodeCall("executeUpdate");
-            checkClosedForWrite();
+            checkClosed();
             try {
                 return executeUpdateInternal();
             } finally {
@@ -161,7 +188,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCodeCall("execute");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 boolean returnsResultSet;
                 synchronized (conn.getSession()) {
@@ -747,7 +774,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setBlob(" + parameterIndex + ", x);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v;
                 if (x == null) {
@@ -779,7 +806,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setBlob(" + parameterIndex + ", x);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createBlob(x, -1);
                 setParameter(parameterIndex, v);
@@ -804,7 +831,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setClob(" + parameterIndex + ", x);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v;
                 if (x == null) {
@@ -836,7 +863,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setClob(" + parameterIndex + ", x);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v;
                 if (x == null) {
@@ -898,7 +925,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setBinaryStream(" + parameterIndex + ", x, " + length + "L);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createBlob(x, length);
                 setParameter(parameterIndex, v);
@@ -974,7 +1001,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setAsciiStream(" + parameterIndex + ", x, " + length + "L);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createClob(IOUtils.getAsciiReader(x), length);
                 setParameter(parameterIndex, v);
@@ -1049,7 +1076,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setCharacterStream(" + parameterIndex + ", x, " + length + "L);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createClob(x, length);
                 setParameter(parameterIndex, v);
@@ -1151,7 +1178,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             int[] result = new int[size];
             boolean error = false;
             SQLException next = null;
-            checkClosedForWrite();
+            checkClosed();
             try {
                 for (int i = 0; i < size; i++) {
                     Value[] set = batchParameters.get(i);
@@ -1197,7 +1224,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
     public void addBatch() throws SQLException {
         try {
             debugCodeCall("addBatch");
-            checkClosedForWrite();
+            checkClosed();
             try {
                 ArrayList<? extends ParameterInterface> parameters =
                         command.getParameters();
@@ -1416,7 +1443,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
                 debugCode("setNCharacterStream(" +
                         parameterIndex + ", x, " + length + "L);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createClob(x, length);
                 setParameter(parameterIndex, v);
@@ -1456,7 +1483,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setNClob(" + parameterIndex + ", x);");
             }
-            checkClosedForWrite();
+            checkClosed();
             Value v;
             if (x == null) {
                 v = ValueNull.INSTANCE;
@@ -1484,7 +1511,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setNClob(" + parameterIndex + ", x);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createClob(x, -1);
                 setParameter(parameterIndex, v);
@@ -1512,7 +1539,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setClob(" + parameterIndex + ", x, " + length + "L);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createClob(x, length);
                 setParameter(parameterIndex, v);
@@ -1541,7 +1568,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setBlob(" + parameterIndex + ", x, " + length + "L);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createBlob(x, length);
                 setParameter(parameterIndex, v);
@@ -1570,7 +1597,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (isDebugEnabled()) {
                 debugCode("setNClob(" + parameterIndex + ", x, " + length + "L);");
             }
-            checkClosedForWrite();
+            checkClosed();
             try {
                 Value v = conn.createClob(x, length);
                 setParameter(parameterIndex, v);
@@ -1599,8 +1626,8 @@ public class JdbcPreparedStatement extends JdbcStatement implements
     }
 
     @Override
-    protected boolean checkClosed(boolean write) {
-        if (super.checkClosed(write)) {
+    protected boolean checkClosed() {
+        if (super.checkClosed()) {
             // if the session was re-connected, re-prepare the statement
             ArrayList<? extends ParameterInterface> oldParams = command.getParameters();
             command = conn.prepareCommand(sqlStatement, fetchSize);

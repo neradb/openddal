@@ -66,7 +66,7 @@ public class Merge extends Prepared {
     }
 
     @Override
-    public String getPlanSQL() {
+    public String explainPlan() {
         StatementBuilder buff = new StatementBuilder("MERGE INTO ");
         buff.append(table.getSQL()).append('(');
         for (Column c : columns) {
@@ -104,7 +104,7 @@ public class Merge extends Prepared {
                 buff.append(')');
             }
         } else {
-            buff.append(query.getPlanSQL());
+            buff.append(query.explainPlan());
         }
         return buff.toString();
     }

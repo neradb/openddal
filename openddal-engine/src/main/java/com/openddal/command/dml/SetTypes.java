@@ -30,10 +30,14 @@ public class SetTypes {
     public static final int IGNORECASE = 1;
 
     /**
+     * The type of a SET MODE statement.
+     */
+    public static final int MODE = 3;
+
+    /**
      * The type of a SET COLLATION statement.
      */
     public static final int COLLATION = 12;
-
 
     /**
      * The type of a SET MAX_MEMORY_ROWS statement.
@@ -51,6 +55,11 @@ public class SetTypes {
     public static final int SCHEMA = 26;
 
     /**
+     * The type of a SET SCHEMA_SEARCH_PATH statement.
+     */
+    public static final int SCHEMA_SEARCH_PATH = 28;
+
+    /**
      * The type of a SET MAX_OPERATION_MEMORY statement.
      */
     public static final int MAX_OPERATION_MEMORY = 32;
@@ -60,22 +69,26 @@ public class SetTypes {
      */
     public static final int QUERY_TIMEOUT = 36;
 
-
     /**
      * The type of a SET BINARY_COLLATION statement.
      */
     public static final int BINARY_COLLATION = 38;
 
     /**
+     * The type of a SET \@VARIABLE statement.
+     */
+    public static final int VARIABLE = 35;
+
+    /**
      * The type of a SET QUERY_STATISTICS_ACTIVE statement.
      */
     public static final int QUERY_STATISTICS = 41;
-    
+
     /**
      * The type of a SET QUERY_STATISTICS_MAX_ENTRIES statement.
      */
     public static final int QUERY_STATISTICS_MAX_ENTRIES = 42;
-    
+
     private static final ArrayList<String> TYPES = New.arrayList();
 
     static {
@@ -86,12 +99,12 @@ public class SetTypes {
         list.add(MAX_MEMORY_ROWS, "MAX_MEMORY_ROWS");
         list.add(ALLOW_LITERALS, "ALLOW_LITERALS");
         list.add(SCHEMA, "SCHEMA");
+        list.add(SCHEMA_SEARCH_PATH, "SCHEMA_SEARCH_PATH");
         list.add(MAX_OPERATION_MEMORY, "MAX_OPERATION_MEMORY");
         list.add(QUERY_TIMEOUT, "QUERY_TIMEOUT");
         list.add(BINARY_COLLATION, "BINARY_COLLATION");
         list.add(QUERY_STATISTICS, "QUERY_STATISTICS");
         list.add(QUERY_STATISTICS_MAX_ENTRIES, "QUERY_STATISTICS_MAX_ENTRIES");
-        
 
     }
 

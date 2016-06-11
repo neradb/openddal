@@ -26,12 +26,12 @@ import com.openddal.util.New;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class HandlerTraceProxy implements QueryHandlerFactory {
+public class HandlerHolderProxy implements QueryHandlerFactory {
 
     private final QueryHandlerFactory target;
     private final List<ReadWriteHandler> createdHandlers = New.arrayList(10);
 
-    public HandlerTraceProxy(QueryHandlerFactory target) {
+    public HandlerHolderProxy(QueryHandlerFactory target) {
         this.target = target;
     }
 
@@ -107,8 +107,8 @@ public class HandlerTraceProxy implements QueryHandlerFactory {
     }
 
     @Override
-    public UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node) {
-        UpdateHandler handler = target.createUpdateHandler(createTable, node);
+    public UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node, ObjectNode refNode) {
+        UpdateHandler handler = target.createUpdateHandler(createTable, node, refNode);
         createdHandlers.add(handler);
         return handler;
     }
@@ -178,17 +178,21 @@ public class HandlerTraceProxy implements QueryHandlerFactory {
             try {
                 handler.close();
             } catch (Throwable e) {
-
+                // ignored
             }
         }
-        createdHandlers.clear();
+        // createdHandlers.clear();
     }
-    /*
-     * public void cancelAllCreatedHandlers() { for (ReadWriteHandler handler :
-     * createdHandlers) { try { handler.cancel(); } catch (Throwable e) {
-     * 
-     * } } createdHandlers.clear(); }
-     */
+
+    public void cancelAllCreatedHandlers() {
+        for (ReadWriteHandler handler : createdHandlers) {
+            try {
+                handler.cancel();
+            } catch (Throwable e) {
+                // ignored
+            }
+        }
+    }
 
     public boolean hasCreatedHandlers() {
         return !createdHandlers.isEmpty();

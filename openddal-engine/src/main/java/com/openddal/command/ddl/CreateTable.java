@@ -15,17 +15,18 @@
  */
 package com.openddal.command.ddl;
 
+import java.util.ArrayList;
+
 import com.openddal.command.CommandInterface;
 import com.openddal.command.dml.Query;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.engine.Session;
+import com.openddal.excutor.effects.CreateTableExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.util.New;
-
-import java.util.ArrayList;
 
 /**
  * This class represents the statement CREATE TABLE
@@ -44,6 +45,7 @@ public class CreateTable extends SchemaCommand {
     private String comment;
     private boolean sortedInsertMode;
     private String charset;
+    private CreateTableExecutor executor;
 
     public CreateTable(Session session, Schema schema) {
         super(session, schema);
@@ -139,6 +141,19 @@ public class CreateTable extends SchemaCommand {
         this.ifNotExists = ifNotExists;
     }
 
+    @Override
+    public CreateTableExecutor getExecutor() {
+        if (executor == null) {
+            executor = new CreateTableExecutor(session, this);
+        }
+        return executor;
+    }
+
+    @Override
+    public int update() {
+        return getExecutor().update();
+    }
+
     /**
      * Sets the primary key columns, but also check if a primary key with
      * different columns is already defined.
@@ -211,7 +226,7 @@ public class CreateTable extends SchemaCommand {
     }
 
     @Override
-    public String getPlanSQL() {
+    public String explainPlan() {
         return null;
     }
 
