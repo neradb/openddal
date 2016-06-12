@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2016 the original author or authors
+ * Copyright 2014-2015 the original author or authors
  *
  * Licensed under the Apache License, Version 2.0 (the “License”);
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.excutor.handle;
+package com.openddal.excutor.effects;
 
-import java.util.concurrent.Callable;
-
-import com.openddal.excutor.cursor.Cursor;
+import com.openddal.command.dml.Call;
+import com.openddal.excutor.ExecutionFramework;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
  */
-public interface QueryHandler extends Callable<Cursor>, ReadWriteHandler {
+public class CallExecutor extends ExecutionFramework<Call> {
 
-    Cursor executeQuery();
+    /**
+     * @param prepared
+     */
+    public CallExecutor(Call prepared) {
+        super(prepared);
+    }
+
+    @Override
+    protected void doPrepare() {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    protected String doExplain() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
 }

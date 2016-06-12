@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo.handle;
+package com.openddal.repo.works;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -28,6 +29,7 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.repo.JdbcRepository;
+import com.openddal.repo.ShardChooser;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
@@ -35,7 +37,7 @@ import com.openddal.value.Value;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public abstract class JdbcBasicHandler {
+public abstract class JdbcWorker {
     protected final Session session;
     protected final Trace trace;
 
@@ -43,11 +45,11 @@ public abstract class JdbcBasicHandler {
     protected final String sql;
     protected final List<Value> params;
 
-    private Connection rtConn;
-    private Statement rtStmt;
-    private ResultSet rtRs;
+    protected Connection opendConnection;
+    protected PreparedStatement opendStatement;
+    protected ResultSet opendResultSet;
 
-    public JdbcBasicHandler(Session session, String shardName, String sql, List<Value> params) {
+    public JdbcWorker(Session session, String shardName, String sql, List<Value> params) {
         super();
         this.session = session;
         this.shardName = shardName;
@@ -61,7 +63,7 @@ public abstract class JdbcBasicHandler {
      * Wrap a SQL exception that occurred while accessing a linked table.
      *
      * @param sql the SQL statement
-     * @param ex  the exception from the remote database
+     * @param ex the exception from the remote database
      * @return the wrapped exception
      */
     protected static DbException wrapException(String sql, Exception ex) {
@@ -69,46 +71,11 @@ public abstract class JdbcBasicHandler {
         return DbException.get(ErrorCode.ERROR_ACCESSING_DATABASE_TABLE_2, e, sql, e.toString());
     }
 
-    public void attach(Connection conn) {
-        if (this.rtConn != null) {
-            throw new IllegalStateException();
-        }
-        this.rtConn = conn;
-    }
-
-    public void attach(Statement stmt) {
-        if (this.rtStmt != null) {
-            throw new IllegalStateException();
-        }
-        this.rtStmt = stmt;
-    }
-
-    public void attach(ResultSet rs) {
-        if (this.rtRs != null) {
-            throw new IllegalStateException();
-        }
-        this.rtRs = rs;
-    }
-
-    /**
-     * @return the rtConn
-     */
-    public Connection getRuntimeConnection() {
-        return rtConn;
-    }
-
-    /**
-     * @return the rtStmt
-     */
-    public Statement getRuntimeStatement() {
-        return rtStmt;
-    }
-
-    /**
-     * @return the rtRs
-     */
-    public ResultSet getRuntimeResultSet() {
-        return rtRs;
+    protected Connection doGetConnection(ShardChooser chooser) throws SQLException {
+        JdbcRepository dataSourceRepository = (JdbcRepository) session.getDatabase().getRepository();
+        DataSource dataSource = dataSourceRepository.getDataSourceByShardName(chooser.shardName);
+        Connection conn = session.applyConnection(dataSource, chooser);
+        return conn;
     }
 
     /**
@@ -134,21 +101,24 @@ public abstract class JdbcBasicHandler {
 
     public void cancel() {
         try {
-            if (rtStmt == null) {
+            if (opendStatement == null) {
                 return;
             }
-            rtStmt.cancel();
+            opendStatement.cancel();
         } catch (Exception e) {
 
         }
     }
 
     public void close() {
-        JdbcUtils.closeSilently(rtRs);
-        JdbcUtils.closeSilently(rtStmt);
-        JdbcUtils.closeSilently(rtConn);
+        JdbcUtils.closeSilently(opendResultSet);
+        JdbcUtils.closeSilently(opendStatement);
+        JdbcUtils.closeSilently(opendConnection);
+        opendResultSet = null;
+        opendStatement = null;
+        opendConnection = null;
     }
-    
+
     public String explain() {
         StatementBuilder buff = new StatementBuilder();
         buff.append("execute on ").append(shardName);
@@ -166,18 +136,12 @@ public abstract class JdbcBasicHandler {
     }
 
     protected void applyQueryTimeout(Statement stmt) throws SQLException {
-        //The session timeout of a query in milliseconds
+        // The session timeout of a query in milliseconds
         int queryTimeout = session.getQueryTimeout();
         if (queryTimeout > 0) {
             int seconds = queryTimeout / 1000;
             trace.debug("apply {0} query time out from statement.", seconds);
             stmt.setQueryTimeout(seconds);
         }
-    }
-
-    protected DataSource getDataSource() {
-        JdbcRepository dataSourceRepository = (JdbcRepository) session.getDatabase().getRepository();
-        DataSource dataSource = dataSourceRepository.getDataSourceByShardName(shardName);
-        return dataSource;
     }
 }

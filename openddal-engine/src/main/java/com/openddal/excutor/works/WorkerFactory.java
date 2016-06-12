@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.excutor.handle;
+package com.openddal.excutor.works;
 
 import java.util.Map;
 
@@ -40,45 +40,45 @@ import com.openddal.route.rule.ObjectNode;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface QueryHandlerFactory {
+public interface WorkerFactory {
     
-    QueryHandler createQueryHandler(Select select, ObjectNode node,
+    QueryWorker createQueryWorker(Select select, ObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
 
-    QueryHandler createQueryHandler(TableFilter filter, ObjectNode node);
+    QueryWorker createQueryWorker(TableFilter filter, ObjectNode node);
 
-    QueryHandler createQueryHandler(Call call, ObjectNode node);
+    QueryWorker createQueryWorker(Call call, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Insert insert, ObjectNode node);
+    UpdateWorker createUpdateWorker(Insert insert, ObjectNode node);
 
-    BatchUpdateHandler createBatchUpdateHandler(Insert insert, ObjectNode node);
+    BatchUpdateWorker createBatchUpdateWorker(Insert insert, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Update update, ObjectNode node);
+    UpdateWorker createUpdateWorker(Update update, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Delete delete, ObjectNode node);
+    UpdateWorker createUpdateWorker(Delete delete, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Replace replace, ObjectNode node);
+    UpdateWorker createUpdateWorker(Replace replace, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Merge merge, ObjectNode node);
+    UpdateWorker createUpdateWorker(Merge merge, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(Call call, ObjectNode node);
+    UpdateWorker createUpdateWorker(Call call, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(CreateTable createTable, ObjectNode node, ObjectNode refNode);
+    UpdateWorker createUpdateWorker(CreateTable createTable, ObjectNode node, ObjectNode refNode);
 
-    UpdateHandler createUpdateHandler(DropTable dropTable, ObjectNode node);
+    UpdateWorker createUpdateWorker(DropTable dropTable, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(TruncateTable truncateTable, ObjectNode node);
+    UpdateWorker createUpdateWorker(TruncateTable truncateTable, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(AlterTableAddConstraint alterTableAddConstraint, ObjectNode node);
+    UpdateWorker createUpdateWorker(AlterTableAddConstraint alterTableAddConstraint, ObjectNode node, ObjectNode refNode);
 
-    UpdateHandler createUpdateHandler(AlterTableAlterColumn alterTableAlterColumn, ObjectNode node);
+    UpdateWorker createUpdateWorker(AlterTableAlterColumn alterTableAlterColumn, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(AlterTableRename alterTableRename, ObjectNode node);
+    UpdateWorker createUpdateWorker(AlterTableRename alterTableRename, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(AlterTableDropConstraint alterTableRename, ObjectNode node);
+    UpdateWorker createUpdateWorker(AlterTableDropConstraint alterTableRename, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(CreateIndex createIndex, ObjectNode node);
+    UpdateWorker createUpdateWorker(CreateIndex createIndex, ObjectNode node);
 
-    UpdateHandler createUpdateHandler(DropIndex dropIndex, ObjectNode node);
+    UpdateWorker createUpdateWorker(DropIndex dropIndex, ObjectNode node);
 
 }

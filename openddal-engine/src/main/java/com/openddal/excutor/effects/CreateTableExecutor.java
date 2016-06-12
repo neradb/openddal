@@ -28,34 +28,32 @@ import com.openddal.command.ddl.DefineCommand;
 import com.openddal.command.dml.Insert;
 import com.openddal.command.dml.Query;
 import com.openddal.command.expression.Expression;
-import com.openddal.command.expression.Parameter;
-import com.openddal.config.TableRule;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
-import com.openddal.engine.Session;
 import com.openddal.excutor.ExecutionFramework;
-import com.openddal.excutor.handle.UpdateHandler;
+import com.openddal.excutor.works.UpdateWorker;
+import com.openddal.excutor.works.Worker;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 import com.openddal.value.DataType;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class CreateTableExecutor extends ExecutionFramework {
+public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
 
     private CreateTable prepared;
-    private List<UpdateHandler> updateHandlers;
+    private List<UpdateWorker> handlers;
     private Insert asQueryInsert;
     /**
      * @param prepared
      */
-    public CreateTableExecutor(Session session, CreateTable prepared) {
-        super(session);
-        this.prepared = prepared;
+    public CreateTableExecutor(CreateTable prepared) {
+        super(prepared);
     }
 
     @Override
@@ -65,7 +63,6 @@ public class CreateTableExecutor extends ExecutionFramework {
         if (tableMate == null) {
             throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
         }
-        TableRule tableRule = tableMate.getTableRule();
         if (!tableMate.isInited()) {
             if (prepared.isIfNotExists()) {
                 return;
@@ -78,13 +75,9 @@ public class CreateTableExecutor extends ExecutionFramework {
                 AlterTableAddConstraint stmt = (AlterTableAddConstraint) command;
                 String refTableName = stmt.getRefTableName();
                 refTable = getTableMate(refTableName);
-                TableRule r2 = refTable.getTableRule();
-                if (refTable != null) {
-                    if (!tableRule.isNodeComparable(r2)) {
-                        throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
-                                "Create foreign key for table,the original table and the reference table nodes should be consistency.");
-                    }
-
+                if (!isConsistencyTableForReferential(tableMate, refTable)) {
+                    throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
+                            "Create foreign key for table,the original table and the reference table nodes should be consistency.");
                 }
             }
         }
@@ -114,20 +107,20 @@ public class CreateTableExecutor extends ExecutionFramework {
 
         routingResult = routingHandler.doRoute(tableMate);
         ObjectNode[] selectNodes = routingResult.getSelectNodes();
-        updateHandlers = New.arrayList(selectNodes.length);
+        handlers = New.arrayList(selectNodes.length);
         for (ObjectNode objectNode : selectNodes) {
             ObjectNode refTableNode = null;
             if (refTable != null) {
                 refTableNode = getConsistencyNode(refTable.getTableRule(), objectNode);
             }
-            UpdateHandler handler = queryHandlerFactory.createUpdateHandler(prepared, objectNode, refTableNode);
-            updateHandlers.add(handler);
+            UpdateWorker handler = queryHandlerFactory.createUpdateWorker(prepared, objectNode, refTableNode);
+            handlers.add(handler);
         }
     }
 
     @Override
-    public int update() {
-        checkPrepared();
+    public int doUpdate() {
+        prepare();
         String tableName = prepared.getTableName();
         TableMate tableMate = getTableMate(tableName);
         ArrayList<Sequence> sequences = New.arrayList();
@@ -142,7 +135,7 @@ public class CreateTableExecutor extends ExecutionFramework {
         for (Sequence sequence : sequences) {
             tableMate.addSequence(sequence);
         }
-        int affectRows = executeUpdateHandlers(updateHandlers);
+        int affectRows = invokeUpdateHandler(handlers);
 
         if (asQueryInsert != null) {
             asQueryInsert.update();
@@ -150,6 +143,28 @@ public class CreateTableExecutor extends ExecutionFramework {
         tableMate.loadMataData(session);
         return affectRows;
     }
+    
+    /**
+     * Get the PreparedExecutor with the execution explain.
+     *
+     * @return the execution explain
+     */
+    @Override
+    public String doExplain() {
+        prepare();
+        if (handlers.size() == 1) {
+            return handlers.iterator().next().explain();
+        }
+        StringBuilder explain = new StringBuilder();
+        explain.append("MULTINODES_EXECUTION");
+        explain.append('\n');
+        for (Worker handler : handlers) {
+            String subexplain = handler.explain();
+            explain.append(StringUtils.indent(subexplain, 4, false));
+        }
+        return explain.toString();
+    }
+
 
     private void generateColumnsFromQuery() {
         int columnCount = prepared.getQuery().getColumnCount();
@@ -178,20 +193,5 @@ public class CreateTableExecutor extends ExecutionFramework {
         }
     }
 
-    @Override
-    protected List<Parameter> getPreparedParameters() {
-        return prepared.getParameters();
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.excutor.ExecutionFramework#isQuery()
-     */
-    @Override
-    protected boolean isQuery() {
-        // TODO Auto-generated method stub
-        return false;
-    }
 
 }

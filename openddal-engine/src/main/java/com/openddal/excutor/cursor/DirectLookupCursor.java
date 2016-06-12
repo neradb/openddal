@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 
 import com.openddal.command.dml.Select;
-import com.openddal.command.expression.Parameter;
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.IndexCondition;
@@ -16,9 +15,8 @@ import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Constants;
-import com.openddal.engine.Session;
 import com.openddal.excutor.ExecutionFramework;
-import com.openddal.excutor.handle.QueryHandler;
+import com.openddal.excutor.works.QueryWorker;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
@@ -27,30 +25,44 @@ import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 
-public class DirectLookupCursor extends ExecutionFramework implements Cursor {
+public class DirectLookupCursor extends ExecutionFramework<Select> implements Cursor {
 
-    private final Select select;
     private Cursor cursor;
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
-    private List<QueryHandler> queryHandlers;
+    private List<QueryWorker> queryHandlers;
 
-    public DirectLookupCursor(Session session, Select select) {
-        super(session);
-        this.select = select;
+    public DirectLookupCursor(Select select) {
+        super(select);
     }
 
     @Override
-    public void doPrepare() {
-        this.routingResult = doRoute(select);
+    protected void doPrepare() {
+        this.routingResult = doRoute(prepared);
         ObjectNode[] selectNodes = routingResult.getSelectNodes();
         if (session.getDatabase().getSettings().optimizeMerging) {
             selectNodes = routingResult.group();
         }
         queryHandlers = New.arrayList(selectNodes.length);
         for (ObjectNode node : selectNodes) {
-            QueryHandler queryHandler = queryHandlerFactory.createQueryHandler(select, node, consistencyTableNodes);
+            QueryWorker queryHandler = queryHandlerFactory.createQueryWorker(prepared, node, consistencyTableNodes);
             queryHandlers.add(queryHandler);
         }
+    }
+
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.openddal.excutor.ExecutionFramework#isQuery()
+     */
+    @Override
+    protected void doQuery() {
+
+    }
+
+    @Override
+    public String doExplain() {
+        return null;
     }
 
     private RoutingResult doRoute(Select prepare) {
@@ -116,7 +128,6 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
             consistencyTableNodes.put(target, tableNodeMapping);
         }
     }
-    
 
     @Override
     public Row get() {
@@ -157,7 +168,6 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
     }
 
     public double getCost() {
-        checkPrepared();
         return queryHandlers.size() * Constants.COST_ROW_OFFSET;
     }
 
@@ -295,28 +305,5 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         }
 
     }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.excutor.ExecutionFramework#getPreparedParameters()
-     */
-    @Override
-    protected List<Parameter> getPreparedParameters() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.excutor.ExecutionFramework#isQuery()
-     */
-    @Override
-    protected boolean isQuery() {
-        // TODO Auto-generated method stubt
-        return true;
-    }
-
 
 }

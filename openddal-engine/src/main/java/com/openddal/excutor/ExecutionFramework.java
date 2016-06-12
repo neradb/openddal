@@ -22,6 +22,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import com.openddal.command.Prepared;
 import com.openddal.command.expression.Parameter;
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.ShardedTableRule;
@@ -32,10 +33,12 @@ import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
-import com.openddal.excutor.handle.HandlerHolderProxy;
-import com.openddal.excutor.handle.QueryHandlerFactory;
-import com.openddal.excutor.handle.ReadWriteHandler;
-import com.openddal.excutor.handle.UpdateHandler;
+import com.openddal.excutor.cursor.Cursor;
+import com.openddal.excutor.cursor.MergedCursor;
+import com.openddal.excutor.works.BatchUpdateWorker;
+import com.openddal.excutor.works.QueryWorker;
+import com.openddal.excutor.works.UpdateWorker;
+import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.RoutingHandler;
@@ -49,39 +52,35 @@ import com.openddal.value.Value;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public abstract class ExecutionFramework implements Executor {
+public abstract class ExecutionFramework<T extends Prepared> implements Executor {
 
     protected final Session session;
+    protected final T prepared;
     protected final Database database;
     protected RoutingResult routingResult = null;
     protected final ThreadPoolExecutor queryExecutor;
     protected final RoutingHandler routingHandler;
-    protected final HandlerHolderProxy queryHandlerFactory;
+    protected final WorkerFactory queryHandlerFactory;
 
     private boolean isPrepared;
     private List<Parameter> lastParams;
 
-
     /**
      * @param prepared
      */
-    public ExecutionFramework(Session session) {
-        this.session = session;
+    public ExecutionFramework(T prepared) {
+        this.prepared = prepared;
+        this.session = prepared.getSession();
         this.database = session.getDatabase();
         this.queryExecutor = database.getQueryExecutor();
         this.routingHandler = database.getRoutingHandler();
-        this.queryHandlerFactory = new HandlerHolderProxy(session.getQueryHandlerFactory());
+        this.queryHandlerFactory = session.getQueryHandlerFactory();
 
     }
 
-    public void checkPrepared() {
-        if (!isPrepared) {
-            DbException.throwInternalError("Executor not prepared.");
-        }
-    }
-
+    @Override
     public final void prepare() {
-        List<Parameter> params = getPreparedParameters();
+        List<Parameter> params = prepared.getParameters();
         if (isPrepared && sameParamsAsLast(params, lastParams)) {
             return;
         }
@@ -90,102 +89,44 @@ public abstract class ExecutionFramework implements Executor {
         isPrepared = true;
     }
 
-    private boolean sameParamsAsLast(List<Parameter> params, List<Parameter> lastParams) {
-        Database db = session.getDatabase();
-        params = params == null ? New.<Parameter> arrayList() : params;
-        lastParams = lastParams == null ? New.<Parameter> arrayList() : lastParams;
-        if (params.size() != lastParams.size()) {
-            return false;
-        }
-        for (int i = 0; i < params.size(); i++) {
-            Value a = params.get(i).getParamValue(), b = params.get(i).getParamValue();
-            if (a.getType() != b.getType() || !db.areEqual(a, b)) {
-                return false;
-            }
-        }
-        return true;
+    @Override
+    public final int update() {
+        prepare();
+        return doUpdate();
     }
 
-    protected abstract List<Parameter> getPreparedParameters();
+    @Override
+    public final void query() {
+        prepare();
+        doQuery();
+    }
 
-    /**
-     * Execute the statement.
-     *
-     * @return the update count
-     * @throws DbException if it is a query
-     */
-    public int update() {
-        checkPrepared();
+    @Override
+    public final String explain() {
+        prepare();
+        return doExplain();
+    }
+
+    protected abstract void doPrepare();
+
+    protected abstract String doExplain();
+    
+    protected int doUpdate() {
         throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
     }
 
-    /**
-     * Execute the query.
-     *
-     * @param maxrows the maximum number of rows to return
-     * @return the result set
-     * @throws DbException if it is not a query
-     */
-    public void query() {
-        checkPrepared();
+    protected void doQuery() {
         throw DbException.get(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY);
     }
 
-    /**
-     * Get the PreparedExecutor with the execution explain.
-     *
-     * @return the execution explain
-     */
-    public String explain() {
-        checkPrepared();
-        if (!queryHandlerFactory.hasCreatedHandlers()) {
-            return null;
-        }
-        List<ReadWriteHandler> handlers = queryHandlerFactory.getCreatedHandlers();
-        if (handlers.size() == 1) {
-            return handlers.iterator().next().explain();
-        }
-        StringBuilder explain = new StringBuilder();
-        if (isQuery()) {
-            explain.append("MERGE_RESULT");
-        } else {
-            explain.append("MULTINODES_EXECUTION");
-        }
-        explain.append('\n');
-        for (ReadWriteHandler handler : handlers) {
-            String subexplain = handler.explain();
-            explain.append(StringUtils.indent(subexplain, 4, false));
-        }
-        return explain.toString();
-    }
-
-
-    public abstract void doPrepare();
-
-    public QueryHandlerFactory getQueryHandlerFactory() {
-        return queryHandlerFactory;
-    }
-
-    protected boolean isQuery() {
-        return false;
-    }
-    public int executeUpdateHandlers(List<UpdateHandler> handlers) {
+    protected int invokeUpdateHandler(List<UpdateWorker> handlers) {
         session.checkCanceled();
         try {
+            int queryTimeout = session.getQueryTimeout();// MILLISECONDS
+            List<Future<Integer>> invokeAll = queryExecutor.invokeAll(handlers, queryTimeout, TimeUnit.MILLISECONDS);
             int affectRows = 0;
-            if (handlers.size() > 1) {
-                int queryTimeout = session.getQueryTimeout();// MILLISECONDS
-                List<Future<Integer>> invokeAll;
-                if (queryTimeout > 0) {
-                    invokeAll = queryExecutor.invokeAll(handlers, queryTimeout, TimeUnit.MILLISECONDS);
-                } else {
-                    invokeAll = queryExecutor.invokeAll(handlers);
-                }
-                for (Future<Integer> future : invokeAll) {
-                    affectRows += future.get();
-                }
-            } else if (handlers.size() == 1) {
-                handlers.iterator().next().executeUpdate();
+            for (Future<Integer> future : invokeAll) {
+                affectRows += future.get();
             }
             return affectRows;
         } catch (InterruptedException e) {
@@ -193,17 +134,53 @@ public abstract class ExecutionFramework implements Executor {
         } catch (ExecutionException e) {
             throw DbException.convert(e.getCause());
         } finally {
-            for (UpdateHandler handler : handlers) {
-                handler.close();
-            }
+            session.checkCanceled();
         }
     }
 
-    protected static TableMate getTableMate(TableFilter filter) {
-        if (filter.isFromTableMate()) {
-            return (TableMate) filter.getTable();
+    protected int invokeBatchUpdateHandler(List<BatchUpdateWorker> handlers) {
+        session.checkCanceled();
+        try {
+            int queryTimeout = session.getQueryTimeout();// MILLISECONDS
+            List<Future<Integer[]>> invokeAll = queryExecutor.invokeAll(handlers, queryTimeout, TimeUnit.MILLISECONDS);
+            int affectRows = 0;
+            for (Future<Integer[]> future : invokeAll) {
+                Integer[] integers = future.get();
+                for (Integer integer : integers) {
+                    affectRows += integer;
+                }
+            }
+            return affectRows;
+        } catch (InterruptedException e) {
+            throw DbException.convert(e);
+        } catch (ExecutionException e) {
+            throw DbException.convert(e.getCause());
+        } finally {
+            session.checkCanceled();
         }
-        return null;
+    }
+
+    protected Cursor invokeQueryHandler(List<QueryWorker> handlers) {
+        session.checkCanceled();
+        try {
+            int queryTimeout = session.getQueryTimeout();// MILLISECONDS
+            List<Future<Cursor>> invokeAll = queryExecutor.invokeAll(handlers, queryTimeout, TimeUnit.MILLISECONDS);
+            if (invokeAll.size() > 1) {
+                MergedCursor cursor = new MergedCursor();
+                for (Future<Cursor> future : invokeAll) {
+                    cursor.addCursor(future.get());
+                }
+                return cursor;
+            } else {
+                return invokeAll.iterator().next().get();
+            }
+        } catch (InterruptedException e) {
+            throw DbException.convert(e);
+        } catch (ExecutionException e) {
+            throw DbException.convert(e.getCause());
+        } finally {
+            session.checkCanceled();
+        }
     }
 
     protected TableMate getTableMate(String tableName) {
@@ -234,6 +211,29 @@ public abstract class ExecutionFramework implements Executor {
         return null;
     }
 
+    private boolean sameParamsAsLast(List<Parameter> params, List<Parameter> lastParams) {
+        Database db = session.getDatabase();
+        params = params == null ? New.<Parameter> arrayList() : params;
+        lastParams = lastParams == null ? New.<Parameter> arrayList() : lastParams;
+        if (params.size() != lastParams.size()) {
+            return false;
+        }
+        for (int i = 0; i < params.size(); i++) {
+            Value a = params.get(i).getParamValue(), b = params.get(i).getParamValue();
+            if (a.getType() != b.getType() || !db.areEqual(a, b)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    protected static TableMate getTableMate(TableFilter filter) {
+        if (filter.isFromTableMate()) {
+            return (TableMate) filter.getTable();
+        }
+        return null;
+    }
+
     protected static TableRule getTableRule(TableFilter filter) throws NullPointerException {
         TableMate tableMate = getTableMate(filter);
         TableRule tableRule = tableMate.getTableRule();
@@ -248,6 +248,28 @@ public abstract class ExecutionFramework implements Executor {
             }
         }
         return result;
+    }
+    
+    protected static boolean isConsistencyTableForReferential(TableMate table, TableMate refTable) {
+        TableRule t1 = table.getTableRule();
+        TableRule t2 = refTable.getTableRule();
+        if(t1.getType() != t2.getType()) {
+            return false;
+        }
+        switch (t1.getType()) {
+        case TableRule.SHARDED_NODE_TABLE:
+            ShardedTableRule shard1 = (ShardedTableRule)t1;
+            ShardedTableRule shard2 = (ShardedTableRule)t2;
+            return shard1.getOwnerGroup() == shard2.getOwnerGroup();
+            
+        case TableRule.FIXED_NODE_TABLE:
+            String s1 = t1.getMetadataNode().getShardName();
+            String s2 = t2.getMetadataNode().getShardName();
+            return StringUtils.equals(s1, s2);
+        default:
+            return false;
+        }
+        
     }
 
     protected static ObjectNode getConsistencyNode(TableRule tableRule, ObjectNode target) {

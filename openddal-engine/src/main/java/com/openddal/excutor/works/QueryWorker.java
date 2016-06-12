@@ -13,16 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.excutor.handle;
+package com.openddal.excutor.works;
 
 import java.util.concurrent.Callable;
+
+import com.openddal.excutor.cursor.Cursor;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface UpdateHandler extends Callable<Integer>, ReadWriteHandler {
+public interface QueryWorker extends Callable<Cursor>, Worker {
 
-    int executeUpdate();
+    Cursor executeQuery();
 
 }

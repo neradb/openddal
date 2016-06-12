@@ -1,18 +1,18 @@
 package com.openddal.repo.mysql;
 
 import com.openddal.engine.Database;
-import com.openddal.excutor.handle.QueryHandlerFactory;
-import com.openddal.repo.JdbcQueryHandlerFactory;
+import com.openddal.excutor.works.WorkerFactory;
+import com.openddal.repo.JdbcWorkerFactory;
 import com.openddal.repo.JdbcRepository;
 import com.openddal.repo.SQLTranslator;
 
 public class MySQLRepository extends JdbcRepository {
 
     private MySQLTranslator sqlTranslator;
-    private JdbcQueryHandlerFactory handlerFactory;
+    private JdbcWorkerFactory handlerFactory;
 
     @Override
-    public QueryHandlerFactory getQueryHandlerFactory() {
+    public WorkerFactory getWorkerFactory() {
         return handlerFactory;
     }
 
@@ -25,7 +25,7 @@ public class MySQLRepository extends JdbcRepository {
     public void init(Database database) {
         super.init(database);
         sqlTranslator = new MySQLTranslator(database);
-        handlerFactory = new JdbcQueryHandlerFactory(this);
+        handlerFactory = new JdbcWorkerFactory(this);
     }
 
     @Override

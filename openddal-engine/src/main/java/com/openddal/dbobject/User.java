@@ -16,6 +16,7 @@
 package com.openddal.dbobject;
 
 import com.openddal.dbobject.schema.Schema;
+import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Database;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
@@ -61,6 +62,30 @@ public class User extends DbObject {
         if (!admin) {
             throw DbException.get(ErrorCode.ADMIN_RIGHTS_REQUIRED);
         }
+    }
+    
+    /**
+     * Checks that this user has the given rights for this database object.
+     *
+     * @param table     the database object
+     * @param rightMask the rights required
+     * @throws DbException if this user does not have the required rights
+     */
+    public void checkRight(Table table, int rightMask) {
+        if (!hasRight(table, rightMask)) {
+            throw DbException.get(ErrorCode.NOT_ENOUGH_RIGHTS_FOR_1, table.getSQL());
+        }
+    }
+
+    /**
+     * See if this user has the given rights for this database object.
+     *
+     * @param table     the database object, or null for schema-only check
+     * @param rightMask the rights required
+     * @return true if the user has the rights
+     */
+    public boolean hasRight(Table table, int rightMask) {
+        return true;
     }
 
     @Override

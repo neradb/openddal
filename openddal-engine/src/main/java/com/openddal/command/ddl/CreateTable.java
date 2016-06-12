@@ -141,10 +141,9 @@ public class CreateTable extends SchemaCommand {
         this.ifNotExists = ifNotExists;
     }
 
-    @Override
-    public CreateTableExecutor getExecutor() {
+    private CreateTableExecutor getExecutor() {
         if (executor == null) {
-            executor = new CreateTableExecutor(session, this);
+            executor = new CreateTableExecutor(this);
         }
         return executor;
     }
@@ -227,7 +226,7 @@ public class CreateTable extends SchemaCommand {
 
     @Override
     public String explainPlan() {
-        return null;
+        return getExecutor().explain();
     }
 
     /**

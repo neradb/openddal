@@ -34,8 +34,8 @@ import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
-import com.openddal.excutor.handle.HandlerHolderProxy;
-import com.openddal.excutor.handle.QueryHandlerFactory;
+import com.openddal.excutor.works.WorkerFactory;
+import com.openddal.excutor.works.WorkerFactoryProxy;
 import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
@@ -99,7 +99,7 @@ public class Session implements SessionInterface {
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
     private int transactionIsolation;
-    private final HandlerHolderProxy handlerHolder;
+    private final WorkerFactoryProxy workerHolder;
 
     public Session(Database database, User user, int id) {
         this.database = database;
@@ -108,7 +108,7 @@ public class Session implements SessionInterface {
         this.user = user;
         this.id = id;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
-        this.handlerHolder = new HandlerHolderProxy(database.getRepository().getQueryHandlerFactory());
+        this.workerHolder = new WorkerFactoryProxy(database.getRepository().getWorkerFactory());
     }
 
 
@@ -471,7 +471,7 @@ public class Session implements SessionInterface {
                 for (Connection conn : connectionHolder.values()) {
                     JdbcUtils.closeSilently(conn);
                 }
-                handlerHolder.closeAllCreatedHandlers();
+                workerHolder.close();
                 connectionHolder.clear();
                 cleanTempTables(true);
                 database.removeSession(this);
@@ -606,7 +606,7 @@ public class Session implements SessionInterface {
     }
 
     public void doCancel() {
-        handlerHolder.cancelAllCreatedHandlers();
+        workerHolder.cancel();
     }
 
     /**
@@ -794,7 +794,7 @@ public class Session implements SessionInterface {
      * set, and deletes all temporary files held by the result sets.
      */
     public void endStatement() {
-        handlerHolder.closeAllCreatedHandlers();
+        workerHolder.close();
         closeTemporaryResults();
     }
 
@@ -849,8 +849,8 @@ public class Session implements SessionInterface {
         return conn;
     }
     
-    public QueryHandlerFactory getQueryHandlerFactory() {
-        return handlerHolder;
+    public WorkerFactory getQueryHandlerFactory() {
+        return workerHolder;
     }
 
 

@@ -1,6 +1,6 @@
-package com.openddal.excutor.handle;
+package com.openddal.excutor.works;
 
-public interface ReadWriteHandler {
+public interface Worker {
 
     void close();
     /**

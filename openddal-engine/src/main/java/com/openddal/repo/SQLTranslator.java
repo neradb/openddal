@@ -17,6 +17,7 @@ package com.openddal.repo;
 
 import java.util.Map;
 
+import com.openddal.command.ddl.AlterTableAddConstraint;
 import com.openddal.command.ddl.CreateTable;
 import com.openddal.command.dml.Select;
 import com.openddal.dbobject.table.TableFilter;
@@ -30,6 +31,8 @@ import com.openddal.route.rule.ObjectNode;
 public interface SQLTranslator {
 
     String identifier(String identifier);
+
+    SQLTranslated translate(AlterTableAddConstraint alterTableAddConstraint, ObjectNode node, ObjectNode refNode);
 
     SQLTranslated translate(Select select, ObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);

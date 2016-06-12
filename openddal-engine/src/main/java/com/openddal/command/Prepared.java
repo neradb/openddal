@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.Parameter;
 import com.openddal.engine.Session;
-import com.openddal.excutor.Executor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
@@ -287,19 +286,6 @@ public abstract class Prepared {
      * @return the execution plan
      */
     public String explainPlan() {
-        Executor executor = getExecutor();
-        if (executor != null) {
-            return executor.explain();
-        }
-        return null;
-    }
-
-    /**
-     * Get the prepared executor
-     * 
-     * @return
-     */
-    public Executor getExecutor() {
         return null;
     }
 

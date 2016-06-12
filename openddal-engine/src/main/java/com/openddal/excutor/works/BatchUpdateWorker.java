@@ -13,34 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo;
+package com.openddal.excutor.works;
 
-import com.openddal.config.TableRule;
-import com.openddal.dbobject.table.TableMate;
-import com.openddal.engine.Database;
-import com.openddal.excutor.works.WorkerFactory;
-import com.openddal.tx.Transaction;
+import java.util.concurrent.Callable;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface Repository {
-    
-    void init(Database database);
-
-    String getName();
-    
-    TableMate loadMataData(TableRule tableRule);
-
-    Transaction beginTransaction();
-
-    WorkerFactory getWorkerFactory();
-    
-    String getDefaultShardName();
-    
-    boolean isAsyncSupported();
-
-    void close();
-
+public interface BatchUpdateWorker extends Callable<Integer[]>, Worker {
+    Integer[] executeBatchUpdate();
 }

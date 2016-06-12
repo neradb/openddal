@@ -15,8 +15,10 @@ import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableFilter;
+import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.repo.SQLTranslated;
 import com.openddal.repo.SQLTranslator;
 import com.openddal.result.SortOrder;
@@ -353,6 +355,154 @@ public class MySQLTranslator implements SQLTranslator {
         }
         return SQLTranslated.build().sql(buff.toString()).sql(null);
 
+    }
+
+    @Override
+    public SQLTranslated translate(AlterTableAddConstraint prepared, ObjectNode node,
+            ObjectNode refNode) {
+        
+        switch (prepared.getType()) {
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY: {
+                String keyType = AlterTableAddConstraint.PRIMARY_KEY;
+                StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
+                buff.append(identifier(node.getCompositeObjectName())).append(" ADD CONSTRAINT ");
+                String constraintName = prepared.getConstraintName();
+                // MySQL constraintName is optional
+                if (!StringUtils.isNullOrEmpty(constraintName)) {
+                    buff.append(constraintName);
+                }
+                buff.append(' ').append(AlterTableAddConstraint.PRIMARY_KEY);
+                if (prepared.isPrimaryKeyHash()) {
+                    buff.append(" USING ").append("HASH");
+                }
+                buff.append('(');
+                for (IndexColumn c : prepared.getIndexColumns()) {
+                    buff.appendExceptFirst(", ");
+                    buff.append(identifier(c.column.getName()));
+                }
+                buff.append(')');
+                return SQLTranslated.build().sql(buff.toString());
+            
+            }
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE: {
+                return translateAddUniqueKey(prepared, node);
+
+            }
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
+            /*
+             * MySQL. The CHECK clause is parsed but ignored by all storage
+             * engines.
+             */
+                return doBuildCheck(forTable);
+            }
+            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
+            /*
+             * MySQL. The FOREIGN KEY and REFERENCES clauses are supported by
+             * the InnoDB and NDB storage engines
+             */
+                String refTableName = prepared.getRefTableName();
+                TableMate refTable = getTableMate(refTableName);
+                Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(table.getPartitionNode(),
+                        refTable.getPartitionNode());
+                TableNode relation = symmetryRelation.get(tableNode);
+                if (relation == null) {
+                    throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
+                            "The original table and reference table should be symmetrical.");
+                }
+                return doBuildReferences(forTable, relation.getCompositeObjectName());
+            }
+            default:
+                throw DbException.throwInternalError("type=" + prepared.getType());
+
+        }
+            return null;
+    }
+
+    private SQLTranslated translateAddUniqueKey(AlterTableAddConstraint prepared, ObjectNode node) {
+        String keyType = AlterTableAddConstraint.UNIQUE + " KEY";
+        StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
+        buff.append(identifier(node.getCompositeObjectName())).append(" ADD CONSTRAINT ");
+        String constraintName = prepared.getConstraintName();
+        // MySQL constraintName is optional
+        if (!StringUtils.isNullOrEmpty(constraintName)) {
+            buff.append(constraintName);
+        }
+        buff.append(' ').append(keyType);
+        if (prepared.isPrimaryKeyHash()) {
+            buff.append(" USING ").append("HASH");
+        }
+        buff.append('(');
+        for (IndexColumn c : prepared.getIndexColumns()) {
+            buff.appendExceptFirst(", ");
+            buff.append(identifier(c.column.getName()));
+        }
+        buff.append(')');
+        return SQLTranslated.build().sql(buff.toString());
+    }
+    
+    private String doBuildUnique(AlterTableAddConstraint prepared,String forTable, String uniqueType) {}
+
+    private String doBuildCheck(AlterTableAddConstraint prepared,String forTable) {
+        StringBuilder buff = new StringBuilder("ALTER TABLE ");
+        buff.append(identifier(forTable)).append(" ADD CONSTRAINT ");
+        String constraintName = prepared.getConstraintName();
+        if (!StringUtils.isNullOrEmpty(constraintName)) {
+            buff.append(constraintName);
+        }
+        String enclose = StringUtils.enclose(prepared.getCheckExpression().getSQL());
+        buff.append(" CHECK").append(enclose).append(" NOCHECK");
+        return buff.toString();
+    }
+
+    private String doBuildReferences(AlterTableAddConstraint prepared, String forTable, String forRefTable) {
+        StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
+        buff.append(identifier(forTable)).append(" ADD CONSTRAINT ");
+        String constraintName = prepared.getConstraintName();
+        if (!StringUtils.isNullOrEmpty(constraintName)) {
+            buff.append(constraintName);
+        }
+        IndexColumn[] cols = prepared.getIndexColumns();
+        IndexColumn[] refCols = prepared.getRefIndexColumns();
+        buff.append(" FOREIGN KEY(");
+        for (IndexColumn c : cols) {
+            buff.appendExceptFirst(", ");
+            buff.append(c.getSQL());
+        }
+        buff.append(')');
+
+        buff.append(" REFERENCES ");
+        buff.append(identifier(forRefTable)).append('(');
+        buff.resetCount();
+        for (IndexColumn r : refCols) {
+            buff.appendExceptFirst(", ");
+            buff.append(r.getSQL());
+        }
+        buff.append(')');
+        if (prepared.getDeleteAction() != AlterTableAddConstraint.RESTRICT) {
+            buff.append(" ON DELETE ");
+            appendAction(buff, prepared.getDeleteAction());
+        }
+        if (prepared.getUpdateAction() != AlterTableAddConstraint.RESTRICT) {
+            buff.append(" ON UPDATE ");
+            appendAction(buff, prepared.getDeleteAction());
+        }
+        return buff.toString();
+    }
+    
+    private static void appendAction(StatementBuilder buff, int action) {
+        switch (action) {
+            case AlterTableAddConstraint.CASCADE:
+                buff.append("CASCADE");
+                break;
+            case AlterTableAddConstraint.SET_DEFAULT:
+                buff.append("SET DEFAULT");
+                break;
+            case AlterTableAddConstraint.SET_NULL:
+                buff.append("SET NULL");
+                break;
+            default:
+                DbException.throwInternalError("action=" + action);
+        }
     }
 
 }

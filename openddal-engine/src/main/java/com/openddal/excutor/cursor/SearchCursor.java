@@ -15,13 +15,8 @@
  */
 package com.openddal.excutor.cursor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.openddal.command.expression.Parameter;
-import com.openddal.dbobject.index.IndexCondition;
+import com.openddal.command.dml.Select;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.engine.Session;
 import com.openddal.excutor.ExecutionFramework;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
@@ -30,17 +25,16 @@ import com.openddal.result.SearchRow;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class SearchCursor extends ExecutionFramework implements Cursor {
+public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
 
     private final TableFilter tableFilter;
     private Cursor cursor;
     private boolean alwaysFalse;
 
-    public SearchCursor(Session session, TableFilter tableFilter) {
-        super(session);
+    public SearchCursor(TableFilter tableFilter) {
+        super(tableFilter.getSelect());
         this.tableFilter = tableFilter;
     }
-
 
     /*
      * (non-Javadoc)
@@ -51,20 +45,21 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     public void doPrepare() {
 
     }
-    
+
     @Override
-    public boolean isQuery() {
-        return true;
+    public String doExplain() {
+        return null;
     }
+
     /**
      * Re-evaluate the start and end values of the index search for rows.
      *
      * @param s the session
      * @param indexConditions the index conditions
      */
-    public void find(Session s, ArrayList<IndexCondition> indexConditions) {
+    public void doQuery() {
         if (!alwaysFalse) {
-            
+
         }
     }
 
@@ -76,8 +71,6 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     public boolean isAlwaysFalse() {
         return alwaysFalse;
     }
-
-
 
     @Override
     public Row get() {
@@ -109,25 +102,12 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     }
 
     private void nextCursor() {
-        
-    }
 
+    }
 
     @Override
     public boolean previous() {
         throw DbException.throwInternalError();
-    }
-
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.excutor.ExecutionFramework#getPreparedParameters()
-     */
-    @Override
-    protected List<Parameter> getPreparedParameters() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 }

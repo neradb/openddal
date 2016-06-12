@@ -30,7 +30,6 @@ import com.openddal.result.LocalResult;
 import com.openddal.result.ResultInterface;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
-import com.openddal.result.SearchRow;
 import com.openddal.result.SortOrder;
 import com.openddal.util.New;
 import com.openddal.util.ValueHashMap;
@@ -309,13 +308,10 @@ public class Select extends Query {
     }
 
     private void queryGroupQuick(int columnCount, ResultTarget result) {
-        DirectLookupCursor cursor = new DirectLookupCursor(session, this);
         for (int i = 0; i < columnCount; i++) {
             Expression expr = expressions.get(i);
         }
-        while (cursor.next()) {
-            SearchRow searchRow = cursor.getSearchRow();
-        }
+  
         // result.addRow(row);
     }
 
@@ -610,7 +606,7 @@ public class Select extends Query {
 
     private double preparePlan() {
         if(DirectLookupCursor.isDirectLookupQuery(this)) {
-            lookupCursor = new DirectLookupCursor(session, this);
+            lookupCursor = new DirectLookupCursor(this);
             lookupCursor.prepare();
             return lookupCursor.getCost();
         }

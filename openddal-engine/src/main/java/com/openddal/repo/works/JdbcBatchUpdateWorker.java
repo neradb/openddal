@@ -13,19 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo.handle;
+package com.openddal.repo.works;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.sql.DataSource;
-
 import com.openddal.engine.Session;
-import com.openddal.excutor.handle.BatchUpdateHandler;
-import com.openddal.message.DbException;
+import com.openddal.excutor.works.BatchUpdateWorker;
 import com.openddal.repo.ShardChooser;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
@@ -34,11 +28,11 @@ import com.openddal.value.Value;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class JdbcBatchUpdateHandler extends JdbcBasicHandler implements BatchUpdateHandler {
+public class JdbcBatchUpdateWorker extends JdbcWorker implements BatchUpdateWorker {
 
     protected final List<List<Value>> array;
 
-    public JdbcBatchUpdateHandler(Session session, String shardName, String sql, List<List<Value>> array) {
+    public JdbcBatchUpdateWorker(Session session, String shardName, String sql, List<List<Value>> array) {
         super(session, shardName, sql, null);
         this.array = array;
     }
@@ -50,41 +44,36 @@ public class JdbcBatchUpdateHandler extends JdbcBasicHandler implements BatchUpd
 
     @Override
     public Integer[] executeBatchUpdate() {
-        Connection conn = null;
-        PreparedStatement stmt = null;
         try {
             if (array == null || array.size() < 1) {
                 throw new IllegalArgumentException();
             }
-            DataSource dataSource = getDataSource();
-            ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(false);
+            ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }
-            conn = session.applyConnection(dataSource, optional);
-            attach(conn);
+            opendConnection = doGetConnection(optional);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Preparing: {};", shardName, sql);
             }
-            stmt = conn.prepareStatement(sql);
-            attach(stmt);
-            applyQueryTimeout(stmt);
+            opendStatement = opendConnection.prepareStatement(sql);
+            applyQueryTimeout(opendStatement);
             for (List<Value> params : array) {
                 if (params != null) {
                     for (int i = 0, size = params.size(); i < size; i++) {
                         Value v = params.get(i);
-                        v.set(stmt, i + 1);
+                        v.set(opendStatement, i + 1);
                         if (trace.isDebugEnabled()) {
                             trace.debug("{0} setParameter: {1} -> {2};", shardName, i + 1, v.getSQL());
                         }
                     }
-                    stmt.addBatch();
+                    opendStatement.addBatch();
                     if (trace.isDebugEnabled()) {
                         trace.debug("{0} addBatch.", shardName);
                     }
                 }
             }
-            int[] affected = stmt.executeBatch();
+            int[] affected = opendStatement.executeBatch();
             Integer[] rows = new Integer[affected.length];
             for (int i = 0; i < rows.length; i++) {
                 rows[i] = affected[i];
@@ -93,12 +82,11 @@ public class JdbcBatchUpdateHandler extends JdbcBasicHandler implements BatchUpd
                 trace.debug("{0} executeUpdate: {1} affected.", shardName, Arrays.toString(affected));
             }
             return rows;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             error(e);
             throw wrapException(sql, e);
-        } catch (Throwable e) {
-            error(e);
-            throw DbException.convert(e);
+        } finally {
+            close();
         }
     }
 

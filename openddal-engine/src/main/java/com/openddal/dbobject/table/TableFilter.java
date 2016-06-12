@@ -110,7 +110,7 @@ public class TableFilter implements ColumnResolver {
         this.table = table;
         this.alias = alias;
         this.select = select;
-        this.cursor = new SearchCursor(session, this);
+        this.cursor = new SearchCursor(this);
         hashCode = session.nextObjectId();
     }
 
@@ -301,7 +301,7 @@ public class TableFilter implements ColumnResolver {
         if (state == AFTER_LAST) {
             return false;
         } else if (state == BEFORE_FIRST) {
-            cursor.find(session, indexConditions);
+            cursor.query();
             if (!cursor.isAlwaysFalse()) {
                 if (nestedJoin != null) {
                     nestedJoin.reset();
