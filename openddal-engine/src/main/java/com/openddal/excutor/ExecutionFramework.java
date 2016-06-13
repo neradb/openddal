@@ -182,7 +182,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
     }
     
-    protected String explainForUpdateWorker(List<UpdateWorker> workers) {
+    protected String explainForWorker(List<? extends Worker> workers) {
         if (workers.size() == 1) {
             return workers.iterator().next().explain();
         }

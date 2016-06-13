@@ -33,7 +33,6 @@ import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
 import com.openddal.excutor.works.UpdateWorker;
-import com.openddal.excutor.works.Worker;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
@@ -148,16 +147,8 @@ public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
      */
     @Override
     public String doExplain() {
-        if (workers.size() == 1) {
-            return workers.iterator().next().explain();
-        }
         StringBuilder explain = new StringBuilder();
-        explain.append("MULTINODES_EXECUTION");
-        explain.append('\n');
-        for (Worker worker : workers) {
-            String subexplain = worker.explain();
-            explain.append(StringUtils.indent(subexplain, 4, false));
-        }
+        explain.append(explainForWorker(workers));
         if(asQueryInsert != null) {
             String explainPlan = asQueryInsert.explainPlan();
             explain.append(StringUtils.indent(explainPlan, 4, false));

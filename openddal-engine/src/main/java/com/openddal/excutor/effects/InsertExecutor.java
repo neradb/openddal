@@ -15,46 +15,43 @@
  */
 package com.openddal.excutor.effects;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Insert;
 import com.openddal.command.dml.Query;
 import com.openddal.command.expression.Expression;
+import com.openddal.config.GlobalTableRule;
+import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
+import com.openddal.excutor.works.BatchUpdateWorker;
 import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.message.DbException;
-import com.openddal.repo.works.JdbcWorker;
 import com.openddal.result.ResultInterface;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
-import com.openddal.result.SearchRow;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
+import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *         TODO validation rule column
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a> TODO validation
+ *         rule column
  */
 public class InsertExecutor extends ExecutionFramework<Insert> implements ResultTarget {
 
+    private static final int CONVERSIO_TO_BATCH_THRESHOLD = 10;
+    private static final int QUERY_FLUSH_THRESHOLD = 400;
     private int rowNumber;
     private int affectRows;
     private List<Row> newRows = New.arrayList(10);
     private List<UpdateWorker> workers;
-
-    
+    private List<BatchUpdateWorker> batchWorkers;
 
     /**
      * @param prepared
@@ -62,7 +59,7 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
     public InsertExecutor(Insert prepared) {
         super(prepared);
     }
-    
+
     @Override
     protected void doPrepare() {
         TableMate table = toTableMate(prepared.getTable());
@@ -75,6 +72,7 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
         int listSize = list.size();
         if (listSize > 0) {
             int columnLen = columns.length;
+            List<Row> values = New.arrayList(10);
             for (int x = 0; x < listSize; x++) {
                 Row newRow = table.getTemplateRow();
                 Expression[] expr = list.get(x);
@@ -95,10 +93,12 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                     }
                 }
                 rowNumber++;
-                addNewRow(newRow);
+                values.add(newRow);
             }
+            prepareInsert(table, values);
         } else {
             Query query = prepared.getQuery();
+            query.prepare();
             if (prepared.isInsertFromSelect()) {
                 query.query(0, this);
             } else {
@@ -114,15 +114,38 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
 
     @Override
     public int doUpdate() {
-        
+        if (workers != null) {
+            return invokeUpdateWorker(workers);
+        } else if (batchWorkers != null) {
+            return invokeBatchUpdateWorker(batchWorkers);
+        } else {
+            Query query = prepared.getQuery();
+            if (prepared.isInsertFromSelect()) {
+                query.query(0, this);
+            } else {
+                ResultInterface rows = query.query(0);
+                while (rows.next()) {
+                    Value[] r = rows.currentRow();
+                    addRow(r);
+                }
+                rows.close();
+            }
+            flushNewRows();
+            return this.affectRows;
+        }
+
     }
-    
-    
-    protected int updateRows(TableMate table, List<Row> rows) {
-        Map<BatchKey, List<List<Value>>> batches = New.hashMap();
+
+    private void prepareInsert(TableMate table, List<Row> rows) {
         session.checkCanceled();
         for (Row row : rows) {
-            RoutingResult result = routingHandler.doRoute(table, row);
+            RoutingResult result;
+            if (table.getTableRule().getType() == TableRule.GLOBAL_NODE_TABLE) {
+                GlobalTableRule rule = (GlobalTableRule) table.getTableRule();
+                result = rule.getBroadcastsRoutingResult();
+            } else {
+                result = routingHandler.doRoute(table, row);
+            }
             ObjectNode[] selectNodes = result.getSelectNodes();
             workers = New.arrayList(selectNodes.length);
             for (ObjectNode objectNode : selectNodes) {
@@ -130,46 +153,12 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                 workers.add(worker);
             }
         }
-        if(workers.size() > 5) {
-            queryHandlerFactory.mergeToBatchUpdateWorker(session, workers);
+        if (workers.size() > CONVERSIO_TO_BATCH_THRESHOLD) {
+            batchWorkers = queryHandlerFactory.mergeToBatchUpdateWorker(session, workers);
+            workers = null;
         }
-        try {
-            addRuningJdbcWorkers(workers);
-            int affectRows = 0;
-            if (workers.size() > 1) {
-                int queryTimeout = getQueryTimeout();//MILLISECONDS
-                List<Future<Integer[]>> invokeAll;
-                if (queryTimeout > 0) {
-                    invokeAll = jdbcExecutor.invokeAll(workers, queryTimeout, TimeUnit.MILLISECONDS);
-                } else {
-                    invokeAll = jdbcExecutor.invokeAll(workers);
-                }
-                for (Future<Integer[]> future : invokeAll) {
-                    Integer[] integers = future.get();
-                    for (Integer integer : integers) {
-                        affectRows += integer;
-                    }
-                }
-            } else if (workers.size() == 1) {
-                Integer[] integers = workers.get(0).doWork();
-                for (Integer integer : integers) {
-                    affectRows += integer;
-                }
-            }
-            return affectRows;
-        } catch (InterruptedException e) {
-            throw DbException.convert(e);
-        } catch (ExecutionException e) {
-            throw DbException.convert(e.getCause());
-        } finally {
-            removeRuningJdbcWorkers(workers);
-            for (JdbcWorker<Integer[]> jdbcWorker : workers) {
-                jdbcWorker.closeResource();
-            }
-        }
+
     }
-
-
 
     @Override
     public void addRow(Value[] values) {
@@ -187,7 +176,7 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                 throw prepared.setRow(ex, rowNumber, Prepared.getSQL(values));
             }
         }
-        addNewRow(newRow);
+        addNewRowFlushIfNeed(newRow);
     }
 
     @Override
@@ -195,26 +184,25 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
         return rowNumber;
     }
 
-    private void addNewRow(Row newRow) {
+
+    private synchronized void addNewRowFlushIfNeed(Row newRow) {
         newRows.add(newRow);
-    }
-    
-    private void addNewRowFlushIfNeed(Row newRow) {
-        newRows.add(newRow);
-        if (newRows.size() >= 500) {
+        if (newRows.size() >= QUERY_FLUSH_THRESHOLD) {
             flushNewRows();
         }
     }
 
-    private void flushNewRows() {
+    private synchronized void flushNewRows() {
         try {
-            TableMate table = castTableMate(prepared.getTable());
+            TableMate table = toTableMate(prepared.getTable());
             if (newRows.isEmpty()) {
                 return;
-            } else if (newRows.size() == 1) {
-                affectRows += updateRow(table, newRows.get(0));
-            } else {
-                affectRows += updateRows(table, newRows);
+            }
+            prepareInsert(table, newRows);
+            if (workers != null) {
+                affectRows += invokeUpdateWorker(workers);
+            } else if (batchWorkers != null) {
+                affectRows += invokeBatchUpdateWorker(batchWorkers);
             }
         } finally {
             newRows.clear();
@@ -223,72 +211,22 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
     }
 
     @Override
-    protected List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff) {
-        String forTable = node.getCompositeObjectName();
-        TableMate table = castTableMate(prepared.getTable());
-        Column[] columns = table.getColumns();
-        return buildInsert(forTable, columns, row, buff);
-    }
-
-
-    @Override
     protected String doExplain() {
-        // TODO Auto-generated method stub
-        return null;
+        TableMate table = toTableMate(prepared.getTable());
+        if (workers != null) {
+            return explainForWorker(workers);
+        } else if (batchWorkers != null) {
+            return explainForWorker(batchWorkers);
+        } else {
+            Query query = prepared.getQuery();
+            String subPlan = query.explainPlan();
+            StringBuilder explain = new StringBuilder();
+            explain.append("insert into ").append(table.getName()).append(" with query result");
+            explain.append(StringUtils.indent(subPlan, 4, false));
+            return explain.toString();
+        }
+
     }
-    
-    
-    private static class BatchKey implements Serializable {
-        private static final long serialVersionUID = 1L;
 
-        private final String shardName;
-        private final String sql;
-
-        /**
-         * @param shardName
-         * @param sql
-         */
-        private BatchKey(String shardName, String sql) {
-            super();
-            this.shardName = shardName;
-            this.sql = sql;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((shardName == null) ? 0 : shardName.hashCode());
-            result = prime * result + ((sql == null) ? 0 : sql.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            BatchKey other = (BatchKey) obj;
-            if (shardName == null) {
-                if (other.shardName != null)
-                    return false;
-            } else if (!shardName.equals(other.shardName))
-                return false;
-            if (sql == null) {
-                if (other.sql != null)
-                    return false;
-            } else if (!sql.equals(other.sql))
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "BatchKey [shardName=" + shardName + ", sql=" + sql + "]";
-        }
-    }
 
 }

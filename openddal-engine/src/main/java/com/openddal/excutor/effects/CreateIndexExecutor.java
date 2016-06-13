@@ -75,7 +75,7 @@ public class CreateIndexExecutor extends ExecutionFramework<CreateIndex> {
 
     @Override
     protected String doExplain() {
-        return explainForUpdateWorker(workers);
+        return explainForWorker(workers);
     }
 
 }

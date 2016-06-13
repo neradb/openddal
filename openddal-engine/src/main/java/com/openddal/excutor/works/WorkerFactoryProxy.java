@@ -25,6 +25,8 @@ import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.Update;
 import com.openddal.dbobject.table.TableFilter;
+import com.openddal.engine.Session;
+import com.openddal.result.Row;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 
@@ -63,16 +65,9 @@ public class WorkerFactoryProxy implements WorkerFactory {
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Insert insert, ObjectNode node) {
-        UpdateWorker handler = target.createUpdateWorker(insert, node);
+    public UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row row) {
+        UpdateWorker handler = target.createUpdateWorker(insert, node, row);
         handler = newWorkerProxy(handler, UpdateWorker.class);
-        return handler;
-    }
-
-    @Override
-    public BatchUpdateWorker createBatchUpdateWorker(Insert insert, ObjectNode node) {
-        BatchUpdateWorker handler = target.createBatchUpdateWorker(insert, node);
-        handler = newWorkerProxy(handler, BatchUpdateWorker.class);
         return handler;
     }
 
@@ -174,6 +169,16 @@ public class WorkerFactoryProxy implements WorkerFactory {
         return handler;
     }
 
+    @Override
+    public List<BatchUpdateWorker> mergeToBatchUpdateWorker(Session session, List<UpdateWorker> workers) {
+        List<BatchUpdateWorker> batchWorkers = target.mergeToBatchUpdateWorker(session, workers);
+        List<BatchUpdateWorker> batchWorkerProxys = New.arrayList(batchWorkers.size());
+        for (BatchUpdateWorker batchWorker : batchWorkers) {
+            batchWorkerProxys.add(newWorkerProxy(batchWorker, BatchUpdateWorker.class));
+        }
+        return batchWorkerProxys;
+    }
+
     public synchronized void close() {
         List<Worker> workers = New.arrayList(pendingClose);
         for (Worker worker : workers) {
@@ -247,5 +252,6 @@ public class WorkerFactoryProxy implements WorkerFactory {
         }
 
     }
+
 
 }

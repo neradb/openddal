@@ -66,7 +66,7 @@ public class DeleteExecutor extends ExecutionFramework<Delete> {
 
     @Override
     protected String doExplain() {
-        return explainForUpdateWorker(workers);
+        return explainForWorker(workers);
     }
 
 }

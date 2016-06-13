@@ -95,7 +95,7 @@ public class DropTableExecutor extends ExecutionFramework<DropTable> {
 
     private String executeExplain(DropTable next) {
         StringBuilder explain = new StringBuilder();
-        String plan = explainForUpdateWorker(dropWorkers.get(prepared));
+        String plan = explainForWorker(dropWorkers.get(prepared));
         explain.append(plan);
         next = prepared.getNext();
         if (next != null) {

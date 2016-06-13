@@ -46,7 +46,7 @@ public class DropIndexExecutor extends ExecutionFramework<DropIndex>{
 
     @Override
     protected String doExplain() {
-        return explainForUpdateWorker(workers);
+        return explainForWorker(workers);
     }
 
 }

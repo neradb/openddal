@@ -92,7 +92,7 @@ public class AlterTableAlterColumnExecutor extends ExecutionFramework<AlterTable
 
     @Override
     protected String doExplain() {
-        return explainForUpdateWorker(workers);
+        return explainForWorker(workers);
     }
 
 }

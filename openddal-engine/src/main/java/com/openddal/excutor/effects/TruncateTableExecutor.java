@@ -60,7 +60,7 @@ public class TruncateTableExecutor extends ExecutionFramework<TruncateTable> {
 
     @Override
     protected String doExplain() {
-        return explainForUpdateWorker(workers);
+        return explainForWorker(workers);
     }
 
 }
