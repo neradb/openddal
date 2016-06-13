@@ -18,9 +18,17 @@ package com.openddal.repo;
 import java.util.Map;
 
 import com.openddal.command.ddl.AlterTableAddConstraint;
+import com.openddal.command.ddl.AlterTableAlterColumn;
+import com.openddal.command.ddl.CreateIndex;
 import com.openddal.command.ddl.CreateTable;
+import com.openddal.command.ddl.DropIndex;
+import com.openddal.command.ddl.DropTable;
+import com.openddal.command.ddl.TruncateTable;
+import com.openddal.command.dml.Delete;
+import com.openddal.command.dml.Insert;
 import com.openddal.command.dml.Select;
 import com.openddal.dbobject.table.TableFilter;
+import com.openddal.result.Row;
 import com.openddal.route.rule.GroupObjectNode;
 import com.openddal.route.rule.ObjectNode;
 
@@ -32,14 +40,28 @@ public interface SQLTranslator {
 
     String identifier(String identifier);
 
-    SQLTranslated translate(AlterTableAddConstraint alterTableAddConstraint, ObjectNode node, ObjectNode refNode);
-
-    SQLTranslated translate(Select select, ObjectNode node,
+    SQLTranslated translate(Select prepared, ObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
 
-    SQLTranslated translate(Select select, GroupObjectNode node,
+    SQLTranslated translate(Select prepared, GroupObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
 
-    SQLTranslated translate(CreateTable createTable, ObjectNode node, ObjectNode refNode);
+    SQLTranslated translate(CreateTable prepared, ObjectNode node, ObjectNode refNode);
+
+    SQLTranslated translate(DropTable prepared, ObjectNode node);
+
+    SQLTranslated translate(TruncateTable prepared, ObjectNode node);
+
+    SQLTranslated translate(AlterTableAlterColumn prepared, ObjectNode node);
+
+    SQLTranslated translate(AlterTableAddConstraint prepared, ObjectNode node, ObjectNode refNode);
+
+    SQLTranslated translate(CreateIndex prepared, ObjectNode indexNode, ObjectNode tableNode);
+
+    SQLTranslated translate(DropIndex prepared, ObjectNode indexNode, ObjectNode tableNode);
+
+    SQLTranslated translate(Delete delete, ObjectNode node);
+
+    SQLTranslated translate(Insert insert, ObjectNode node, Row row);
 
 }

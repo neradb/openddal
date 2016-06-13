@@ -19,27 +19,25 @@
 package com.openddal.excutor.effects;
 
 import java.util.List;
-import java.util.Map;
 
 import com.openddal.command.CommandInterface;
 import com.openddal.command.ddl.AlterTableAddConstraint;
-import com.openddal.config.TableRule;
-import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
 import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
-import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class AlterTableAddConstraintExecutor extends ExecutionFramework<AlterTableAddConstraint> {
-    private List<UpdateWorker> handlers;
+
+    private List<UpdateWorker> workers;
+
     /**
      * @param session
      * @param prepared
@@ -48,24 +46,6 @@ public class AlterTableAddConstraintExecutor extends ExecutionFramework<AlterTab
         super(prepared);
     }
 
-    private static void appendAction(StatementBuilder buff, int action) {
-        switch (action) {
-            case AlterTableAddConstraint.CASCADE:
-                buff.append("CASCADE");
-                break;
-            case AlterTableAddConstraint.SET_DEFAULT:
-                buff.append("SET DEFAULT");
-                break;
-            case AlterTableAddConstraint.SET_NULL:
-                buff.append("SET NULL");
-                break;
-            default:
-                DbException.throwInternalError("action=" + action);
-        }
-    }
-    
-    
-    
     @Override
     public void doPrepare() {
         String tableName = prepared.getTableName();
@@ -76,7 +56,6 @@ public class AlterTableAddConstraintExecutor extends ExecutionFramework<AlterTab
         case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
             String refTableName = prepared.getRefTableName();
             refTable = getTableMate(refTableName);
-            TableRule r2 = refTable.getTableRule();
             if (isConsistencyTableForReferential(table, refTable)) {
                 throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                         "Create foreign key for table,the original table and the reference table nodes should be consistency.");
@@ -85,166 +64,36 @@ public class AlterTableAddConstraintExecutor extends ExecutionFramework<AlterTab
         case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY:
         case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE:
         case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
-            this.routingResult = routingHandler.doRoute(table);
-            ObjectNode[] selectNodes = routingResult.getSelectNodes();
-            handlers = New.arrayList(selectNodes.length);
+            RoutingResult rr = routingHandler.doRoute(table);
+            ObjectNode[] selectNodes = rr.getSelectNodes();
+            workers = New.arrayList(selectNodes.length);
             for (ObjectNode objectNode : selectNodes) {
                 ObjectNode refTableNode = null;
                 if (refTable != null) {
                     refTableNode = getConsistencyNode(refTable.getTableRule(), objectNode);
                 }
-                UpdateWorker handler = queryHandlerFactory.createUpdateWorker(prepared, objectNode, refTableNode);
-                handlers.add(handler);
+                UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode, refTableNode);
+                workers.add(worker);
             }
             break;
         }
         default:
             throw DbException.throwInternalError("type=" + type);
-    }
+        }
     }
 
     @Override
     public int doUpdate() {
         String tableName = prepared.getTableName();
-        TableMate table = getTableMate(tableName);
-        
-        TableNode[] tableNodes = table.getPartitionNode();
-        int type = prepared.getType();
-        switch (type) {
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
-                String refTableName = prepared.getRefTableName();
-                TableMate refTable = getTableMate(refTableName);
-                TableNode[] refTableNode = table.getPartitionNode();
-                Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(tableNodes, refTableNode);
-                if (symmetryRelation == null) {
-                    throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
-                            "The original table and reference table should be symmetrical.");
-                }
-                session.getUser().checkRight(refTable, Right.ALL);
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY:
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE:
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
-                execute(tableNodes);
-                break;
-            }
-
-            default:
-                throw DbException.throwInternalError("type=" + type);
-        }
-
-        return 0;
+        TableMate tableMate = getTableMate(tableName);
+        int affectRows = invokeUpdateWorker(workers);
+        tableMate.loadMataData(session);
+        return affectRows;
     }
 
     @Override
-    protected String doTranslate(TableNode tableNode) {
-        String tableName = prepared.getTableName();
-        TableMate table = getTableMate(tableName);
-        String forTable = tableNode.getCompositeObjectName();
-        IndexColumn.mapColumns(prepared.getIndexColumns(), table);
-        switch (prepared.getType()) {
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_PRIMARY_KEY: {
-                return doBuildUnique(forTable, AlterTableAddConstraint.PRIMARY_KEY);
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_UNIQUE: {
-                String uniqueType = AlterTableAddConstraint.UNIQUE + " KEY";
-                return doBuildUnique(forTable, uniqueType);
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_CHECK: {
-            /*
-             * MySQL. The CHECK clause is parsed but ignored by all storage
-             * engines.
-             */
-                return doBuildCheck(forTable);
-            }
-            case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
-            /*
-             * MySQL. The FOREIGN KEY and REFERENCES clauses are supported by
-             * the InnoDB and NDB storage engines
-             */
-                String refTableName = prepared.getRefTableName();
-                TableMate refTable = getTableMate(refTableName);
-                Map<TableNode, TableNode> symmetryRelation = getSymmetryRelation(table.getPartitionNode(),
-                        refTable.getPartitionNode());
-                TableNode relation = symmetryRelation.get(tableNode);
-                if (relation == null) {
-                    throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
-                            "The original table and reference table should be symmetrical.");
-                }
-                return doBuildReferences(forTable, relation.getCompositeObjectName());
-            }
-            default:
-                throw DbException.throwInternalError("type=" + prepared.getType());
-
-        }
-    }
-
-    private String doBuildUnique(String forTable, String uniqueType) {
-        StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
-        buff.append(identifier(forTable)).append(" ADD CONSTRAINT ");
-        String constraintName = prepared.getConstraintName();
-        // MySQL constraintName is optional
-        if (!StringUtils.isNullOrEmpty(constraintName)) {
-            buff.append(constraintName);
-        }
-        buff.append(' ').append(uniqueType);
-        if (prepared.isPrimaryKeyHash()) {
-            buff.append(" USING ").append("HASH");
-        }
-        buff.append('(');
-        for (IndexColumn c : prepared.getIndexColumns()) {
-            buff.appendExceptFirst(", ");
-            buff.append(identifier(c.column.getName()));
-        }
-        buff.append(')');
-        return buff.toString();
-    }
-
-    private String doBuildCheck(String forTable) {
-        StringBuilder buff = new StringBuilder("ALTER TABLE ");
-        buff.append(identifier(forTable)).append(" ADD CONSTRAINT ");
-        String constraintName = prepared.getConstraintName();
-        if (!StringUtils.isNullOrEmpty(constraintName)) {
-            buff.append(constraintName);
-        }
-        String enclose = StringUtils.enclose(prepared.getCheckExpression().getSQL());
-        buff.append(" CHECK").append(enclose).append(" NOCHECK");
-        return buff.toString();
-    }
-
-    private String doBuildReferences(String forTable, String forRefTable) {
-        StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
-        buff.append(identifier(forTable)).append(" ADD CONSTRAINT ");
-        String constraintName = prepared.getConstraintName();
-        if (!StringUtils.isNullOrEmpty(constraintName)) {
-            buff.append(constraintName);
-        }
-        IndexColumn[] cols = prepared.getIndexColumns();
-        IndexColumn[] refCols = prepared.getRefIndexColumns();
-        buff.append(" FOREIGN KEY(");
-        for (IndexColumn c : cols) {
-            buff.appendExceptFirst(", ");
-            buff.append(c.getSQL());
-        }
-        buff.append(')');
-
-        buff.append(" REFERENCES ");
-        buff.append(forRefTable).append('(');
-        buff.resetCount();
-        for (IndexColumn r : refCols) {
-            buff.appendExceptFirst(", ");
-            buff.append(r.getSQL());
-        }
-        buff.append(')');
-        if (prepared.getDeleteAction() != AlterTableAddConstraint.RESTRICT) {
-            buff.append(" ON DELETE ");
-            appendAction(buff, prepared.getDeleteAction());
-        }
-        if (prepared.getUpdateAction() != AlterTableAddConstraint.RESTRICT) {
-            buff.append(" ON UPDATE ");
-            appendAction(buff, prepared.getDeleteAction());
-        }
-        return buff.toString();
+    protected String doExplain() {
+        return explainForUpdateWorker(workers);
     }
 
 }

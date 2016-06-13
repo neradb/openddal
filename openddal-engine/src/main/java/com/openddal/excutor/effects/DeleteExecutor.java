@@ -19,21 +19,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.openddal.command.dml.Delete;
-import com.openddal.command.expression.Expression;
+import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
-import com.openddal.result.SearchRow;
+import com.openddal.excutor.works.UpdateWorker;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
-import com.openddal.util.StringUtils;
-import com.openddal.value.Value;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class DeleteExecutor extends ExecutionFramework<Delete> {
-
+    
+    private List<UpdateWorker> workers;
     /**
      * @param prepared
      */
@@ -42,34 +42,31 @@ public class DeleteExecutor extends ExecutionFramework<Delete> {
     }
 
     @Override
-    public int doUpdate() {
+    public void doPrepare() {
         TableFilter tableFilter = prepared.getTableFilter();
-        TableMate table = castTableMate(tableFilter.getTable());
+        TableMate table = getTableMate(tableFilter);
         table.check();
-        session.getUser().checkRight(table, Right.DELETE);
-        return updateRow(table, null, tableFilter.getIndexConditions());
+        ArrayList<IndexCondition> where = tableFilter.getIndexConditions();
+        RoutingResult rr = routingHandler.doRoute(session, table, where);
+        ObjectNode[] selectNodes = rr.getSelectNodes();
+        workers = New.arrayList(selectNodes.length);
+        for (ObjectNode objectNode : selectNodes) {
+            UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode);
+            workers.add(worker);
+        }
     }
 
+
+    
     @Override
-    protected List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff) {
-        ArrayList<Value> params = New.arrayList();
-        TableFilter tableFilter = prepared.getTableFilter();
-        String forTable = node.getCompositeObjectName();
-        Expression condition = prepared.getCondition();
-        Expression limitExpr = prepared.getLimitExpr();
+    public int doUpdate() {
+        return invokeUpdateWorker(workers);
+    }
 
-        buff.append("DELETE FROM ");
-        buff.append(identifier(forTable));
-        if (condition != null) {
-            condition.exportParameters(tableFilter, params);
-            buff.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
-        }
-        if (limitExpr != null) {
-            limitExpr.exportParameters(tableFilter, params);
-            buff.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
-        }
-        return params;
 
+    @Override
+    protected String doExplain() {
+        return explainForUpdateWorker(workers);
     }
 
 }

@@ -15,14 +15,14 @@
  */
 package com.openddal.command.ddl;
 
+import java.util.ArrayList;
+
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
-import com.openddal.message.DbException;
-
-import java.util.ArrayList;
+import com.openddal.excutor.effects.AlterTableAlterColumnExecutor;
 
 /**
  * This class represents the statements
@@ -48,14 +48,11 @@ public class AlterTableAlterColumn extends SchemaCommand {
     private String addAfter;
     private boolean ifNotExists;
     private ArrayList<Column> columnsToAdd;
+    private AlterTableAlterColumnExecutor executor;
+    
 
     public AlterTableAlterColumn(Session session, Schema schema) {
         super(session, schema);
-    }
-
-    @Override
-    public int update() {
-        throw DbException.getUnsupportedException("TODO");
     }
 
     public void setSelectivity(Expression selectivity) {
@@ -143,5 +140,13 @@ public class AlterTableAlterColumn extends SchemaCommand {
         this.ifNotExists = ifNotExists;
     }
 
+    @Override
+    public AlterTableAlterColumnExecutor getExecutor() {
+        if(executor == null) {
+            executor = new AlterTableAlterColumnExecutor(this);
+        }
+        return executor;
+    }
 
+    
 }

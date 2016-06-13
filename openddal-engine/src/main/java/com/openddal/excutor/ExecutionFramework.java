@@ -38,12 +38,12 @@ import com.openddal.excutor.cursor.MergedCursor;
 import com.openddal.excutor.works.BatchUpdateWorker;
 import com.openddal.excutor.works.QueryWorker;
 import com.openddal.excutor.works.UpdateWorker;
+import com.openddal.excutor.works.Worker;
 import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.RoutingHandler;
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
@@ -57,7 +57,6 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
     protected final Session session;
     protected final T prepared;
     protected final Database database;
-    protected RoutingResult routingResult = null;
     protected final ThreadPoolExecutor queryExecutor;
     protected final RoutingHandler routingHandler;
     protected final WorkerFactory queryHandlerFactory;
@@ -119,7 +118,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         throw DbException.get(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY);
     }
 
-    protected int invokeUpdateHandler(List<UpdateWorker> handlers) {
+    protected int invokeUpdateWorker(List<UpdateWorker> handlers) {
         session.checkCanceled();
         try {
             int queryTimeout = session.getQueryTimeout();// MILLISECONDS
@@ -138,7 +137,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
     }
 
-    protected int invokeBatchUpdateHandler(List<BatchUpdateWorker> handlers) {
+    protected int invokeBatchUpdateWorker(List<BatchUpdateWorker> handlers) {
         session.checkCanceled();
         try {
             int queryTimeout = session.getQueryTimeout();// MILLISECONDS
@@ -160,7 +159,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
     }
 
-    protected Cursor invokeQueryHandler(List<QueryWorker> handlers) {
+    protected Cursor invokeQueryWorker(List<QueryWorker> handlers) {
         session.checkCanceled();
         try {
             int queryTimeout = session.getQueryTimeout();// MILLISECONDS
@@ -182,6 +181,20 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
             session.checkCanceled();
         }
     }
+    
+    protected String explainForUpdateWorker(List<UpdateWorker> workers) {
+        if (workers.size() == 1) {
+            return workers.iterator().next().explain();
+        }
+        StringBuilder explain = new StringBuilder();
+        explain.append("MULTINODES_EXECUTION");
+        explain.append('\n');
+        for (Worker worker : workers) {
+            String subexplain = worker.explain();
+            explain.append(StringUtils.indent(subexplain, 4, false));
+        }
+        return explain.toString();
+    }
 
     protected TableMate getTableMate(String tableName) {
         TableMate table = findTableMate(tableName);
@@ -189,6 +202,13 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
             return table;
         }
         throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
+    }
+    
+    protected TableMate toTableMate(Table table) {
+        if(table instanceof TableMate) {
+            return (TableMate)table;
+        }
+        throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, table.getName());
     }
 
     protected TableMate findTableMate(String tableName) {
@@ -231,7 +251,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         if (filter.isFromTableMate()) {
             return (TableMate) filter.getTable();
         }
-        return null;
+        throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, filter.getTable().getName());
     }
 
     protected static TableRule getTableRule(TableFilter filter) throws NullPointerException {

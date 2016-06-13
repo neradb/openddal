@@ -15,14 +15,22 @@
  */
 package com.openddal.excutor.effects;
 
+import java.util.List;
+
 import com.openddal.command.ddl.TruncateTable;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
+import com.openddal.excutor.works.UpdateWorker;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
+import com.openddal.util.New;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class TruncateTableExecutor extends ExecutionFramework<TruncateTable> {
+
+    private List<UpdateWorker> workers;
 
     /**
      * @param prepared
@@ -31,26 +39,28 @@ public class TruncateTableExecutor extends ExecutionFramework<TruncateTable> {
         super(prepared);
     }
 
+    @Override
+    protected void doPrepare() {
+        TableMate table = getTableMate(prepared.getTable().getName());
+        RoutingResult rr = routingHandler.doRoute(table);
+        ObjectNode[] selectNodes = rr.getSelectNodes();
+        workers = New.arrayList(selectNodes.length);
+        for (ObjectNode objectNode : selectNodes) {
+            UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode);
+            workers.add(worker);
+        }
+    }
 
     @Override
     public int doUpdate() {
-        TableMate table = castTableMate(prepared.getTable());
-        session.commit(true);
-        session.getUser().checkRight(table, Right.DELETE);
-        TableNode[] nodes = table.getPartitionNode();
-        execute(nodes);
-        return 0;
+        return invokeUpdateWorker(workers);
 
     }
 
 
     @Override
-    protected String doTranslate(TableNode node) {
-        String forTable = node.getCompositeObjectName();
-        StringBuilder sql = new StringBuilder();
-        sql.append("TRUNCATE TABLE ");
-        sql.append(identifier(forTable));
-        return sql.toString();
+    protected String doExplain() {
+        return explainForUpdateWorker(workers);
     }
 
 }

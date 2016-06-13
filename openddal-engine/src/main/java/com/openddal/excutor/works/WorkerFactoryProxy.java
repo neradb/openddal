@@ -161,15 +161,15 @@ public class WorkerFactoryProxy implements WorkerFactory {
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(CreateIndex createIndex, ObjectNode node) {
-        UpdateWorker handler = target.createUpdateWorker(createIndex, node);
+    public UpdateWorker createUpdateWorker(CreateIndex createIndex, ObjectNode indexNode, ObjectNode tableNode) {
+        UpdateWorker handler = target.createUpdateWorker(createIndex, indexNode, tableNode);
         handler = newWorkerProxy(handler, UpdateWorker.class);
         return handler;
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(DropIndex dropIndex, ObjectNode node) {
-        UpdateWorker handler = target.createUpdateWorker(dropIndex, node);
+    public UpdateWorker createUpdateWorker(DropIndex dropIndex, ObjectNode indexNode, ObjectNode tableNode) {
+        UpdateWorker handler = target.createUpdateWorker(dropIndex, indexNode, tableNode);
         handler = newWorkerProxy(handler, UpdateWorker.class);
         return handler;
     }

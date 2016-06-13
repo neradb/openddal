@@ -19,6 +19,7 @@ import com.openddal.command.CommandInterface;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.engine.Session;
+import com.openddal.excutor.effects.CreateIndexExecutor;
 
 /**
  * This class represents the statement
@@ -32,6 +33,7 @@ public class CreateIndex extends SchemaCommand {
     private boolean primaryKey, unique, hash, spatial;
     private boolean ifNotExists;
     private String comment;
+    private CreateIndexExecutor executor;
 
     public CreateIndex(Session session, Schema schema) {
         super(session, schema);
@@ -112,6 +114,14 @@ public class CreateIndex extends SchemaCommand {
     @Override
     public int getType() {
         return CommandInterface.CREATE_INDEX;
+    }
+    
+    @Override
+    public CreateIndexExecutor getExecutor() {
+        if(executor == null) {
+            executor = new CreateIndexExecutor(this);
+        }
+        return executor;
     }
 
 }

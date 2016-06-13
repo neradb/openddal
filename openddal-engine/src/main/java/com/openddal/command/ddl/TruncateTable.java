@@ -18,6 +18,7 @@ package com.openddal.command.ddl;
 import com.openddal.command.CommandInterface;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
+import com.openddal.excutor.effects.TruncateTableExecutor;
 
 /**
  * This class represents the statement
@@ -26,6 +27,7 @@ import com.openddal.engine.Session;
 public class TruncateTable extends DefineCommand {
 
     private Table table;
+    private TruncateTableExecutor executor;
 
     public TruncateTable(Session session) {
         super(session);
@@ -44,5 +46,11 @@ public class TruncateTable extends DefineCommand {
         this.table = table;
     }
 
-
+    @Override
+    public TruncateTableExecutor getExecutor() {
+        if(executor == null) {
+            executor = new TruncateTableExecutor(this);
+        }
+        return executor;
+    }
 }

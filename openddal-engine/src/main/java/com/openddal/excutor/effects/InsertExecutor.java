@@ -15,8 +15,13 @@
  */
 package com.openddal.excutor.effects;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Insert;
@@ -25,11 +30,15 @@ import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
+import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.message.DbException;
+import com.openddal.repo.works.JdbcWorker;
 import com.openddal.result.ResultInterface;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
@@ -43,6 +52,9 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
     private int rowNumber;
     private int affectRows;
     private List<Row> newRows = New.arrayList(10);
+    private List<UpdateWorker> workers;
+
+    
 
     /**
      * @param prepared
@@ -50,12 +62,11 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
     public InsertExecutor(Insert prepared) {
         super(prepared);
     }
-
+    
     @Override
-    public int executeUpdate() {
-        TableMate table = castTableMate(prepared.getTable());
+    protected void doPrepare() {
+        TableMate table = toTableMate(prepared.getTable());
         table.check();
-        session.getUser().checkRight(table, Right.INSERT);
         prepared.setCurrentRowNumber(0);
         rowNumber = 0;
         affectRows = 0;
@@ -84,9 +95,7 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                     }
                 }
                 rowNumber++;
-                table.validateConvertUpdateSequence(session, newRow);
                 addNewRow(newRow);
-
             }
         } else {
             Query query = prepared.getQuery();
@@ -101,14 +110,70 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                 rows.close();
             }
         }
-        flushNewRows();
-        return affectRows;
-
     }
 
     @Override
+    public int doUpdate() {
+        
+    }
+    
+    
+    protected int updateRows(TableMate table, List<Row> rows) {
+        Map<BatchKey, List<List<Value>>> batches = New.hashMap();
+        session.checkCanceled();
+        for (Row row : rows) {
+            RoutingResult result = routingHandler.doRoute(table, row);
+            ObjectNode[] selectNodes = result.getSelectNodes();
+            workers = New.arrayList(selectNodes.length);
+            for (ObjectNode objectNode : selectNodes) {
+                UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode, row);
+                workers.add(worker);
+            }
+        }
+        if(workers.size() > 5) {
+            queryHandlerFactory.mergeToBatchUpdateWorker(session, workers);
+        }
+        try {
+            addRuningJdbcWorkers(workers);
+            int affectRows = 0;
+            if (workers.size() > 1) {
+                int queryTimeout = getQueryTimeout();//MILLISECONDS
+                List<Future<Integer[]>> invokeAll;
+                if (queryTimeout > 0) {
+                    invokeAll = jdbcExecutor.invokeAll(workers, queryTimeout, TimeUnit.MILLISECONDS);
+                } else {
+                    invokeAll = jdbcExecutor.invokeAll(workers);
+                }
+                for (Future<Integer[]> future : invokeAll) {
+                    Integer[] integers = future.get();
+                    for (Integer integer : integers) {
+                        affectRows += integer;
+                    }
+                }
+            } else if (workers.size() == 1) {
+                Integer[] integers = workers.get(0).doWork();
+                for (Integer integer : integers) {
+                    affectRows += integer;
+                }
+            }
+            return affectRows;
+        } catch (InterruptedException e) {
+            throw DbException.convert(e);
+        } catch (ExecutionException e) {
+            throw DbException.convert(e.getCause());
+        } finally {
+            removeRuningJdbcWorkers(workers);
+            for (JdbcWorker<Integer[]> jdbcWorker : workers) {
+                jdbcWorker.closeResource();
+            }
+        }
+    }
+
+
+
+    @Override
     public void addRow(Value[] values) {
-        TableMate table = castTableMate(prepared.getTable());
+        TableMate table = toTableMate(prepared.getTable());
         Row newRow = table.getTemplateRow();
         Column[] columns = prepared.getColumns();
         prepared.setCurrentRowNumber(++rowNumber);
@@ -122,7 +187,6 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                 throw prepared.setRow(ex, rowNumber, Prepared.getSQL(values));
             }
         }
-        table.validateConvertUpdateSequence(session, newRow);
         addNewRow(newRow);
     }
 
@@ -133,7 +197,11 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
 
     private void addNewRow(Row newRow) {
         newRows.add(newRow);
-        if (newRows.size() >= 200) {
+    }
+    
+    private void addNewRowFlushIfNeed(Row newRow) {
+        newRows.add(newRow);
+        if (newRows.size() >= 500) {
             flushNewRows();
         }
     }
@@ -160,6 +228,67 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
         TableMate table = castTableMate(prepared.getTable());
         Column[] columns = table.getColumns();
         return buildInsert(forTable, columns, row, buff);
+    }
+
+
+    @Override
+    protected String doExplain() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    
+    
+    private static class BatchKey implements Serializable {
+        private static final long serialVersionUID = 1L;
+
+        private final String shardName;
+        private final String sql;
+
+        /**
+         * @param shardName
+         * @param sql
+         */
+        private BatchKey(String shardName, String sql) {
+            super();
+            this.shardName = shardName;
+            this.sql = sql;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((shardName == null) ? 0 : shardName.hashCode());
+            result = prime * result + ((sql == null) ? 0 : sql.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            BatchKey other = (BatchKey) obj;
+            if (shardName == null) {
+                if (other.shardName != null)
+                    return false;
+            } else if (!shardName.equals(other.shardName))
+                return false;
+            if (sql == null) {
+                if (other.sql != null)
+                    return false;
+            } else if (!sql.equals(other.sql))
+                return false;
+            return true;
+        }
+
+        @Override
+        public String toString() {
+            return "BatchKey [shardName=" + shardName + ", sql=" + sql + "]";
+        }
     }
 
 }

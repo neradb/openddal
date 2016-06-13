@@ -18,54 +18,59 @@
 
 package com.openddal.excutor.effects;
 
-import com.openddal.command.ddl.AlterTableAddConstraint;
+import java.util.List;
+import java.util.Map;
+
 import com.openddal.command.ddl.DropTable;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
+import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
+import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class DropTableExecutor extends ExecutionFramework<DropTable> {
 
+    private Map<DropTable, List<UpdateWorker>> dropWorkers = New.hashMap();
+
     public DropTableExecutor(DropTable prepared) {
         super(prepared);
     }
 
     @Override
-    public int executeUpdate() {
+    protected void doPrepare() {
+        prepareDrop(prepared);
+    }
+
+    @Override
+    protected int doUpdate() {
         prepareDrop(prepared);
         executeDrop(prepared);
         return 0;
     }
 
-    @Override
-    protected String doTranslate(TableNode tableNode) {
-        String forTable = tableNode.getCompositeObjectName();
-        StringBuilder sql = new StringBuilder();
-        sql.append("DROP TABLE");
-        if (prepared.isIfExists()) {
-            sql.append(" IF EXISTS");
-        }
-        sql.append(" ").append(identifier(forTable));
-        if (prepared.getDropAction() == AlterTableAddConstraint.CASCADE) {
-            sql.append(" CASCADE");
-        }
-        return sql.toString();
-    }
-
-
     private void prepareDrop(DropTable next) {
         String tableName = next.getTableName();
-        TableMate table = getTableMate(tableName);
+        TableMate table = findTableMate(tableName);
         if (table == null) {
             if (!next.isIfExists()) {
                 throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
             }
         }
-        session.getUser().checkRight(table, Right.ALL);
+        RoutingResult rr = routingHandler.doRoute(table);
+        ObjectNode[] selectNodes = rr.getSelectNodes();
+        List<UpdateWorker> workers = New.arrayList(selectNodes.length);
+        for (ObjectNode objectNode : selectNodes) {
+            UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode);
+            workers.add(worker);
+        }
+        dropWorkers.put(next, workers);
         next = prepared.getNext();
         if (next != null) {
             prepareDrop(next);
@@ -74,17 +79,30 @@ public class DropTableExecutor extends ExecutionFramework<DropTable> {
 
     private void executeDrop(DropTable next) {
         String tableName = next.getTableName();
-        TableMate table = findTableMate(tableName);
-        if (table != null) {
-            TableNode[] nodes = table.getPartitionNode();
-            execute(nodes);
-            table.markDeleted();
-        }
+        TableMate table = getTableMate(tableName);
+        invokeUpdateWorker(dropWorkers.get(next));
+        table.markDeleted();
         next = prepared.getNext();
         if (next != null) {
             executeDrop(next);
         }
     }
 
+    @Override
+    protected String doExplain() {
+        return executeExplain(prepared);
+    }
+
+    private String executeExplain(DropTable next) {
+        StringBuilder explain = new StringBuilder();
+        String plan = explainForUpdateWorker(dropWorkers.get(prepared));
+        explain.append(plan);
+        next = prepared.getNext();
+        if (next != null) {
+            explain.append("\n");
+            explain.append(StringUtils.indent(executeExplain(next), 4, false));
+        }
+        return explain.toString();
+    }
 
 }

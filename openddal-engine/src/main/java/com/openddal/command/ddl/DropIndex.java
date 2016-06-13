@@ -18,7 +18,7 @@ package com.openddal.command.ddl;
 import com.openddal.command.CommandInterface;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Session;
-import com.openddal.message.DbException;
+import com.openddal.excutor.effects.DropIndexExecutor;
 
 /**
  * This class represents the statement
@@ -27,7 +27,9 @@ import com.openddal.message.DbException;
 public class DropIndex extends SchemaCommand {
 
     private String indexName;
+    private String tableName;
     private boolean ifExists;
+    private DropIndexExecutor executor;
 
     public DropIndex(Session session, Schema schema) {
         super(session, schema);
@@ -41,6 +43,14 @@ public class DropIndex extends SchemaCommand {
         this.indexName = indexName;
     }
 
+    public String getTableName() {
+        return tableName;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
     public boolean isIfExists() {
         return ifExists;
     }
@@ -50,13 +60,16 @@ public class DropIndex extends SchemaCommand {
     }
 
     @Override
-    public int update() {
-        throw DbException.getUnsupportedException("TODO");
-    }
-
-    @Override
     public int getType() {
         return CommandInterface.DROP_INDEX;
+    }
+    
+    @Override
+    public DropIndexExecutor getExecutor() {
+        if(executor == null) {
+            executor = new DropIndexExecutor(this);
+        }
+        return executor;
     }
 
 }

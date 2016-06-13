@@ -45,7 +45,6 @@ import com.openddal.command.ddl.DefineCommand;
 import com.openddal.command.ddl.DropAggregate;
 import com.openddal.command.ddl.DropConstant;
 import com.openddal.command.ddl.DropDatabase;
-import com.openddal.command.ddl.DropFunctionAlias;
 import com.openddal.command.ddl.DropIndex;
 import com.openddal.command.ddl.DropRole;
 import com.openddal.command.ddl.DropSchema;
@@ -1394,6 +1393,11 @@ public class Parser {
             DropIndex command = new DropIndex(session, getSchema());
             command.setIndexName(indexName);
             ifExists = readIfExists(ifExists);
+            //MySQL compatibility,DROP INDEX index_name ON tbl_name
+            if (readIf("ON")) {
+                String tableName = readIdentifierWithSchema();
+                command.setTableName(tableName);
+            }
             command.setIfExists(ifExists);
             return command;
         } else if (readIf("USER")) {
@@ -1444,15 +1448,6 @@ public class Parser {
             boolean ifExists = readIfExists(false);
             DropRole command = new DropRole(session);
             command.setRoleName(readUniqueIdentifier());
-            ifExists = readIfExists(ifExists);
-            command.setIfExists(ifExists);
-            return command;
-        } else if (readIf("ALIAS")) {
-            boolean ifExists = readIfExists(false);
-            String aliasName = readIdentifierWithSchema();
-            DropFunctionAlias command = new DropFunctionAlias(session,
-                    getSchema());
-            command.setAliasName(aliasName);
             ifExists = readIfExists(ifExists);
             command.setIfExists(ifExists);
             return command;
@@ -4824,6 +4819,7 @@ public class Parser {
                 String indexName = readIdentifierWithSchema();
                 DropIndex command = new DropIndex(session, getSchema());
                 command.setIndexName(indexName);
+                command.setTableName(table.getName());
                 return command;
             } else if (readIf("PRIMARY")) {
                 read("KEY");

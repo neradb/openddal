@@ -17,6 +17,7 @@ package com.openddal.command.ddl;
 
 import com.openddal.command.Prepared;
 import com.openddal.engine.Session;
+import com.openddal.excutor.Executor;
 import com.openddal.result.ResultInterface;
 
 /**
@@ -57,6 +58,28 @@ public abstract class DefineCommand extends Prepared {
 
     public void setTransactional(boolean transactional) {
         this.transactional = transactional;
+    }
+
+    public Executor getExecutor() {
+        return null;
+    }
+
+    @Override
+    public int update() {
+        Executor executor = getExecutor();
+        if (executor != null) {
+            return executor.update();
+        }
+        return super.update();
+    }
+
+    @Override
+    public String explainPlan() {
+        Executor executor = getExecutor();
+        if (executor != null) {
+            return executor.explain();
+        }
+        return super.explainPlan();
     }
 
 }

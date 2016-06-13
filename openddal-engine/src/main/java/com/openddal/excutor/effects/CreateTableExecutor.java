@@ -37,6 +37,7 @@ import com.openddal.excutor.works.Worker;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.value.DataType;
@@ -47,7 +48,7 @@ import com.openddal.value.DataType;
 public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
 
     private CreateTable prepared;
-    private List<UpdateWorker> handlers;
+    private List<UpdateWorker> workers;
     private Insert asQueryInsert;
     /**
      * @param prepared
@@ -60,9 +61,6 @@ public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
     public void doPrepare() {
         String tableName = prepared.getTableName();
         TableMate tableMate = getTableMate(tableName);
-        if (tableMate == null) {
-            throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
-        }
         if (!tableMate.isInited()) {
             if (prepared.isIfNotExists()) {
                 return;
@@ -105,22 +103,21 @@ public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
             // asQueryInsert.update();
         }
 
-        routingResult = routingHandler.doRoute(tableMate);
-        ObjectNode[] selectNodes = routingResult.getSelectNodes();
-        handlers = New.arrayList(selectNodes.length);
+        RoutingResult rr = routingHandler.doRoute(tableMate);
+        ObjectNode[] selectNodes = rr.getSelectNodes();
+        workers = New.arrayList(selectNodes.length);
         for (ObjectNode objectNode : selectNodes) {
             ObjectNode refTableNode = null;
             if (refTable != null) {
                 refTableNode = getConsistencyNode(refTable.getTableRule(), objectNode);
             }
             UpdateWorker handler = queryHandlerFactory.createUpdateWorker(prepared, objectNode, refTableNode);
-            handlers.add(handler);
+            workers.add(handler);
         }
     }
 
     @Override
     public int doUpdate() {
-        prepare();
         String tableName = prepared.getTableName();
         TableMate tableMate = getTableMate(tableName);
         ArrayList<Sequence> sequences = New.arrayList();
@@ -135,7 +132,7 @@ public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
         for (Sequence sequence : sequences) {
             tableMate.addSequence(sequence);
         }
-        int affectRows = invokeUpdateHandler(handlers);
+        int affectRows = invokeUpdateWorker(workers);
 
         if (asQueryInsert != null) {
             asQueryInsert.update();
@@ -151,20 +148,23 @@ public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
      */
     @Override
     public String doExplain() {
-        prepare();
-        if (handlers.size() == 1) {
-            return handlers.iterator().next().explain();
+        if (workers.size() == 1) {
+            return workers.iterator().next().explain();
         }
         StringBuilder explain = new StringBuilder();
         explain.append("MULTINODES_EXECUTION");
         explain.append('\n');
-        for (Worker handler : handlers) {
-            String subexplain = handler.explain();
+        for (Worker worker : workers) {
+            String subexplain = worker.explain();
             explain.append(StringUtils.indent(subexplain, 4, false));
         }
+        if(asQueryInsert != null) {
+            String explainPlan = asQueryInsert.explainPlan();
+            explain.append(StringUtils.indent(explainPlan, 4, false));
+        }
         return explain.toString();
+    
     }
-
 
     private void generateColumnsFromQuery() {
         int columnCount = prepared.getQuery().getColumnCount();

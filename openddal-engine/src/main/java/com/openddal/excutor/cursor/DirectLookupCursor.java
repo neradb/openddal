@@ -37,10 +37,10 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
 
     @Override
     protected void doPrepare() {
-        this.routingResult = doRoute(prepared);
-        ObjectNode[] selectNodes = routingResult.getSelectNodes();
+        RoutingResult rr = doRoute(prepared);
+        ObjectNode[] selectNodes = rr.getSelectNodes();
         if (session.getDatabase().getSettings().optimizeMerging) {
-            selectNodes = routingResult.group();
+            selectNodes = rr.group();
         }
         queryHandlers = New.arrayList(selectNodes.length);
         for (ObjectNode node : selectNodes) {

@@ -141,18 +141,6 @@ public class CreateTable extends SchemaCommand {
         this.ifNotExists = ifNotExists;
     }
 
-    private CreateTableExecutor getExecutor() {
-        if (executor == null) {
-            executor = new CreateTableExecutor(this);
-        }
-        return executor;
-    }
-
-    @Override
-    public int update() {
-        return getExecutor().update();
-    }
-
     /**
      * Sets the primary key columns, but also check if a primary key with
      * different columns is already defined.
@@ -223,12 +211,7 @@ public class CreateTable extends SchemaCommand {
     public int getType() {
         return CommandInterface.CREATE_TABLE;
     }
-
-    @Override
-    public String explainPlan() {
-        return getExecutor().explain();
-    }
-
+    
     /**
      * @return the onCommitDrop
      */
@@ -276,5 +259,11 @@ public class CreateTable extends SchemaCommand {
         this.sortedInsertMode = sortedInsertMode;
     }
 
-
+    @Override
+    public CreateTableExecutor getExecutor() {
+        if(executor == null) {
+            executor = new CreateTableExecutor(this);
+        }
+        return executor;
+    }
 }
