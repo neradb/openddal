@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS customers,address,orders,order_items,order_status,product,product_category;
+
 
 CREATE TABLE IF NOT EXISTS `customers` (
   `id` int(11) NOT NULL,

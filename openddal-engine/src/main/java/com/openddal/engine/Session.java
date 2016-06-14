@@ -102,11 +102,11 @@ public class Session implements SessionInterface {
     private final WorkerFactoryProxy workerHolder;
 
     public Session(Database database, User user, int id) {
-        this.database = database;
-        this.queryTimeout = database.getSettings().queryTimeout;
-        this.queryCacheSize = database.getSettings().queryCacheSize;
-        this.user = user;
         this.id = id;
+        this.user = user;
+        this.database = database;
+        this.queryTimeout = database.getSettings().defaultQueryTimeout;
+        this.queryCacheSize = database.getSettings().queryCacheSize;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
         this.workerHolder = new WorkerFactoryProxy(database.getRepository().getWorkerFactory());
     }
@@ -764,12 +764,9 @@ public class Session implements SessionInterface {
     }
 
     public void setQueryTimeout(int queryTimeout) {
-        int max = database.getSettings().queryTimeout;
-        if (max != 0 && (max < queryTimeout || queryTimeout == 0)) {
-            // the value must be at most max
-            queryTimeout = max;
+        if (queryTimeout > 0) {
+            this.queryTimeout = queryTimeout;
         }
-        this.queryTimeout = queryTimeout;
         // must reset the cancel at here,
         // otherwise it is still used
         this.cancelAt = 0;

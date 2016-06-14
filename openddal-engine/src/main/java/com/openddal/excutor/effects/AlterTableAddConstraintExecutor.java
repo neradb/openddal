@@ -56,7 +56,7 @@ public class AlterTableAddConstraintExecutor extends ExecutionFramework<AlterTab
         case CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL: {
             String refTableName = prepared.getRefTableName();
             refTable = getTableMate(refTableName);
-            if (isConsistencyTableForReferential(table, refTable)) {
+            if (isConsistencyNodeForReferential(table, refTable)) {
                 throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                         "Create foreign key for table,the original table and the reference table nodes should be consistency.");
             }

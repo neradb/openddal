@@ -194,7 +194,7 @@ public class DbSettings extends SettingsBase {
      * no limit. Please note the actual query timeout may be set to a lower
      * value.
      */
-    public int queryTimeout = get("QUERY_TIMEOUT", 0);
+    public int defaultQueryTimeout = get("DEFAULT_QUERY_TIMEOUT", 0);
     /**
      * Database setting <code>DEFAULT_TABLE_ENGINE</code>
      * (default: null).<br />

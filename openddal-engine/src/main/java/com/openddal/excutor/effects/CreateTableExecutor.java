@@ -59,19 +59,13 @@ public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
     public void doPrepare() {
         String tableName = prepared.getTableName();
         TableMate tableMate = getTableMate(tableName);
-        if (!tableMate.isInited()) {
-            if (prepared.isIfNotExists()) {
-                return;
-            }
-            throw DbException.get(ErrorCode.TABLE_OR_VIEW_ALREADY_EXISTS_1, tableName);
-        }
         TableMate refTable = null;
         for (DefineCommand command : prepared.getConstraintCommands()) {
             if (command.getType() == CommandInterface.ALTER_TABLE_ADD_CONSTRAINT_REFERENTIAL) {
                 AlterTableAddConstraint stmt = (AlterTableAddConstraint) command;
                 String refTableName = stmt.getRefTableName();
                 refTable = getTableMate(refTableName);
-                if (!isConsistencyTableForReferential(tableMate, refTable)) {
+                if (!isConsistencyNodeForReferential(tableMate, refTable)) {
                     throw DbException.get(ErrorCode.CHECK_CONSTRAINT_INVALID,
                             "Create foreign key for table,the original table and the reference table nodes should be consistency.");
                 }

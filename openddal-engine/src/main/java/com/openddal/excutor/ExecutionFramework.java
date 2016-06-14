@@ -18,6 +18,7 @@ package com.openddal.excutor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -112,7 +113,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
     protected abstract void doPrepare();
 
     protected abstract String doExplain();
-    
+
     protected int doUpdate() {
         throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
     }
@@ -125,7 +126,12 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         session.checkCanceled();
         try {
             int queryTimeout = session.getQueryTimeout();// MILLISECONDS
-            List<Future<Integer>> invokeAll = queryExecutor.invokeAll(worker, queryTimeout, TimeUnit.MILLISECONDS);
+            List<Future<Integer>> invokeAll;
+            if (queryTimeout > 0) {
+                invokeAll = queryExecutor.invokeAll(worker, queryTimeout, TimeUnit.MILLISECONDS);
+            } else {
+                invokeAll = queryExecutor.invokeAll(worker);
+            }
             int affectRows = 0;
             for (Future<Integer> future : invokeAll) {
                 affectRows += future.get();
@@ -140,11 +146,16 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
     }
 
-    protected int invokeBatchUpdateWorker(List<BatchUpdateWorker> handlers) {
+    protected int invokeBatchUpdateWorker(List<BatchUpdateWorker> worker) {
         session.checkCanceled();
         try {
             int queryTimeout = session.getQueryTimeout();// MILLISECONDS
-            List<Future<Integer[]>> invokeAll = queryExecutor.invokeAll(handlers, queryTimeout, TimeUnit.MILLISECONDS);
+            List<Future<Integer[]>> invokeAll;
+            if (queryTimeout > 0) {
+                invokeAll = queryExecutor.invokeAll(worker, queryTimeout, TimeUnit.MILLISECONDS);
+            } else {
+                invokeAll = queryExecutor.invokeAll(worker);
+            }
             int affectRows = 0;
             for (Future<Integer[]> future : invokeAll) {
                 Integer[] integers = future.get();
@@ -162,11 +173,16 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
     }
 
-    protected Cursor invokeQueryWorker(List<QueryWorker> handlers) {
+    protected Cursor invokeQueryWorker(List<QueryWorker> worker) {
         session.checkCanceled();
         try {
             int queryTimeout = session.getQueryTimeout();// MILLISECONDS
-            List<Future<Cursor>> invokeAll = queryExecutor.invokeAll(handlers, queryTimeout, TimeUnit.MILLISECONDS);
+            List<Future<Cursor>> invokeAll;
+            if (queryTimeout > 0) {
+                invokeAll = queryExecutor.invokeAll(worker, queryTimeout, TimeUnit.MILLISECONDS);
+            } else {
+                invokeAll = queryExecutor.invokeAll(worker);
+            }
             if (invokeAll.size() > 1) {
                 MergedCursor cursor = new MergedCursor();
                 for (Future<Cursor> future : invokeAll) {
@@ -184,7 +200,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
             session.checkCanceled();
         }
     }
-    
+
     protected String explainForWorker(List<? extends Worker> workers) {
         if (workers.size() == 1) {
             return workers.iterator().next().explain();
@@ -198,7 +214,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
         return explain.toString();
     }
-    
+
     protected Map<ObjectNode, List<Row>> batchForRoutingNode(TableMate table, List<Row> rows) {
         Map<ObjectNode, List<Row>> batches = New.hashMap();
         for (Row row : rows) {
@@ -212,7 +228,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
             ObjectNode[] selectNodes = result.getSelectNodes();
             for (ObjectNode objectNode : selectNodes) {
                 List<Row> batch = batches.get(objectNode);
-                if(batch == null) {
+                if (batch == null) {
                     batch = New.arrayList(10);
                     batches.put(objectNode, batch);
                 }
@@ -229,10 +245,10 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
         throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
     }
-    
+
     protected TableMate toTableMate(Table table) {
-        if(table instanceof TableMate) {
-            return (TableMate)table;
+        if (table instanceof TableMate) {
+            return (TableMate) table;
         }
         throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, table.getName());
     }
@@ -295,19 +311,34 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         }
         return result;
     }
-    
-    protected static boolean isConsistencyTableForReferential(TableMate table, TableMate refTable) {
+
+    protected static boolean isConsistencyNodeForReferential(TableMate table, TableMate refTable) {
         TableRule t1 = table.getTableRule();
         TableRule t2 = refTable.getTableRule();
-        if(t1.getType() != t2.getType()) {
+        if (t1.getType() != t2.getType()) {
             return false;
         }
         switch (t1.getType()) {
         case TableRule.SHARDED_NODE_TABLE:
-            ShardedTableRule shard1 = (ShardedTableRule)t1;
-            ShardedTableRule shard2 = (ShardedTableRule)t2;
+            ShardedTableRule shard1 = (ShardedTableRule) t1;
+            ShardedTableRule shard2 = (ShardedTableRule) t2;
             return shard1.getOwnerGroup() == shard2.getOwnerGroup();
-            
+
+        case TableRule.GLOBAL_NODE_TABLE:
+            GlobalTableRule g1 = (GlobalTableRule) t1;
+            GlobalTableRule g2 = (GlobalTableRule) t2;
+            ObjectNode[] ns1 = g1.getBroadcasts();
+            ObjectNode[] ns2 = g2.getBroadcasts();
+            Set<String> set1 = New.hashSet();
+            Set<String> set2 = New.hashSet();
+            for (ObjectNode n1 : ns1) {
+                set1.add(n1.getShardName());
+            }
+            for (ObjectNode n2 : ns2) {
+                set2.add(n2.getShardName());
+            }
+            return set1.equals(set2);
+
         case TableRule.FIXED_NODE_TABLE:
             String s1 = t1.getMetadataNode().getShardName();
             String s2 = t2.getMetadataNode().getShardName();
@@ -315,7 +346,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         default:
             return false;
         }
-        
+
     }
 
     protected static ObjectNode getConsistencyNode(TableRule tableRule, ObjectNode target) {

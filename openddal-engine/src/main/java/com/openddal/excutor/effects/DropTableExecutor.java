@@ -25,8 +25,6 @@ import com.openddal.command.ddl.DropTable;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
 import com.openddal.excutor.works.UpdateWorker;
-import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
@@ -50,19 +48,13 @@ public class DropTableExecutor extends ExecutionFramework<DropTable> {
 
     @Override
     protected int doUpdate() {
-        prepareDrop(prepared);
         executeDrop(prepared);
         return 0;
     }
 
     private void prepareDrop(DropTable next) {
         String tableName = next.getTableName();
-        TableMate table = findTableMate(tableName);
-        if (table == null) {
-            if (!next.isIfExists()) {
-                throw DbException.get(ErrorCode.TABLE_OR_VIEW_NOT_FOUND_1, tableName);
-            }
-        }
+        TableMate table = getTableMate(tableName);
         RoutingResult rr = routingHandler.doRoute(table);
         ObjectNode[] selectNodes = rr.getSelectNodes();
         List<UpdateWorker> workers = New.arrayList(selectNodes.length);
@@ -71,7 +63,7 @@ public class DropTableExecutor extends ExecutionFramework<DropTable> {
             workers.add(worker);
         }
         dropWorkers.put(next, workers);
-        next = prepared.getNext();
+        next = next.getNext();
         if (next != null) {
             prepareDrop(next);
         }
@@ -82,7 +74,7 @@ public class DropTableExecutor extends ExecutionFramework<DropTable> {
         TableMate table = getTableMate(tableName);
         invokeUpdateWorker(dropWorkers.get(next));
         table.markDeleted();
-        next = prepared.getNext();
+        next = next.getNext();
         if (next != null) {
             executeDrop(next);
         }

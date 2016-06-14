@@ -4,13 +4,12 @@
 
 	<settings>
 		<property name="ddal.compatibilityMode" value="MySQL" />
-		<property name="ddal.queryTimeout" value="3000" />
+		<property name="ddal.defaultQueryTimeout" value="3000" />
 		<property name="ddal.validationQuery" value="select 1" />
 		<property name="ddal.validationQueryTimeout" value="1000" />
 	</settings>
 
-	<schema name="ut-app" force="false">
-
+	<schema name="SCHEMA_MAIN" force="false">
 		<tableGroup>
 			<tables>
 				<table name="orders" />
@@ -27,7 +26,6 @@
 				<columns>order_id</columns>
 				<algorithm>order_partitioner</algorithm>
 			</tableRule>
-
 		</tableGroup>
 
 		<tableGroup>
@@ -57,6 +55,10 @@
 			<broadcast>
 				<node shard="shard0,shard1,shard2,shard3" />
 			</broadcast>
+		</table>
+		
+		<table name="login_log">
+			<node shard="shard0" name="t_login_log"/>
 		</table>
 
 	</schema>

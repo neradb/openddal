@@ -388,6 +388,7 @@ public class XmlConfigParser {
                 throw new ParsingException(
                         "Error parsing XML. Cause: " + "the shard attribute of 'node' element is required.");
             }
+            name = StringUtils.isNullOrEmpty(name) ? tableName : name;
             tableRule.setMetadataNode(new ObjectNode(shard, catalog, schema, name, null));
         } else {
             if (StringUtils.isNullOrEmpty(configuration.defaultShardName)) {
@@ -415,6 +416,7 @@ public class XmlConfigParser {
                 throw new ParsingException(
                         "Error parsing ddal-rule XML. Cause: " + "the shard attribute of 'node' element is required.");
             }
+            name = StringUtils.isNullOrEmpty(name) ? table.getName() : name;
             List<String> shards = collectItems(shard);
             List<String> suffixes = collectItems(suffix);
             if (suffixes.isEmpty()) {
