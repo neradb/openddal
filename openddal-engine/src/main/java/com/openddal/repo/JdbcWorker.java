@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo.works;
+package com.openddal.repo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,8 +28,6 @@ import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
-import com.openddal.repo.JdbcRepository;
-import com.openddal.repo.ShardChooser;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
@@ -71,7 +69,7 @@ public abstract class JdbcWorker {
         return DbException.get(ErrorCode.ERROR_ACCESSING_DATABASE_TABLE_2, e, sql, e.toString());
     }
 
-    protected Connection doGetConnection(ShardChooser chooser) throws SQLException {
+    protected Connection doGetConnection(Navigator chooser) throws SQLException {
         JdbcRepository dataSourceRepository = (JdbcRepository) session.getDatabase().getRepository();
         DataSource dataSource = dataSourceRepository.getDataSourceByShardName(chooser.shardName);
         Connection conn = session.applyConnection(dataSource, chooser);

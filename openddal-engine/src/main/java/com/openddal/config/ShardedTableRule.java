@@ -3,6 +3,7 @@ package com.openddal.config;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import com.openddal.route.algorithm.Partitioner;
 import com.openddal.route.rule.ObjectNode;
@@ -20,6 +21,7 @@ public class ShardedTableRule extends TableRule implements Serializable {
 
     private static final long serialVersionUID = 1L;
     private int scanLevel = SCANLEVEL_ANYINDEX;
+    private Random random = new Random();
     private ObjectNode[] objectNodes;
     private List<String> ruleColumns;
     private Partitioner partitioner; 
@@ -58,6 +60,16 @@ public class ShardedTableRule extends TableRule implements Serializable {
         this.partitioner = partitioner;
     }
     
+    @Override
+    public ObjectNode getMetadataNode() {
+        if (this.metadataNode == null) {
+            ObjectNode[] objectNodes = getObjectNodes();
+            int bound = objectNodes.length - 1;
+            return objectNodes[random.nextInt(bound)];
+        }
+        return this.metadataNode;
+    }
+    
     public ObjectNode[] getObjectNodes() {
         return objectNodes;
     }
@@ -85,6 +97,15 @@ public class ShardedTableRule extends TableRule implements Serializable {
             this.objectNodes[i] = new ObjectNode(item.getShardName(), item.getCatalog(), item.getSchema(),
                     this.getName(), item.getSuffix());
         }
+    }
+    
+    public void cloneMetadataNode(ObjectNode node) {
+        if (StringUtils.isNullOrEmpty(node.getShardName())) {
+            throw new IllegalArgumentException();
+        }
+        this.metadataNode = new ObjectNode(node.getShardName(), node.getCatalog(), node.getSchema(), this.getName(),
+                node.getSuffix());
+
     }
     
     public ShardedTableRule ruleColumn(String ... ruleColumn) {

@@ -1,6 +1,7 @@
 package com.openddal.repo.mysql;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,13 +17,17 @@ import com.openddal.command.ddl.DropTable;
 import com.openddal.command.ddl.TruncateTable;
 import com.openddal.command.dml.Delete;
 import com.openddal.command.dml.Insert;
+import com.openddal.command.dml.Merge;
+import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
+import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Database;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.repo.SQLTranslated;
 import com.openddal.repo.SQLTranslator;
 import com.openddal.result.Row;
@@ -358,7 +363,7 @@ public class MySQLTranslator implements SQLTranslator {
             buff.append(" DEFAULT CHARACTER SET = ");
             buff.append(prepared.getCharset());
         }
-        return SQLTranslated.build().sql(buff.toString()).sql(null);
+        return SQLTranslated.build().sql(buff.toString());
 
     }
 
@@ -609,7 +614,9 @@ public class MySQLTranslator implements SQLTranslator {
         }
         return SQLTranslated.build().sql(sql.toString());
     }
-
+    /**
+     * @see http://dev.mysql.com/doc/refman/5.7/en/drop-index.html
+     */
     @Override
     public SQLTranslated translate(DropIndex prepared, ObjectNode indexNode, ObjectNode tableNode) {
         String forIndex = indexNode.getCompositeObjectName();
@@ -620,7 +627,9 @@ public class MySQLTranslator implements SQLTranslator {
         sql.append(" ON ").append(identifier(forTable));
         return SQLTranslated.build().sql(sql.toString());
     }
-
+    /**
+     * @see http://dev.mysql.com/doc/refman/5.7/en/delete.html
+     */
     @Override
     public SQLTranslated translate(Delete prepared, ObjectNode node) {
 
@@ -645,9 +654,12 @@ public class MySQLTranslator implements SQLTranslator {
 
     
     }
-
+    
+    /**
+     * @see http://dev.mysql.com/doc/refman/5.7/en/insert.html
+     */
     @Override
-    public SQLTranslated translate(Insert insert, ObjectNode node, Row row) {
+    public SQLTranslated translate(Insert insert, ObjectNode node, Row ... rows) {
         ArrayList<Value> params = New.arrayList();
         StatementBuilder sql = new StatementBuilder();
         String forTable = node.getCompositeObjectName();
@@ -658,13 +670,95 @@ public class MySQLTranslator implements SQLTranslator {
             sql.appendExceptFirst(", ");
             sql.append(c.getSQL());
         }
-        sql.append(") ");
-        sql.resetCount();
-        sql.append("VALUES( ");
-        for (int i = 0; i < columns.length; i++) {
-            Column c = columns[i];
-            int index = c.getColumnId();
-            Value v = row.getValue(index);
+        sql.append(") VALUES ");
+        appendValues(params, sql, columns, rows);
+        HashMap<Column, Expression> duplicateKeyMap = insert.getDuplicateKeyAssignmentMap();
+        if(duplicateKeyMap != null) {
+            sql.resetCount();
+            sql.append(" ON DUPLICATE KEY UPDATE ");
+            for (Map.Entry<Column, Expression> item: duplicateKeyMap.entrySet()) {
+                sql.appendExceptFirst(", ");
+                sql.append(item.getKey().getSQL());
+                sql.append(" = ");
+                sql.append(item.getValue().getSQL());
+            }
+        }
+        return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
+    
+    }
+
+    private void appendValues(ArrayList<Value> params, StatementBuilder sql, Column[] columns, Row... rows) {
+        for (int i = 0; i < rows.length; i++) {
+            Row row = rows[i];
+            if(i > 0) {
+                sql.append(", ");
+            }
+            sql.append('(');
+            sql.resetCount();
+            for (Column c : columns) {
+                int index = c.getColumnId();
+                Value v = row.getValue(index);
+                sql.appendExceptFirst(", ");
+                if (v == null) {
+                    sql.append("DEFAULT");
+                } else if (isNull(v)) {
+                    sql.append("NULL");
+                } else {
+                    sql.append('?');
+                    params.add(v);
+                }
+            }
+            sql.append(')');
+        
+        }
+    }
+    
+    protected static boolean isNull(Value v) {
+        return v == null || v == ValueNull.INSTANCE;
+    }
+
+    /**
+     * @see http://dev.mysql.com/doc/refman/5.7/en/replace.html
+     */
+    @Override
+    public SQLTranslated translate(Replace replace, ObjectNode node, Row ... rows) {
+        ArrayList<Value> params = New.arrayList();
+        String forTable = node.getCompositeObjectName();
+        Column[] columns = replace.getColumns();
+        StatementBuilder sql = new StatementBuilder("REPLACE INTO ");
+        sql.append(identifier(forTable)).append('(');
+        for (Column c : columns) {
+            sql.appendExceptFirst(", ");
+            sql.append(c.getSQL());
+        }
+        sql.append(')');
+        sql.append(") VALUES ");
+        appendValues(params, sql, columns, rows);
+        return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
+    }
+
+    @Override
+    public SQLTranslated translate(Merge merge, ObjectNode node, Row ... rows) {
+        throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1,"MySQL not support merge.");
+    }
+
+    @Override
+    public SQLTranslated translate(Update prepared, ObjectNode node, Row row) {
+        ArrayList<Value> params = New.arrayList();
+        TableFilter tableFilter = prepared.getTableFilter();
+        String forTable = node.getCompositeObjectName();
+        List<Column> columns = prepared.getColumns();
+        Expression condition = prepared.getCondition();
+        Expression limitExpr = prepared.getLimitExpr();
+        StatementBuilder sql = new StatementBuilder();
+        sql.append("UPDATE ");
+        sql.append(identifier(forTable)).append(" SET ");
+        for (int i = 0, size = columns.size(); i < size; i++) {
+            Column c = columns.get(i);
+            sql.appendExceptFirst(", ");
+            sql.append(c.getSQL()).append(" = ");
+
+            Value v = row.getValue(i);
             sql.appendExceptFirst(", ");
             if (v == null) {
                 sql.append("DEFAULT");
@@ -675,13 +769,15 @@ public class MySQLTranslator implements SQLTranslator {
                 params.add(v);
             }
         }
-        sql.append(")");
+        if (condition != null) {
+            condition.exportParameters(tableFilter, params);
+            sql.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
+        }
+        if (limitExpr != null) {
+            limitExpr.exportParameters(tableFilter, params);
+            sql.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
+        }
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
-    
-    }
-    
-    protected static boolean isNull(Value v) {
-        return v == null || v == ValueNull.INSTANCE;
     }
 
 }

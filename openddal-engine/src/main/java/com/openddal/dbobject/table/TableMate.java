@@ -43,7 +43,7 @@ import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.repo.JdbcRepository;
-import com.openddal.repo.ShardChooser;
+import com.openddal.repo.Navigator;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.MathUtils;
@@ -245,7 +245,7 @@ public class TableMate extends Table {
                 try {
                     JdbcRepository dsRepository = (JdbcRepository) database.getRepository();
                     DataSource dataSource = dsRepository.getDataSourceByShardName(shardName);
-                    ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(false);
+                    Navigator optional = Navigator.build().shardName(shardName).readOnly(false);
                     conn = session.applyConnection(dataSource, optional);
                     tableName = database.identifier(tableName);
                     tryReadMetaData(conn, tableName);
@@ -542,17 +542,17 @@ public class TableMate extends Table {
             switch (shardedTableRule.getScanLevel()) {
             case ShardedTableRule.SCANLEVEL_SHARDINGKEY:
                 if (priority < ScanningStrategy.USE_SHARDINGKEY.priority) {
-                    throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE, getName(), "shardingKey", "shardingKey");
+                    throw DbException.get(ErrorCode.NOT_ALLOWED_SCANTABLE, getName(), "shardingKey", "shardingKey");
                 }
                 break;
             case ShardedTableRule.SCANLEVEL_UNIQUEINDEX:
                 if (priority < ScanningStrategy.USE_UNIQUEKEY.priority) {
-                    throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE, getName(), "uniqueIndex", "uniqueIndex");
+                    throw DbException.get(ErrorCode.NOT_ALLOWED_SCANTABLE, getName(), "uniqueIndex", "uniqueIndex");
                 }
                 break;
             case ShardedTableRule.SCANLEVEL_ANYINDEX:
                 if (priority < ScanningStrategy.USE_INDEXKEY.priority) {
-                    throw DbException.get(ErrorCode.NOT_ALLOWED_TO_SCAN_TABLE, getName(), "indexKey", "indexKey");
+                    throw DbException.get(ErrorCode.NOT_ALLOWED_SCANTABLE, getName(), "indexKey", "indexKey");
                 }
                 break;
             case ShardedTableRule.SCANLEVEL_UNLIMITED:

@@ -20,6 +20,7 @@ import com.openddal.command.Prepared;
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
+import com.openddal.excutor.effects.DeleteExecutor;
 import com.openddal.result.ResultInterface;
 
 /**
@@ -30,6 +31,7 @@ public class Delete extends Prepared {
 
     private Expression condition;
     private TableFilter tableFilter;
+    private DeleteExecutor executor;
 
     /**
      * The limit expression as specified in the LIMIT or TOP clause.
@@ -42,7 +44,7 @@ public class Delete extends Prepared {
 
     @Override
     public String explainPlan() {
-        return null;
+        return getExecutor().explain();
     }
 
     @Override
@@ -56,8 +58,11 @@ public class Delete extends Prepared {
         //tableFilter.setPlanItem(item);
         tableFilter.prepare();
     }
-    
-    
+
+    @Override
+    public int update() {
+        return getExecutor().update();
+    }
 
     @Override
     public boolean isTransactional() {
@@ -102,6 +107,13 @@ public class Delete extends Prepared {
 
     public Expression getLimitExpr() {
         return limitExpr;
+    }
+    
+    public DeleteExecutor getExecutor() {
+        if (executor == null) {
+            executor = new DeleteExecutor(this);
+        }
+        return executor;
     }
 
 }

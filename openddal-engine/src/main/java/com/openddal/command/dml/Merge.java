@@ -15,6 +15,8 @@
  */
 package com.openddal.command.dml;
 
+import java.util.ArrayList;
+
 import com.openddal.command.Command;
 import com.openddal.command.CommandInterface;
 import com.openddal.command.Prepared;
@@ -23,13 +25,12 @@ import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
+import com.openddal.excutor.effects.MergeExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
-
-import java.util.ArrayList;
 
 /**
  * This class represents the statement
@@ -43,6 +44,7 @@ public class Merge extends Prepared {
     private Column[] keys;
     private Query query;
     private Prepared update;
+    private MergeExecutor executor;
 
     public Merge(Session session) {
         super(session);
@@ -67,46 +69,7 @@ public class Merge extends Prepared {
 
     @Override
     public String explainPlan() {
-        StatementBuilder buff = new StatementBuilder("MERGE INTO ");
-        buff.append(table.getSQL()).append('(');
-        for (Column c : columns) {
-            buff.appendExceptFirst(", ");
-            buff.append(c.getSQL());
-        }
-        buff.append(')');
-        if (keys != null) {
-            buff.append(" KEY(");
-            buff.resetCount();
-            for (Column c : keys) {
-                buff.appendExceptFirst(", ");
-                buff.append(c.getSQL());
-            }
-            buff.append(')');
-        }
-        buff.append('\n');
-        if (list.size() > 0) {
-            buff.append("VALUES ");
-            int row = 0;
-            for (Expression[] expr : list) {
-                if (row++ > 0) {
-                    buff.append(", ");
-                }
-                buff.append('(');
-                buff.resetCount();
-                for (Expression e : expr) {
-                    buff.appendExceptFirst(", ");
-                    if (e == null) {
-                        buff.append("DEFAULT");
-                    } else {
-                        buff.append(e.getSQL());
-                    }
-                }
-                buff.append(')');
-            }
-        } else {
-            buff.append(query.explainPlan());
-        }
-        return buff.toString();
+        return getExecutor().explain();
     }
 
     @Override
@@ -158,6 +121,11 @@ public class Merge extends Prepared {
         }
         String sql = buff.toString();
         update = session.prepare(sql);
+    }
+    
+    @Override
+    public int update() {
+        return getExecutor().update();
     }
 
     @Override
@@ -220,6 +188,12 @@ public class Merge extends Prepared {
     public Prepared getUpdate() {
         return update;
     }
-
+    
+    public MergeExecutor getExecutor() {
+        if (executor == null) {
+            executor = new MergeExecutor(this);
+        }
+        return executor;
+    }
 
 }

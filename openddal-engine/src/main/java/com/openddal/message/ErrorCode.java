@@ -1907,9 +1907,11 @@ public class ErrorCode {
      * in the database. The serializer of the database must be set when the
      * database is empty.
      */
-    public static final int JAVA_OBJECT_SERIALIZER_CHANGE_WITH_DATA_TABLE = 90141;
+    public static final int SHARDING_COLUMNS_CANNOT_BE_MODIFIED = 90141;
 
-    public static final int NOT_ALLOWED_TO_SCAN_TABLE = 90142;
+    public static final int NOT_ALLOWED_SCANTABLE = 90142;
+    
+    public static final int DATABASE_LOAD_REPOSITORY_ERROR = 90143;
 
 
     // next are 90039, 90051, 90056, 90110, 90122, 90143

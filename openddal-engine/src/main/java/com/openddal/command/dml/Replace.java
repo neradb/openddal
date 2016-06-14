@@ -15,6 +15,8 @@
  */
 package com.openddal.command.dml;
 
+import java.util.ArrayList;
+
 import com.openddal.command.Command;
 import com.openddal.command.CommandInterface;
 import com.openddal.command.Prepared;
@@ -23,13 +25,12 @@ import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
+import com.openddal.excutor.effects.ReplaceExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
-
-import java.util.ArrayList;
 
 /**
  * This class represents the MySQL-compatibility REPLACE statement
@@ -42,6 +43,7 @@ public class Replace extends Prepared {
     private Column[] keys;
     private Query query;
     private Prepared update;
+    private ReplaceExecutor executor;
 
     public Replace(Session session) {
         super(session);
@@ -66,37 +68,7 @@ public class Replace extends Prepared {
 
     @Override
     public String explainPlan() {
-        StatementBuilder buff = new StatementBuilder("REPLACE INTO ");
-        buff.append(table.getSQL()).append('(');
-        for (Column c : columns) {
-            buff.appendExceptFirst(", ");
-            buff.append(c.getSQL());
-        }
-        buff.append(')');
-        buff.append('\n');
-        if (list.size() > 0) {
-            buff.append("VALUES ");
-            int row = 0;
-            for (Expression[] expr : list) {
-                if (row++ > 0) {
-                    buff.append(", ");
-                }
-                buff.append('(');
-                buff.resetCount();
-                for (Expression e : expr) {
-                    buff.appendExceptFirst(", ");
-                    if (e == null) {
-                        buff.append("DEFAULT");
-                    } else {
-                        buff.append(e.getSQL());
-                    }
-                }
-                buff.append(')');
-            }
-        } else {
-            buff.append(query.explainPlan());
-        }
-        return buff.toString();
+        return getExecutor().explain();
     }
 
     @Override
@@ -163,6 +135,11 @@ public class Replace extends Prepared {
         String sql = buff.toString();
         update = session.prepare(sql);
     }
+    
+    @Override
+    public int update() {
+        return getExecutor().update();
+    }
 
     @Override
     public boolean isTransactional() {
@@ -226,4 +203,10 @@ public class Replace extends Prepared {
         return update;
     }
 
+    public ReplaceExecutor getExecutor() {
+        if (executor == null) {
+            executor = new ReplaceExecutor(this);
+        }
+        return executor;
+    }
 }

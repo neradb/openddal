@@ -353,18 +353,21 @@ public class XmlConfigParser {
         String tableName = tableNode.getStringAttribute("name");
         GlobalTableRule globalTableRule = new GlobalTableRule(tableName, null);
         String metaNodeIndex = tableNode.getStringAttribute("metaNodeIndex");
-        XNode broadcast = tableNode.evalNode("broadcast");
-        String text = getStringBody(broadcast);
-        text = text.replaceAll("\\s", "");
-        if (!StringUtils.isNullOrEmpty(text)) {
-            HashSet<String> shards = new HashSet<String>(StringUtils.split(text, ","));
-            List<ObjectNode> objectNodes = New.arrayList(shards.size());
-            for (String shard : shards) {
-                objectNodes.add(new ObjectNode(shard, tableName));
+        List<XNode> evalNodes = tableNode.evalNodes("broadcast/node");
+        if(evalNodes.isEmpty()) {
+            XNode broadcast = tableNode.evalNode("broadcast");
+            String text = getStringBody(broadcast);
+            text = text.replaceAll("\\s", "");
+            if (!StringUtils.isNullOrEmpty(text)) {
+                HashSet<String> shards = new HashSet<String>(StringUtils.split(text, ","));
+                List<ObjectNode> objectNodes = New.arrayList(shards.size());
+                for (String shard : shards) {
+                    objectNodes.add(new ObjectNode(shard, tableName));
+                }
+                globalTableRule.setBroadcasts(objectNodes.toArray(new ObjectNode[objectNodes.size()]));
             }
-            globalTableRule.setBroadcasts(objectNodes.toArray(new ObjectNode[objectNodes.size()]));
         } else {
-            parseNodes(globalTableRule, tableNode.evalNodes("broadcast/node"));
+            parseNodes(globalTableRule, evalNodes);
         }
         // alter object node init.
         setMetaNodeIndex(globalTableRule, metaNodeIndex);

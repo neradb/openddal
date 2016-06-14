@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo.works;
+package com.openddal.repo;
 
 import java.util.List;
 
@@ -21,7 +21,6 @@ import com.openddal.engine.Session;
 import com.openddal.excutor.cursor.Cursor;
 import com.openddal.excutor.cursor.ResultCursor;
 import com.openddal.excutor.works.QueryWorker;
-import com.openddal.repo.ShardChooser;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.util.StatementBuilder;
@@ -45,7 +44,7 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
     @Override
     public Cursor executeQuery() {
         try {
-            ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(true);
+            Navigator optional = Navigator.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }

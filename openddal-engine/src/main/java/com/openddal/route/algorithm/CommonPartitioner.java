@@ -15,17 +15,17 @@
  */
 package com.openddal.route.algorithm;
 
-import com.openddal.route.rule.RuleEvaluateException;
+import java.util.List;
+import java.util.Set;
+
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RuleEvaluateException;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.value.CompareMode;
 import com.openddal.value.Value;
 import com.openddal.value.ValueLong;
 import com.openddal.value.ValueNull;
-
-import java.util.List;
-import java.util.Set;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -99,7 +99,7 @@ public abstract class CommonPartitioner implements Partitioner {
     }
 
     protected List<Value> enumRange(Value firstV, Value lastV) {
-        if (firstV == null || lastV == null) {
+        if (isNull(firstV) || isNull(lastV)) {
             return null;
         }
         if (firstV.getType() != lastV.getType()) {
@@ -134,7 +134,7 @@ public abstract class CommonPartitioner implements Partitioner {
      * @param value
      */
     protected boolean checkNull(Value value) {
-        if (value == null || value == ValueNull.INSTANCE) {
+        if (isNull(value)) {
             if (getDefaultNodeIndex() == -1) {
                 throw new RuleEvaluateException("Null value.");
             }
@@ -142,6 +142,10 @@ public abstract class CommonPartitioner implements Partitioner {
         } else {
             return false;
         }
+    }
+    
+    protected static boolean isNull(Value v) {
+        return v == null || v == ValueNull.INSTANCE;
     }
 
 }

@@ -19,7 +19,8 @@ public class GlobalTableRule extends TableRule {
         super(name, metadataNode);
         this.broadcasts = broadcasts;
     }
-
+    
+    @Override
     public ObjectNode getMetadataNode() {
         if (this.metadataNode == null) {
             this.metadataNode = randomMetadataNode();

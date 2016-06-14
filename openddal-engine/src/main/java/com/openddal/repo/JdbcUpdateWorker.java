@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo.works;
+package com.openddal.repo;
 
 import java.util.List;
 
 import com.openddal.engine.Session;
 import com.openddal.excutor.works.UpdateWorker;
-import com.openddal.repo.ShardChooser;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -41,13 +40,13 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
     @Override
     public int executeUpdate() {
         try {
-            ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(true);
+            Navigator optional = Navigator.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }
             opendConnection = doGetConnection(optional);
             if (trace.isDebugEnabled()) {
-                trace.debug("{0} Preparing: {};", shardName, sql);
+                trace.debug("{0} Preparing: {1};", shardName, sql);
             }
             opendStatement = opendConnection.prepareStatement(sql);
             applyQueryTimeout(opendStatement);

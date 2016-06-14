@@ -4,7 +4,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.sql.Connection;
 import java.util.List;
 import java.util.Map;
 
@@ -65,15 +64,15 @@ public class WorkerFactoryProxy implements WorkerFactory {
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row row) {
-        UpdateWorker handler = target.createUpdateWorker(insert, node, row);
+    public UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row ... rows) {
+        UpdateWorker handler = target.createUpdateWorker(insert, node, rows);
         handler = newWorkerProxy(handler, UpdateWorker.class);
         return handler;
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Update update, ObjectNode node) {
-        UpdateWorker handler = target.createUpdateWorker(update, node);
+    public UpdateWorker createUpdateWorker(Update update, ObjectNode node, Row row) {
+        UpdateWorker handler = target.createUpdateWorker(update, node, row);
         handler = newWorkerProxy(handler, UpdateWorker.class);
         return handler;
     }
@@ -86,15 +85,15 @@ public class WorkerFactoryProxy implements WorkerFactory {
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Replace replace, ObjectNode node) {
-        UpdateWorker handler = target.createUpdateWorker(replace, node);
+    public UpdateWorker createUpdateWorker(Replace replace, ObjectNode node, Row ... rows) {
+        UpdateWorker handler = target.createUpdateWorker(replace, node, rows);
         handler = newWorkerProxy(handler, UpdateWorker.class);
         return handler;
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Merge merge, ObjectNode node) {
-        UpdateWorker handler = target.createUpdateWorker(merge, node);
+    public UpdateWorker createUpdateWorker(Merge merge, ObjectNode node, Row ... rows) {
+        UpdateWorker handler = target.createUpdateWorker(merge, node, rows);
         handler = newWorkerProxy(handler, UpdateWorker.class);
         return handler;
     }
@@ -216,7 +215,7 @@ public class WorkerFactoryProxy implements WorkerFactory {
     @SuppressWarnings("unchecked")
     private <T extends Worker> T newWorkerProxy(T target, Class<T> interfaceClass) {
         InvocationHandler handler = new WorkerProxy(target);
-        ClassLoader cl = Connection.class.getClassLoader();
+        ClassLoader cl = target.getClass().getClassLoader();
         return (T) Proxy.newProxyInstance(cl, new Class[]{interfaceClass}, handler);
     }
 

@@ -19,6 +19,7 @@ import com.openddal.command.CommandInterface;
 import com.openddal.dbobject.index.Index;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 
 /**
  * This class represents the statement
@@ -39,7 +40,7 @@ public class AlterIndexRename extends DefineCommand {
 
     @Override
     public int update() {
-        throw DbException.getUnsupportedException("TODO");
+        throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, "AlterIndexRename");
     }
 
     @Override

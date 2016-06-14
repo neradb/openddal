@@ -17,27 +17,35 @@ package com.openddal.excutor.effects;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Merge;
 import com.openddal.command.dml.Query;
 import com.openddal.command.expression.Expression;
-import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
+import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
 import com.openddal.result.Row;
-import com.openddal.result.SearchRow;
-import com.openddal.util.StatementBuilder;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class MergeExecutor extends ExecutionFramework<Merge> {
+
+
+    private static final int QUERY_FLUSH_THRESHOLD = 200;
+    private int rowNumber;
+    private int affectRows;
+    private List<Row> mergeRows = New.arrayList(10);
+    private List<UpdateWorker> workers;
 
     /**
      * @param prepared
@@ -47,18 +55,14 @@ public class MergeExecutor extends ExecutionFramework<Merge> {
     }
 
     @Override
-    public int executeUpdate() {
-        Column[] columns = prepared.getColumns();
-        TableMate table = castTableMate(prepared.getTable());
-        ArrayList<Expression[]> list = prepared.getList();
+    protected void doPrepare() {
+        TableMate table = toTableMate(prepared.getTable());
         table.check();
-
-        int count;
-        session.getUser().checkRight(table, Right.INSERT);
-        session.getUser().checkRight(table, Right.UPDATE);
         prepared.setCurrentRowNumber(0);
+        ArrayList<Expression[]> list = prepared.getList();
+        Column[] columns = prepared.getColumns();
         if (list.size() > 0) {
-            count = 0;
+            List<Row> values = New.arrayList(10);
             for (int x = 0, size = list.size(); x < size; x++) {
                 prepared.setCurrentRowNumber(x + 1);
                 Expression[] expr = list.get(x);
@@ -73,22 +77,35 @@ public class MergeExecutor extends ExecutionFramework<Merge> {
                             Value v = c.convert(e.getValue(session));
                             newRow.setValue(index, v);
                         } catch (DbException ex) {
-                            throw prepared.setRow(ex, count, Prepared.getSQL(expr));
+                            throw prepared.setRow(ex, x, Prepared.getSQL(expr));
                         }
                     }
                 }
-                merge(newRow);
-                count++;
+                values.add(newRow);
             }
+            prepareMerge(table, values);
         } else {
             Query query = prepared.getQuery();
+            query.prepare();
+        }
+    }
+
+    @Override
+    public int doUpdate() {
+        if (workers != null) {
+            return invokeUpdateWorker(workers);
+        } else {
+            rowNumber = 0;
+            affectRows = 0;
+            TableMate table = toTableMate(prepared.getTable());
+            Query query = prepared.getQuery();
+            Column[] columns = prepared.getColumns();
             ResultInterface rows = query.query(0);
-            count = 0;
             while (rows.next()) {
-                count++;
+                rowNumber++;
                 Value[] r = rows.currentRow();
                 Row newRow = table.getTemplateRow();
-                prepared.setCurrentRowNumber(count);
+                prepared.setCurrentRowNumber(rowNumber);
                 for (int j = 0; j < columns.length; j++) {
                     Column c = columns[j];
                     int index = c.getColumnId();
@@ -96,59 +113,67 @@ public class MergeExecutor extends ExecutionFramework<Merge> {
                         Value v = c.convert(r[j]);
                         newRow.setValue(index, v);
                     } catch (DbException ex) {
-                        throw prepared.setRow(ex, count, Prepared.getSQL(r));
+                        throw prepared.setRow(ex, rowNumber, Prepared.getSQL(r));
                     }
                 }
-                merge(newRow);
+                addMergeRowFlushIfNeed(newRow);
             }
+            flushMergeRows();
             rows.close();
+            return affectRows;
         }
-        return count;
+
     }
 
-    private void merge(Row row) {
-        TableMate table = castTableMate(prepared.getTable());
-        Prepared update = prepared.getUpdate();
-        Column[] columns = prepared.getColumns();
-        Column[] keys = prepared.getKeys();
+    private void prepareMerge(TableMate table, List<Row> rows) {
+        session.checkCanceled();
+        Map<ObjectNode, List<Row>> batches = batchForRoutingNode(table, rows);
+        workers = New.arrayList(batches.size());
+        for (Map.Entry<ObjectNode, List<Row>> item : batches.entrySet()) {
+            Row[] values = item.getValue().toArray(new Row[item.getValue().size()]);
+            UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, item.getKey(), values);
+            workers.add(worker);
+        }
+    }
 
-        ArrayList<Parameter> k = update.getParameters();
-        for (int i = 0; i < columns.length; i++) {
-            Column col = columns[i];
-            Value v = row.getValue(col.getColumnId());
-            Parameter p = k.get(i);
-            p.setValue(v);
+
+    private synchronized void addMergeRowFlushIfNeed(Row replace) {
+        mergeRows.add(replace);
+        if (mergeRows.size() >= QUERY_FLUSH_THRESHOLD) {
+            flushMergeRows();
         }
-        for (int i = 0; i < keys.length; i++) {
-            Column col = keys[i];
-            Value v = row.getValue(col.getColumnId());
-            if (v == null) {
-                throw DbException.get(ErrorCode.COLUMN_CONTAINS_NULL_VALUES_1, col.getSQL());
+    }
+
+    private synchronized void flushMergeRows() {
+        try {
+            TableMate table = toTableMate(prepared.getTable());
+            if (mergeRows.isEmpty()) {
+                return;
             }
-            Parameter p = k.get(columns.length + i);
-            p.setValue(v);
+            prepareMerge(table, mergeRows);
+            affectRows += invokeUpdateWorker(workers);
+        } finally {
+            mergeRows.clear();
         }
-        int count = update.update();
-        if (count == 0) {
-            try {
-                table.validateConvertUpdateSequence(session, row);
-                updateRow(table, row);
-            } catch (DbException e) {
-                throw e;
-            }
-        } else if (count != 1) {
-            throw DbException.get(ErrorCode.DUPLICATE_KEY_1, table.getSQL());
-        }
+
     }
 
     @Override
-    protected List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff) {
-        String forTable = node.getCompositeObjectName();
-        TableMate table = castTableMate(prepared.getTable());
-        Column[] columns = table.getColumns();
-        return buildInsert(forTable, columns, row, buff);
+    protected String doExplain() {
+        TableMate table = toTableMate(prepared.getTable());
+        if (workers != null) {
+            return explainForWorker(workers);
+        } else {
+            Query query = prepared.getQuery();
+            String subPlan = query.explainPlan();
+            StringBuilder explain = new StringBuilder();
+            explain.append("merge into ").append(table.getName()).append(" with query result");
+            explain.append(StringUtils.indent(subPlan, 4, false));
+            return explain.toString();
+        }
 
     }
+
 
 
 }

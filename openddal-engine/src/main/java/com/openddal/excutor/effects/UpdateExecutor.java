@@ -21,22 +21,26 @@ import java.util.Map;
 
 import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
+import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
+import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.result.Row;
-import com.openddal.result.SearchRow;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
-import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class UpdateExecutor extends ExecutionFramework<Update> {
+
+    private List<UpdateWorker> workers;
 
     /**
      * @param prepared
@@ -45,16 +49,20 @@ public class UpdateExecutor extends ExecutionFramework<Update> {
         super(prepared);
     }
 
-
+    
     @Override
-    public int executeUpdate() {
+    protected void doPrepare() {
         TableFilter tableFilter = prepared.getTableFilter();
-        TableMate table = castTableMate(tableFilter.getTable());
+        TableMate table = getTableMate(tableFilter);
+        table.check();
         List<Column> columns = prepared.getColumns();
         Map<Column, Expression> valueMap = prepared.getExpressionMap();
-        table.check();
-        session.getUser().checkRight(table, Right.UPDATE);
-
+        Column[] ruleColumns = table.getRuleColumns();
+        for (Column column : ruleColumns) {
+            if(valueMap.get(column) != null) {
+                throw DbException.get(ErrorCode.SHARDING_COLUMNS_CANNOT_BE_MODIFIED, column.getName());
+            }
+        }
         Row updateRow = table.getTemplateRow();
         for (int i = 0, size = columns.size(); i < size; i++) {
             Column c = columns.get(i);
@@ -72,48 +80,27 @@ public class UpdateExecutor extends ExecutionFramework<Update> {
                 }
             }
         }
-        return updateRow(table, updateRow, tableFilter.getIndexConditions());
+        ArrayList<IndexCondition> where = tableFilter.getIndexConditions();
+        RoutingResult result = routingHandler.doRoute(session, table, where);
+        ObjectNode[] selectNodes = result.getSelectNodes();
+        workers = New.arrayList(selectNodes.length);
+        for (ObjectNode objectNode : selectNodes) {
+            UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode, updateRow);
+            workers.add(worker);
+        }
+    }
 
+    @Override
+    public int doUpdate() {
+        return invokeUpdateWorker(workers);
     }
 
 
     @Override
-    protected List<Value> doTranslate(TableNode node, SearchRow row, StatementBuilder buff) {
-        ArrayList<Value> params = New.arrayList();
-        TableFilter tableFilter = prepared.getTableFilter();
-        String forTable = node.getCompositeObjectName();
-        List<Column> columns = prepared.getColumns();
-        Expression condition = prepared.getCondition();
-        Expression limitExpr = prepared.getLimitExpr();
-
-        buff.append("UPDATE ");
-        buff.append(identifier(forTable)).append(" SET ");
-        for (int i = 0, size = columns.size(); i < size; i++) {
-            Column c = columns.get(i);
-            buff.appendExceptFirst(", ");
-            buff.append(c.getSQL()).append(" = ");
-
-            Value v = row.getValue(i);
-            buff.appendExceptFirst(", ");
-            if (v == null) {
-                buff.append("DEFAULT");
-            } else if (isNull(v)) {
-                buff.append("NULL");
-            } else {
-                buff.append('?');
-                params.add(v);
-            }
-        }
-        if (condition != null) {
-            condition.exportParameters(tableFilter, params);
-            buff.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
-        }
-        if (limitExpr != null) {
-            limitExpr.exportParameters(tableFilter, params);
-            buff.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
-        }
-        return params;
+    protected String doExplain() {
+        return explainForWorker(workers);
     }
+
 
 
 }

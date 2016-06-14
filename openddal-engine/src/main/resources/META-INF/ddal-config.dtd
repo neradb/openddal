@@ -85,7 +85,7 @@
                 > 
 
         <!ELEMENT nodes (node+)>
-        <!ELEMENT broadcast (#PCDATA|node+)>
+        <!ELEMENT broadcast (#PCDATA|node)*>
         <!ELEMENT tableRule (columns,algorithm)>
 
         <!ELEMENT node (#PCDATA)>

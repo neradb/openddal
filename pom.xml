@@ -54,6 +54,7 @@
         <module>openddal-engine</module>
         <module>openddal-mysql</module>
         <module>openddal-server</module>
+        <module>openddal-tests</module>
     </modules>
 
     <dependencyManagement>

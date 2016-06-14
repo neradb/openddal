@@ -21,7 +21,7 @@ package com.openddal.repo;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class ShardChooser {
+public class Navigator {
 
     public static final int DEFAULT_TRYTIMES = 3;
 
@@ -31,8 +31,8 @@ public class ShardChooser {
     public boolean readOnly;
 
 
-    public static ShardChooser build() {
-        ShardChooser optional = new ShardChooser();
+    public static Navigator build() {
+        Navigator optional = new Navigator();
         return optional;
     }
 
@@ -40,7 +40,7 @@ public class ShardChooser {
     /**
      * @param dbid the dbid to set
      */
-    public ShardChooser dbid(String dbid) {
+    public Navigator dbid(String dbid) {
         this.dbid = dbid;
         return this;
     }
@@ -49,7 +49,7 @@ public class ShardChooser {
     /**
      * @param shardName the shardName to set
      */
-    public ShardChooser shardName(String shardName) {
+    public Navigator shardName(String shardName) {
         this.shardName = shardName;
         return this;
     }
@@ -58,7 +58,7 @@ public class ShardChooser {
     /**
      * @param readOnly the readOnly to set
      */
-    public ShardChooser readOnly(boolean readOnly) {
+    public Navigator readOnly(boolean readOnly) {
         this.readOnly = readOnly;
         return this;
     }
@@ -66,7 +66,7 @@ public class ShardChooser {
     /**
      * @param retry the retry to set
      */
-    public ShardChooser retry(int retry) {
+    public Navigator retry(int retry) {
         this.retry = retry;
         return this;
     }

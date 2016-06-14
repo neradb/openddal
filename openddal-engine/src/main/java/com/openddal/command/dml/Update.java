@@ -23,17 +23,13 @@ import com.openddal.command.Prepared;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.table.Column;
-import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
+import com.openddal.excutor.effects.UpdateExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
-import com.openddal.result.Row;
-import com.openddal.result.RowList;
 import com.openddal.util.New;
-import com.openddal.value.Value;
-import com.openddal.value.ValueNull;
 
 /**
  * This class represents the statement
@@ -45,6 +41,7 @@ public class Update extends Prepared {
     private final HashMap<Column, Expression> expressionMap = New.hashMap();
     private Expression condition;
     private TableFilter tableFilter;
+    private UpdateExecutor executor;
     /**
      * The limit expression as specified in the LIMIT clause.
      */
@@ -75,70 +72,13 @@ public class Update extends Prepared {
 
     @Override
     public int update() {
-        return updateRows();
+        return getExecutor().update();
     }
 
-    protected int updateRows() {
-        tableFilter.startQuery(session);
-        tableFilter.reset();
-        RowList rows = new RowList(session);
-        try {
-            Table table = tableFilter.getTable();
-            int columnCount = table.getColumns().length;
-            // get the old rows, compute the new rows
-            setCurrentRowNumber(0);
-            int count = 0;
-            Column[] columns = table.getColumns();
-            int limitRows = -1;
-            if (limitExpr != null) {
-                Value v = limitExpr.getValue(session);
-                if (v != ValueNull.INSTANCE) {
-                    limitRows = v.getInt();
-                }
-            }
-            while (tableFilter.next()) {
-                setCurrentRowNumber(count + 1);
-                if (limitRows >= 0 && count >= limitRows) {
-                    break;
-                }
-                if (condition == null ||
-                        Boolean.TRUE.equals(condition.getBooleanValue(session))) {
-                    Row oldRow = tableFilter.get();
-                    Row newRow = table.getTemplateRow();
-                    for (int i = 0; i < columnCount; i++) {
-                        Expression newExpr = expressionMap.get(columns[i]);
-                        Value newValue;
-                        if (newExpr == null) {
-                            newValue = oldRow.getValue(i);
-                        } else {
-                            Column column = table.getColumn(i);
-                            newValue = column.convert(newExpr.getValue(session));
-                        }
-                        newRow.setValue(i, newValue);
-                    }
-                    rows.add(oldRow);
-                    rows.add(newRow);
-                    count++;
-                }
-            }
-            // TODO self referencing referential integrity constraints
-            // don't work if update is multi-row and 'inversed' the condition!
-            // probably need multi-row triggers with 'deleted' and 'inserted'
-            // at the same time. anyway good for sql compatibility
-            // TODO update in-place (but if the key changes,
-            // we need to update all indexes) before row triggers
-
-            // the cached row is already updated - we need the old values
-            //table.updateRows(this, session, rows);
-            return count;
-        } finally {
-            rows.close();
-        }
-    }
 
     @Override
     public String explainPlan() {
-        return null;
+        return getExecutor().explain();
     }
 
     @Override
@@ -211,6 +151,13 @@ public class Update extends Prepared {
     public Expression getLimitExpr() {
         return limitExpr;
     }
-
+    
+    public UpdateExecutor getExecutor() {
+        if (executor == null) {
+            executor = new UpdateExecutor(this);
+        }
+        return executor;
+    }
+    
 
 }

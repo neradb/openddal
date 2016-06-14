@@ -26,7 +26,10 @@ import com.openddal.command.ddl.DropTable;
 import com.openddal.command.ddl.TruncateTable;
 import com.openddal.command.dml.Delete;
 import com.openddal.command.dml.Insert;
+import com.openddal.command.dml.Merge;
+import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
+import com.openddal.command.dml.Update;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.result.Row;
 import com.openddal.route.rule.GroupObjectNode;
@@ -62,6 +65,12 @@ public interface SQLTranslator {
 
     SQLTranslated translate(Delete delete, ObjectNode node);
 
-    SQLTranslated translate(Insert insert, ObjectNode node, Row row);
+    SQLTranslated translate(Insert insert, ObjectNode node, Row ... rows);
+    
+    SQLTranslated translate(Replace replace, ObjectNode node, Row ... rows);
+    
+    SQLTranslated translate(Merge merge, ObjectNode node, Row ... rows);
+
+    SQLTranslated translate(Update update, ObjectNode node, Row row);
 
 }

@@ -46,7 +46,6 @@ import com.openddal.value.DataType;
  */
 public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
 
-    private CreateTable prepared;
     private List<UpdateWorker> workers;
     private Insert asQueryInsert;
     /**

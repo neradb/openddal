@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo.works;
+package com.openddal.repo;
 
 import java.util.Arrays;
 import java.util.List;
 
 import com.openddal.engine.Session;
 import com.openddal.excutor.works.BatchUpdateWorker;
-import com.openddal.repo.ShardChooser;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -48,7 +47,7 @@ public class JdbcBatchUpdateWorker extends JdbcWorker implements BatchUpdateWork
             if (array == null || array.size() < 1) {
                 throw new IllegalArgumentException();
             }
-            ShardChooser optional = ShardChooser.build().shardName(shardName).readOnly(true);
+            Navigator optional = Navigator.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }

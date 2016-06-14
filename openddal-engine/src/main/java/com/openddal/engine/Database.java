@@ -116,8 +116,8 @@ public class Database {
             repositories.add(service);
         }
         if (repositories.isEmpty()) {
-            DbException.throwInternalError(
-                    "No repository found. Please add repository jar package to project.");
+            String p1 = "No repository found";
+            throw DbException.get(ErrorCode.DATABASE_LOAD_REPOSITORY_ERROR, p1);
         }
         if (repositories.size() > 1) {
             DbException.throwInternalError("Too many repositories found.");

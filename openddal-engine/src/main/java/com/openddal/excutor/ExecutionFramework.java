@@ -17,6 +17,7 @@ package com.openddal.excutor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -42,8 +43,10 @@ import com.openddal.excutor.works.Worker;
 import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
+import com.openddal.result.Row;
 import com.openddal.route.RoutingHandler;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
@@ -118,11 +121,11 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         throw DbException.get(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY);
     }
 
-    protected int invokeUpdateWorker(List<UpdateWorker> handlers) {
+    protected int invokeUpdateWorker(List<UpdateWorker> worker) {
         session.checkCanceled();
         try {
             int queryTimeout = session.getQueryTimeout();// MILLISECONDS
-            List<Future<Integer>> invokeAll = queryExecutor.invokeAll(handlers, queryTimeout, TimeUnit.MILLISECONDS);
+            List<Future<Integer>> invokeAll = queryExecutor.invokeAll(worker, queryTimeout, TimeUnit.MILLISECONDS);
             int affectRows = 0;
             for (Future<Integer> future : invokeAll) {
                 affectRows += future.get();
@@ -194,6 +197,29 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
             explain.append(StringUtils.indent(subexplain, 4, false));
         }
         return explain.toString();
+    }
+    
+    protected Map<ObjectNode, List<Row>> batchForRoutingNode(TableMate table, List<Row> rows) {
+        Map<ObjectNode, List<Row>> batches = New.hashMap();
+        for (Row row : rows) {
+            RoutingResult result;
+            if (table.getTableRule().getType() == TableRule.GLOBAL_NODE_TABLE) {
+                GlobalTableRule rule = (GlobalTableRule) table.getTableRule();
+                result = rule.getBroadcastsRoutingResult();
+            } else {
+                result = routingHandler.doRoute(table, row);
+            }
+            ObjectNode[] selectNodes = result.getSelectNodes();
+            for (ObjectNode objectNode : selectNodes) {
+                List<Row> batch = batches.get(objectNode);
+                if(batch == null) {
+                    batch = New.arrayList(10);
+                    batches.put(objectNode, batch);
+                }
+                batch.add(row);
+            }
+        }
+        return batches;
     }
 
     protected TableMate getTableMate(String tableName) {

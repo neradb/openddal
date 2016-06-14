@@ -26,9 +26,6 @@ import com.openddal.excutor.works.BatchUpdateWorker;
 import com.openddal.excutor.works.QueryWorker;
 import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.excutor.works.WorkerFactory;
-import com.openddal.repo.works.JdbcBatchUpdateWorker;
-import com.openddal.repo.works.JdbcQueryWorker;
-import com.openddal.repo.works.JdbcUpdateWorker;
 import com.openddal.result.Row;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
@@ -62,15 +59,18 @@ public class JdbcWorkerFactory implements WorkerFactory {
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row row) {
-        SQLTranslated translated = repo.getSQLTranslator().translate(insert, node, row);
+    public UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row ... rows) {
+        SQLTranslated translated = repo.getSQLTranslator().translate(insert, node, rows);
         JdbcUpdateWorker handler = new JdbcUpdateWorker(insert.getSession(), node.getShardName(), translated.sql, translated.params);
         return handler;
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Update update, ObjectNode node) {
-        return null;
+    public UpdateWorker createUpdateWorker(Update update, ObjectNode node, Row row) {
+        SQLTranslated translated = repo.getSQLTranslator().translate(update, node, row);
+        JdbcUpdateWorker handler = new JdbcUpdateWorker(update.getSession(), node.getShardName(), translated.sql, translated.params);
+        return handler;        
+    
     }
 
     @Override
@@ -82,12 +82,12 @@ public class JdbcWorkerFactory implements WorkerFactory {
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Replace replace, ObjectNode node) {
+    public UpdateWorker createUpdateWorker(Replace replace, ObjectNode node, Row ... rows) {
         return null;
     }
 
     @Override
-    public UpdateWorker createUpdateWorker(Merge merge, ObjectNode node) {
+    public UpdateWorker createUpdateWorker(Merge merge, ObjectNode node, Row ... rows) {
         return null;
     }
 

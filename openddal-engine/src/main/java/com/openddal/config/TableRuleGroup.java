@@ -27,7 +27,7 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
                 tableRule.setScanLevel(getScanLevel());
             }
             tableRule.cloneObjectNodes(getObjectNodes());
-            tableRule.setMetadataNode(getMetadataNode());
+            tableRule.cloneMetadataNode(getMetadataNode());
 
         }
         return tableRules;

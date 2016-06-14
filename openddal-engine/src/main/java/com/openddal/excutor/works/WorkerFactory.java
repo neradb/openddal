@@ -52,15 +52,15 @@ public interface WorkerFactory {
 
     QueryWorker createQueryWorker(Call call, ObjectNode node);
 
-    UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row row);
+    UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row ... rows);
 
-    UpdateWorker createUpdateWorker(Update update, ObjectNode node);
+    UpdateWorker createUpdateWorker(Update update, ObjectNode node, Row row);
 
     UpdateWorker createUpdateWorker(Delete delete, ObjectNode node);
 
-    UpdateWorker createUpdateWorker(Replace replace, ObjectNode node);
+    UpdateWorker createUpdateWorker(Replace replace, ObjectNode node, Row ... rows);
 
-    UpdateWorker createUpdateWorker(Merge merge, ObjectNode node);
+    UpdateWorker createUpdateWorker(Merge merge, ObjectNode node, Row ... rows);
 
     UpdateWorker createUpdateWorker(Call call, ObjectNode node);
 

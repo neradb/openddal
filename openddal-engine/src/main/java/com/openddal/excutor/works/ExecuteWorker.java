@@ -17,14 +17,14 @@ package com.openddal.excutor.works;
 
 import java.util.concurrent.Callable;
 
-import com.openddal.excutor.cursor.Cursor;
-
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface CallHandler extends Callable<Cursor> {
+public interface ExecuteWorker extends Callable<Boolean> {
 
-    Cursor executeQuery();
+    boolean execute();
+    
+    int getUpdateCount();
 
 }

@@ -17,41 +17,36 @@ package com.openddal.excutor.effects;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Insert;
 import com.openddal.command.dml.Query;
 import com.openddal.command.expression.Expression;
-import com.openddal.config.GlobalTableRule;
-import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
-import com.openddal.excutor.works.BatchUpdateWorker;
 import com.openddal.excutor.works.UpdateWorker;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a> TODO validation
- *         rule column
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class InsertExecutor extends ExecutionFramework<Insert> implements ResultTarget {
 
-    private static final int CONVERSIO_TO_BATCH_THRESHOLD = 10;
-    private static final int QUERY_FLUSH_THRESHOLD = 400;
+    private static final int QUERY_FLUSH_THRESHOLD = 200;
     private int rowNumber;
     private int affectRows;
     private List<Row> newRows = New.arrayList(10);
     private List<UpdateWorker> workers;
-    private List<BatchUpdateWorker> batchWorkers;
 
     /**
      * @param prepared
@@ -65,10 +60,15 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
         TableMate table = toTableMate(prepared.getTable());
         table.check();
         prepared.setCurrentRowNumber(0);
-        rowNumber = 0;
-        affectRows = 0;
         ArrayList<Expression[]> list = prepared.getList();
         Column[] columns = prepared.getColumns();
+        Map<Column, Expression> valueMap = prepared.getDuplicateKeyAssignmentMap();
+        Column[] ruleColumns = table.getRuleColumns();
+        for (Column column : ruleColumns) {
+            if(valueMap.get(column) != null) {
+                throw DbException.get(ErrorCode.SHARDING_COLUMNS_CANNOT_BE_MODIFIED, column.getName());
+            }
+        }
         int listSize = list.size();
         if (listSize > 0) {
             int columnLen = columns.length;
@@ -92,23 +92,12 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                         }
                     }
                 }
-                rowNumber++;
                 values.add(newRow);
             }
             prepareInsert(table, values);
         } else {
             Query query = prepared.getQuery();
             query.prepare();
-            if (prepared.isInsertFromSelect()) {
-                query.query(0, this);
-            } else {
-                ResultInterface rows = query.query(0);
-                while (rows.next()) {
-                    Value[] r = rows.currentRow();
-                    addRow(r);
-                }
-                rows.close();
-            }
         }
     }
 
@@ -116,8 +105,6 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
     public int doUpdate() {
         if (workers != null) {
             return invokeUpdateWorker(workers);
-        } else if (batchWorkers != null) {
-            return invokeBatchUpdateWorker(batchWorkers);
         } else {
             Query query = prepared.getQuery();
             if (prepared.isInsertFromSelect()) {
@@ -138,26 +125,13 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
 
     private void prepareInsert(TableMate table, List<Row> rows) {
         session.checkCanceled();
-        for (Row row : rows) {
-            RoutingResult result;
-            if (table.getTableRule().getType() == TableRule.GLOBAL_NODE_TABLE) {
-                GlobalTableRule rule = (GlobalTableRule) table.getTableRule();
-                result = rule.getBroadcastsRoutingResult();
-            } else {
-                result = routingHandler.doRoute(table, row);
-            }
-            ObjectNode[] selectNodes = result.getSelectNodes();
-            workers = New.arrayList(selectNodes.length);
-            for (ObjectNode objectNode : selectNodes) {
-                UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode, row);
-                workers.add(worker);
-            }
+        Map<ObjectNode, List<Row>> batches = batchForRoutingNode(table, rows);
+        workers = New.arrayList(batches.size());
+        for (Map.Entry<ObjectNode, List<Row>> item : batches.entrySet()) {
+            Row[] values = item.getValue().toArray(new Row[item.getValue().size()]);
+            UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, item.getKey(), values);
+            workers.add(worker);
         }
-        if (workers.size() > CONVERSIO_TO_BATCH_THRESHOLD) {
-            batchWorkers = queryHandlerFactory.mergeToBatchUpdateWorker(session, workers);
-            workers = null;
-        }
-
     }
 
     @Override
@@ -199,11 +173,7 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
                 return;
             }
             prepareInsert(table, newRows);
-            if (workers != null) {
-                affectRows += invokeUpdateWorker(workers);
-            } else if (batchWorkers != null) {
-                affectRows += invokeBatchUpdateWorker(batchWorkers);
-            }
+            affectRows += invokeUpdateWorker(workers);
         } finally {
             newRows.clear();
         }
@@ -215,8 +185,6 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
         TableMate table = toTableMate(prepared.getTable());
         if (workers != null) {
             return explainForWorker(workers);
-        } else if (batchWorkers != null) {
-            return explainForWorker(batchWorkers);
         } else {
             Query query = prepared.getQuery();
             String subPlan = query.explainPlan();
