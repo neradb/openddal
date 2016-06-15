@@ -520,10 +520,10 @@ public class TableMate extends Table {
     private void setRuleColumns() {
         if (tableRule instanceof ShardedTableRule) {
             ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
-            List<String> ruleColNames = shardedTableRule.getRuleColumns();
-            ruleColumns = new Column[ruleColNames.size()];
-            for (int i = 0; i < ruleColNames.size(); i++) {
-                String colName = database.identifier(ruleColNames.get(i)); 
+            String[] ruleColNames = shardedTableRule.getRuleColumns();
+            ruleColumns = new Column[ruleColNames.length];
+            for (int i = 0; i < ruleColNames.length; i++) {
+                String colName = database.identifier(ruleColNames[i]);
                 if(!doesColumnExist(colName)) {
                     throw DbException.get(ErrorCode.SHARDING_COLUMN_NOT_FOUND,  colName ,getName());
                 }

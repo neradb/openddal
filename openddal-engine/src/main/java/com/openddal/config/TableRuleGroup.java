@@ -39,8 +39,8 @@ public class TableRuleGroup extends ShardedTableRule implements Serializable {
     }
 
     public boolean isUseTableRuleColumns() {
-        List<String> ruleColumns = this.getRuleColumns();
-        return ruleColumns.size() == 1 && RULECOLUMNS_QUOTE.equals(ruleColumns.get(0));
+        String[] ruleColumns = this.getRuleColumns();
+        return ruleColumns.length == 1 && RULECOLUMNS_QUOTE.equals(ruleColumns[0]);
     }
 
 }

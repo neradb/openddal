@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 import com.openddal.dbobject.User;
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -34,12 +35,19 @@ public class Engine implements SessionFactory {
         Runtime.getRuntime().addShutdownHook(new Shutdown());
     }
 
-    public synchronized static Engine getImplicitInstance() {
+    public synchronized static Engine getImplicitEngine(Properties prop) {
         if(implicitInstance == null) {
-            String configLocation = SysProperties.ENGINE_CONFIG_LOCATION;
-            implicitInstance = (Engine)SessionFactoryBuilder.newBuilder().fromXml(configLocation).build();
+            String configLocation = (String) prop.remove("ENGINE_CONFIG_LOCATION");
+            if(StringUtils.isNullOrEmpty(configLocation)) {
+                configLocation = SysProperties.ENGINE_CONFIG_LOCATION;
+            }
+            implicitInstance = (Engine)SessionFactoryBuilder.newBuilder().fromXml(configLocation).applySettings(prop).build();
         }
         return implicitInstance;
+    }
+
+    public synchronized static boolean implicitEngineExists() {
+        return implicitInstance != null;
     }
 
 

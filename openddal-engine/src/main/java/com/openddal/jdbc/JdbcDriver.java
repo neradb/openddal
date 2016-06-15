@@ -23,9 +23,12 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 import com.openddal.engine.Constants;
+import com.openddal.engine.DbSettings;
 import com.openddal.engine.Engine;
 import com.openddal.engine.SessionInterface;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
+import com.openddal.util.StringUtils;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -107,7 +110,9 @@ public class JdbcDriver implements java.sql.Driver {
             if (info == null) {
                 info = new Properties();
             }
-            SessionInterface session = Engine.getImplicitInstance().createSession(info);
+            Properties prop = parseUrl(url);
+            Engine engine = Engine.getImplicitEngine(prop);
+            SessionInterface session = engine.createSession(info);
             return new JdbcConnection(session);
         } catch (Exception e) {
             throw DbException.toSQLException(e);
@@ -182,6 +187,42 @@ public class JdbcDriver implements java.sql.Driver {
      */
     public Logger getParentLogger() {
         return null;
+    }
+
+
+    private Properties parseUrl(String url) {
+        Properties prop = new Properties();
+        DbSettings defaultSettings = DbSettings.getDefaultSettings();
+        int idx = url.indexOf(';');
+        if (idx >= 0) {
+            String settings = url.substring(idx + 1);
+            url = url.substring(0, idx);
+            String[] list = StringUtils.arraySplit(settings, ';', false);
+            for (String setting : list) {
+                if (setting.length() == 0) {
+                    continue;
+                }
+                int equal = setting.indexOf('=');
+                if (equal < 0) {
+                    String format = Constants.URL_FORMAT;
+                    throw DbException.get(ErrorCode.URL_FORMAT_ERROR_2, format, url);
+                }
+                String value = setting.substring(equal + 1);
+                String key = setting.substring(0, equal);
+                key = StringUtils.toUpperEnglish(key);
+                if (!defaultSettings.containsKey(key)) {
+                    throw DbException.get(ErrorCode.UNSUPPORTED_SETTING_1, key);
+                }
+                String old = prop.getProperty(key);
+                if (old != null && !old.equals(value)) {
+                    throw DbException.get(ErrorCode.DUPLICATE_PROPERTY_1, key);
+                }
+                prop.setProperty(key, value);
+            }
+        }
+        String configLocation = url.substring(Constants.START_URL.length());
+        prop.put("ENGINE_CONFIG_LOCATION", configLocation);
+        return prop;
     }
 
 }

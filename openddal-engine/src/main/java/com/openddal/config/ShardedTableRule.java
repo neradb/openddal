@@ -1,8 +1,6 @@
 package com.openddal.config;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import com.openddal.route.algorithm.Partitioner;
@@ -23,7 +21,7 @@ public class ShardedTableRule extends TableRule implements Serializable {
     private int scanLevel = SCANLEVEL_ANYINDEX;
     private Random random = new Random();
     private ObjectNode[] objectNodes;
-    private List<String> ruleColumns;
+    private String[] ruleColumns;
     private Partitioner partitioner; 
     private TableRuleGroup ownerGroup;
 
@@ -44,12 +42,12 @@ public class ShardedTableRule extends TableRule implements Serializable {
     public void setScanLevel(int scanLevel) {
         this.scanLevel = scanLevel;
     }
-    
-    public List<String> getRuleColumns() {
+
+    public String[] getRuleColumns() {
         return ruleColumns;
     }
-    
-    public void setRuleColumns(List<String> ruleColumns) {
+
+    public void setRuleColumns(String[] ruleColumns) {
         this.ruleColumns = ruleColumns;
     }
 
@@ -109,7 +107,7 @@ public class ShardedTableRule extends TableRule implements Serializable {
     }
     
     public ShardedTableRule ruleColumn(String ... ruleColumn) {
-        setRuleColumns(Arrays.asList(ruleColumn));
+        setRuleColumns(ruleColumn);
         return this;
     }
     public ShardedTableRule partitioner(Partitioner partitioner) {

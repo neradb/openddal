@@ -131,8 +131,8 @@ public final class SessionFactoryBuilder {
         switch (object.getType()) {
         case TableRule.SHARDED_NODE_TABLE:
             ShardedTableRule shardingTable = (ShardedTableRule) object;
-            List<String> ruleColumns = shardingTable.getRuleColumns();
-            if (ruleColumns == null || ruleColumns.isEmpty()) {
+            String[] ruleColumns = shardingTable.getRuleColumns();
+            if (ruleColumns == null || ruleColumns.length == 0) {
                 throw new IllegalArgumentException();
             }
             for (String string : ruleColumns) {
@@ -201,13 +201,13 @@ public final class SessionFactoryBuilder {
                 throw new IllegalArgumentException();
             }
             ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
-            List<String> ruleColumns = shardedTableRule.getRuleColumns();
-            if (ruleColumns == null || ruleColumns.isEmpty()) {
+            String[] ruleColumns = shardedTableRule.getRuleColumns();
+            if (ruleColumns == null || ruleColumns.length == 0) {
                 throw new IllegalArgumentException("The TableRule columns is required if use table rule columns");
             }
             if (columns == -1) {
-                columns = ruleColumns.size();
-            } else if (columns != ruleColumns.size()) {
+                columns = ruleColumns.length;
+            } else if (columns != ruleColumns.length) {
                 throw new IllegalArgumentException("The length of TableRule columns must be equal");
             }
 

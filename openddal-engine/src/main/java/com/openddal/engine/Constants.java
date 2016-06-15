@@ -485,9 +485,7 @@ public class Constants {
     /**
      * The database URL format in simplified Backus-Naur form.
      */
-    public static final String URL_FORMAT = START_URL +
-            "{ {.|mem:}[name] | [file:]fileName | " +
-            "{tcp|ssl}:[//]server[:port][,server2[:port]]/name }[;key=value...]";
+    public static final String URL_FORMAT = START_URL + "{engineConfigFileName}[;key=value...]";
 
     /**
      * The package name of user defined classes.

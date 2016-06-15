@@ -20,6 +20,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -271,8 +272,8 @@ public class XmlConfigParser {
         for (XNode xNode : tableNodes) {
             String tableName = xNode.getStringAttribute("name");
             String ruleColumns = xNode.getStringAttribute("ruleColumns", "");
-            List<String> columns = StringUtils.split(ruleColumns, ",");
-            if (group.isUseTableRuleColumns() && columns.isEmpty()) {
+            String[] columns = StringUtils.arraySplit(ruleColumns, ',', true);
+            if (group.isUseTableRuleColumns() && columns.length == 0) {
                 throw new ParsingException(
                         "table attribute ruleColumns is required if tableGroup use table.ruleColumns");
             }
@@ -328,7 +329,7 @@ public class XmlConfigParser {
                 if (StringUtils.isNullOrEmpty(text)) {
                     throw new ParsingException("The " + tableNode.getName() + " has no rules columns defined.");
                 }
-                List<String> columns = StringUtils.split(text, ",");
+                String[] columns = StringUtils.arraySplit(text, ',', true);
                 shardTable.setRuleColumns(columns);
             } else if ("algorithm".equals(name)) {
                 if (StringUtils.isNullOrEmpty(text)) {
@@ -359,7 +360,8 @@ public class XmlConfigParser {
             String text = getStringBody(broadcast);
             text = text.replaceAll("\\s", "");
             if (!StringUtils.isNullOrEmpty(text)) {
-                HashSet<String> shards = new HashSet<String>(StringUtils.split(text, ","));
+                List<String> asList = Arrays.asList(StringUtils.arraySplit(text, ',', true));
+                HashSet<String> shards = new HashSet<String>(asList);
                 List<ObjectNode> objectNodes = New.arrayList(shards.size());
                 for (String shard : shards) {
                     objectNodes.add(new ObjectNode(shard, tableName));
@@ -477,12 +479,14 @@ public class XmlConfigParser {
         if (StringUtils.isNullOrEmpty(items)) {
             return result;
         } else if (items.indexOf("-") != -1) {
-            List<String> list = StringUtils.split(items, "-");
-            if (list.size() != 2) {
+            String[] list = StringUtils.arraySplit(items, '-', true);
+            if (list.length != 2) {
                 throw new ParsingException("Invalid conjunction item'" + items + "'");
             }
+            throw new ParsingException("Not support - now");
         } else {
-            result = StringUtils.split(items, ",");
+            String[] array = StringUtils.arraySplit(items, ',', true);
+            result = Arrays.asList(array);
             if (result.size() != new HashSet<String>(result).size()) {
                 throw new ParsingException("Duplicate item " + items);
             }

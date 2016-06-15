@@ -37,11 +37,10 @@ public abstract class CommonPartitioner implements Partitioner {
     private List<ObjectNode> tableNodes;
 
     protected static int[] toIntArray(String string) {
-        string = string.replaceAll("\\s", "");
-        List<String> split = StringUtils.split(string, ",");
-        int[] ints = new int[split.size()];
-        for (int i = 0; i < split.size(); ++i) {
-            ints[i] = Integer.parseInt(split.get(i));
+        String[] split = StringUtils.arraySplit(string, ',', true);
+        int[] ints = new int[split.length];
+        for (int i = 0; i < split.length; ++i) {
+            ints[i] = Integer.parseInt(split[i]);
         }
         return ints;
     }

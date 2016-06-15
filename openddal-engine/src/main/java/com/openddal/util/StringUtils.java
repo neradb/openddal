@@ -18,7 +18,6 @@ package com.openddal.util;
 import java.lang.ref.SoftReference;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 import com.openddal.engine.Constants;
@@ -1070,22 +1069,6 @@ public class StringUtils {
             return pattern;
         }
         return replaceAll(pattern, "\\", "\\\\");
-    }
-
-    /**
-     * @param text
-     * @return
-     */
-    public static List<String> split(String text, String split) {
-        String[] strings = text.split(split);
-        List<String> columns = New.arrayList(strings.length);
-        for (String column : strings) {
-            if (StringUtils.isNullOrEmpty(column)) {
-                continue;
-            }
-            columns.add(column);
-        }
-        return columns;
     }
 
 }
