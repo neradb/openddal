@@ -162,9 +162,11 @@
 90138=Invalid database name: {0}
 90139=The public static Java method was not found: {0}
 90140=The result set is readonly. You may need to use conn.createStatement(.., ResultSet.CONCUR_UPDATABLE).
-90141=Sharding column {0} cannot be modified.
-90142=The table {0} scan strategy is {1}, to find data rows, must provide the {3} conditions.
-90143=Can't load repository component:{0}.
+90141=Sharding column {0} not found in table {1}
+90142=Sharding column {0} cannot be modified.
+90143=The table {0} scan strategy is {1}, to find data rows, must provide the {3} conditions.
+90144=No repository could be found on the class path, add a repository to your class path.
+90145=Multiple repositories are available on the class path, select one and only one repository you wish to use, and remove the other repositories, repositories: {0}
 HY000=General error: {0}
 HY004=Unknown data type: {0}
 HYC00=Feature not supported: {0}

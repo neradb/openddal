@@ -80,6 +80,7 @@ public class TableMate extends Table {
      * @return the shardingColumns
      */
     public Column[] getRuleColumns() {
+        check();
         return ruleColumns;
     }
 
@@ -97,7 +98,7 @@ public class TableMate extends Table {
     }
 
     public boolean isInited() {
-        return initException != null;
+        return initException == null;
     }
 
     public void markDeleted() {
@@ -211,7 +212,7 @@ public class TableMate extends Table {
                 }
             }
         }
-        validationPlanItem(item);
+        //validationPlanItem(item);
         return item;
     }
 
@@ -225,11 +226,17 @@ public class TableMate extends Table {
             trace.debug("Load the {0} metadata success.", getName());
             initException = null;
         } catch (DbException e) {
+            if(e.getErrorCode() == ErrorCode.COLUMN_NOT_FOUND_1) {
+                throw e;
+            }
             trace.debug("Fail to load {0} metadata from table {1}.{2}. error: {3}", getName(), shardName, tableName,
                     e.getCause().getMessage());
             initException = e;
             Column[] cols = {};
             setColumns(cols);
+        }
+        if (isInited()) {
+            setRuleColumns();
         }
     }
 
@@ -345,7 +352,6 @@ public class TableMate extends Table {
         }
         Column[] cols = new Column[columnList.size()];
         columnList.toArray(cols);
-        validationRuleColumn(cols);
         setColumns(cols);
         // create scan index
 
@@ -511,26 +517,17 @@ public class TableMate extends Table {
     /**
      * validation the rule columns is in the table columns
      */
-    private void validationRuleColumn(Column[] columns) {
+    private void setRuleColumns() {
         if (tableRule instanceof ShardedTableRule) {
             ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;
             List<String> ruleColNames = shardedTableRule.getRuleColumns();
             ruleColumns = new Column[ruleColNames.size()];
             for (int i = 0; i < ruleColNames.size(); i++) {
-                String ruleCol = ruleColNames.get(i);
-                Column matched = null;
-                for (Column column : columns) {
-                    String colName = column.getName();
-                    if (colName.equalsIgnoreCase(ruleCol)) {
-                        matched = column;
-                        ruleColumns[i] = column;
-                        break;
-                    }
+                String colName = database.identifier(ruleColNames.get(i)); 
+                if(!doesColumnExist(colName)) {
+                    throw DbException.get(ErrorCode.SHARDING_COLUMN_NOT_FOUND,  colName ,getName());
                 }
-                if (matched == null) {
-                    throw DbException.throwInternalError(
-                            "The rule column " + ruleCol + " does not exist in " + getName() + " table.");
-                }
+                ruleColumns[i] = getColumn(colName);
             }
         }
     }
@@ -542,17 +539,17 @@ public class TableMate extends Table {
             switch (shardedTableRule.getScanLevel()) {
             case ShardedTableRule.SCANLEVEL_SHARDINGKEY:
                 if (priority < ScanningStrategy.USE_SHARDINGKEY.priority) {
-                    throw DbException.get(ErrorCode.NOT_ALLOWED_SCANTABLE, getName(), "shardingKey", "shardingKey");
+                    throw DbException.get(ErrorCode.ALLOWED_SCANTABLE_ERROR, getName(), "shardingKey", "shardingKey");
                 }
                 break;
             case ShardedTableRule.SCANLEVEL_UNIQUEINDEX:
                 if (priority < ScanningStrategy.USE_UNIQUEKEY.priority) {
-                    throw DbException.get(ErrorCode.NOT_ALLOWED_SCANTABLE, getName(), "uniqueIndex", "uniqueIndex");
+                    throw DbException.get(ErrorCode.ALLOWED_SCANTABLE_ERROR, getName(), "uniqueIndex", "uniqueIndex");
                 }
                 break;
             case ShardedTableRule.SCANLEVEL_ANYINDEX:
                 if (priority < ScanningStrategy.USE_INDEXKEY.priority) {
-                    throw DbException.get(ErrorCode.NOT_ALLOWED_SCANTABLE, getName(), "indexKey", "indexKey");
+                    throw DbException.get(ErrorCode.ALLOWED_SCANTABLE_ERROR, getName(), "indexKey", "indexKey");
                 }
                 break;
             case ShardedTableRule.SCANLEVEL_UNLIMITED:

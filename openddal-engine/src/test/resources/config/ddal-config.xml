@@ -57,9 +57,6 @@
 			</broadcast>
 		</table>
 		
-		<table name="login_log">
-			<node shard="shard0" name="t_login_log"/>
-		</table>
 
 	</schema>
 

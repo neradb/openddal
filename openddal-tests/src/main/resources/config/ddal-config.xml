@@ -9,7 +9,7 @@
 		<property name="ddal.validationQueryTimeout" value="1000" />
 	</settings>
 
-	<schema name="ut-app" force="false">
+	<schema name="SCHEMA_MAIN" force="false">
 
 		<tableGroup>
 			<tables>
@@ -33,7 +33,7 @@
 		<tableGroup>
 			<tables>
 				<table name="customers" ruleColumns="id" />
-				<table name="address" ruleColumns="customers_id" />
+				<table name="address" ruleColumns="customer_id" />
 			</tables>
 			<nodes>
 				<node shard="shard0" suffix="_01,_02" />
@@ -48,15 +48,15 @@
 		</tableGroup>
 
 		<table name="product">
-			<broadcast>
-				shard0,shard1,shard2,shard3
-			</broadcast>
+			<broadcast>shard0,shard1,shard2,shard3</broadcast>
 		</table>
 
 		<table name="product_category">
-			<broadcast>
-				<node shard="shard0,shard1,shard2,shard3" />
-			</broadcast>
+			<broadcast>shard0,shard1,shard2,shard3</broadcast>
+		</table>
+		
+		<table name="customer_login_log">
+			<node shard="shard0" name="t_customer_login_log"/>
 		</table>
 
 	</schema>

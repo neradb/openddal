@@ -202,15 +202,18 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
     }
 
     protected String explainForWorker(List<? extends Worker> workers) {
-        if (workers.size() == 1) {
-            return workers.iterator().next().explain();
-        }
         StringBuilder explain = new StringBuilder();
-        explain.append("MULTINODES_EXECUTION");
-        explain.append('\n');
-        for (Worker worker : workers) {
-            String subexplain = worker.explain();
-            explain.append(StringUtils.indent(subexplain, 4, false));
+        if (workers.size() == 1) {
+            explain.append("SINGLE_EXECUTION");
+            explain.append('\n');
+            explain.append(StringUtils.indent(workers.iterator().next().explain(), 4, false));
+        } else {
+            explain.append("MULTIPLE_EXECUTION");
+            for (Worker worker : workers) {
+                String subexplain = worker.explain();
+                explain.append('\n');
+                explain.append(StringUtils.indent(subexplain, 4, false));
+            }
         }
         return explain.toString();
     }

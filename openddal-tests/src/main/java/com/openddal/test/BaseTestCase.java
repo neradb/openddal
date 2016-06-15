@@ -47,9 +47,9 @@ import java.util.UUID;
 
 import javax.sql.DataSource;
 
+import org.apache.commons.dbcp.BasicDataSource;
 import org.junit.After;
 
-import com.openddal.jdbc.JdbcDataSource;
 import com.openddal.message.DbException;
 import com.openddal.test.utils.ProxyCodeGenerator;
 import com.openddal.test.utils.ResultVerifier;
@@ -90,15 +90,19 @@ public abstract class BaseTestCase {
     protected DataSource dataSource;
 
     public BaseTestCase() {
-        try {
-            JdbcDataSource dataSource = new JdbcDataSource();
-            dataSource.setUrl("jdbc:openddal:");
-            dataSource.setDbType("MySQL");
-            this.dataSource = dataSource;
-        } catch (RuntimeException e) {
-            e.printStackTrace();
-            throw e;
-        }
+        BasicDataSource ds = newDataSource();
+        this.dataSource = ds;
+    
+    }
+
+    private BasicDataSource newDataSource() {
+        BasicDataSource ds = new BasicDataSource();
+        ds.setDriverClassName("com.openddal.jdbc.JdbcDriver");
+        ds.setUrl("jdbc:openddal:");
+        ds.setDefaultAutoCommit(false);
+        ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        ds.setTestOnBorrow(true);
+        return ds;
     }
 
     public BaseTestCase(DataSource dataSource) {
@@ -1335,6 +1339,33 @@ public abstract class BaseTestCase {
             ProxyCodeGenerator.getClassProxy(clazz);
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+    
+    public static void printResultSet(ResultSet rs) {
+        try {
+            if (rs != null) {
+                ResultSetMetaData md = rs.getMetaData();
+                int cols = md.getColumnCount();
+                StringBuffer sb = new StringBuffer();
+                for (int i = 0; i < cols; i++) {
+                    sb.append(md.getColumnName(i + 1) + " ");
+                }
+                sb.append('\n');
+                for (int i = 0; i < cols; i++) {
+                    sb.append("-------------------");
+                }
+                sb.append('\n');
+                while (rs.next()) {
+                    for (int i = 0; i < cols; i++) {
+                        sb.append(rs.getString(i + 1) + " ");
+                    }
+                }
+                sb.append("\n");
+                System.out.println(sb.toString());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

@@ -1901,17 +1901,19 @@ public class ErrorCode {
     public static final int RESULT_SET_READONLY = 90140;
 
 
+    public static final int SHARDING_COLUMN_NOT_FOUND = 90141;
     /**
      * The error with code <code>90141</code> is thrown when
-     * trying to change the java object serializer while there was already data
-     * in the database. The serializer of the database must be set when the
-     * database is empty.
+     * trying to change sharding column value
      */
-    public static final int SHARDING_COLUMNS_CANNOT_BE_MODIFIED = 90141;
+    public static final int SHARDING_COLUMNS_CANNOT_BE_MODIFIED = 90142;
 
-    public static final int NOT_ALLOWED_SCANTABLE = 90142;
+    public static final int ALLOWED_SCANTABLE_ERROR = 90143;
     
-    public static final int DATABASE_LOAD_REPOSITORY_ERROR = 90143;
+    public static final int REPOSITORY_BINDING_ERROR_1 = 90145;
+    
+    public static final int REPOSITORY_BINDING_ERROR_2 = 90145;
+    
 
 
     // next are 90039, 90051, 90056, 90110, 90122, 90143

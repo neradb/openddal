@@ -1666,6 +1666,14 @@ public class Parser {
             command.setCommand(parseMerge());
         } else if (readIf("WITH")) {
             command.setCommand(parseWith());
+        } else if (readIf("CREATE")) {
+            command.setCommand(parseCreate());
+        } else if (readIf("DROP")) {
+            command.setCommand(parseDrop());
+        } else if (readIf("ALTER")) {
+            command.setCommand(parseAlter());
+        } else if (readIf("TRUNCATE")) {
+            command.setCommand(parseTruncate());
         } else {
             throw getSyntaxError();
         }

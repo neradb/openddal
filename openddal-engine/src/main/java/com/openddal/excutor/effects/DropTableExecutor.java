@@ -87,9 +87,9 @@ public class DropTableExecutor extends ExecutionFramework<DropTable> {
 
     private String executeExplain(DropTable next) {
         StringBuilder explain = new StringBuilder();
-        String plan = explainForWorker(dropWorkers.get(prepared));
+        String plan = explainForWorker(dropWorkers.get(next));
         explain.append(plan);
-        next = prepared.getNext();
+        next = next.getNext();
         if (next != null) {
             explain.append("\n");
             explain.append(StringUtils.indent(executeExplain(next), 4, false));

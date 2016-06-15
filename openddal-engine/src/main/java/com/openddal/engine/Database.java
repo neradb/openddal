@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -94,7 +94,7 @@ public class Database {
         this.trace = traceSystem.getTrace(Trace.DATABASE);
 
         this.queryExecutor = createQueryExecutor();
-        this.repository = loadRepositoryComponent();
+        this.repository = bindRepository();
         openDatabase();
     }
 
@@ -108,21 +108,21 @@ public class Database {
         return queryExecutor;
     }
 
-    private Repository loadRepositoryComponent() {
-        List<Repository> repositories = New.arrayList();
+    private Repository bindRepository() {
         ServiceLoader<Repository> serviceLoader = ServiceLoader.load(Repository.class);
+        Map<String,Repository> repositories = New.hashMap();
         for (Repository service : serviceLoader) {
-            trace.debug("load repository component {0}", service.getClass().getName());
-            repositories.add(service);
+            trace.debug("Repository {0} was found on the class path.", service.getClass().getName());
+            repositories.put(service.getName(), service);
         }
         if (repositories.isEmpty()) {
-            String p1 = "No repository found";
-            throw DbException.get(ErrorCode.DATABASE_LOAD_REPOSITORY_ERROR, p1);
+            throw DbException.get(ErrorCode.REPOSITORY_BINDING_ERROR_1);
         }
         if (repositories.size() > 1) {
-            DbException.throwInternalError("Too many repositories found.");
+            String names = repositories.keySet().toString();
+            throw DbException.get(ErrorCode.REPOSITORY_BINDING_ERROR_2, names);
         }
-        Repository repository = repositories.get(0);
+        Repository repository = repositories.values().iterator().next();
         repository.init(this);
         return repository;
     }

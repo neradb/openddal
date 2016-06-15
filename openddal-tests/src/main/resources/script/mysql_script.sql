@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS customers,address,orders,order_items,order_status,product,product_category;
+DROP TABLE IF EXISTS customers,address,order_items,order_status,orders,product,product_category,customer_logs;
 
 
 CREATE TABLE IF NOT EXISTS `customers` (
@@ -68,5 +68,13 @@ CREATE TABLE IF NOT EXISTS `product` (
   PRIMARY KEY (`product_id`),
   KEY (`create_date`),
   FOREIGN KEY (`product_category_id`) REFERENCES `product_category` (`product_category_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+
+CREATE TABLE IF NOT EXISTS `customer_logs` (
+  `id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `logintime` datetime NOT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
