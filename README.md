@@ -6,9 +6,9 @@ OpenDDAL致力于提供一个简单易用，高性能的分布式数据库访问
 
 
 # OpenDDAL文档中心
-![功能演示](https://github.com/wplatform/blog/blob/master/posts/openddal-func-showcase.md)
-![用户指南](https://github.com/wplatform/blog/blob/master/posts/openddal-guide.md)
-![设计文档](https://github.com/wplatform/blog/blob/master/posts/openddal-design.md)
+[功能演示](https://github.com/wplatform/blog/blob/master/posts/openddal-func-showcase.md)
+[用户指南](https://github.com/wplatform/blog/blob/master/posts/openddal-guide.md)
+[设计文档](https://github.com/wplatform/blog/blob/master/posts/openddal-design.md)
 
 # OpenDDAL已实现的功能
 - 简洁高效的数据切分方式，支持分库分表，自定义切分规则
