@@ -16,7 +16,6 @@
 package com.openddal.server;
 
 import com.openddal.server.mysql.MySQLProtocolServer;
-import com.openddal.server.pgsql.PgSQLProtocolServer;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -126,12 +125,7 @@ public class ServerLauncher {
             if(serverArgs.port == -1) {
                 serverArgs.port = NettyServer.DEFAULT_LISTEN_PORT;
             }
-            NettyServer server;
-            if("postgresql".equalsIgnoreCase(serverArgs.protocol)) {
-                server = new PgSQLProtocolServer(serverArgs);
-            } else {
-                server = new MySQLProtocolServer(serverArgs);
-            }
+            NettyServer server = new MySQLProtocolServer(serverArgs);
             server.init();
             server.listen();
             runingServer = server;

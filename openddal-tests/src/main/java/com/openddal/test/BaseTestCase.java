@@ -98,7 +98,7 @@ public abstract class BaseTestCase {
     private BasicDataSource newDataSource() {
         BasicDataSource ds = new BasicDataSource();
         ds.setDriverClassName("com.openddal.jdbc.JdbcDriver");
-        ds.setUrl("jdbc:openddal:");
+        ds.setUrl("jdbc:openddal:config/ddal-config.xml;");
         ds.setDefaultAutoCommit(false);
         ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         ds.setTestOnBorrow(true);

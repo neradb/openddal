@@ -88,13 +88,6 @@ public class DbSettings extends SettingsBase {
     public final int estimatedFunctionTableRows = get(
             "ESTIMATED_FUNCTION_TABLE_ROWS", 1000);
     /**
-     * Database setting <code>MAX_COMPACT_COUNT</code>
-     * (default: Integer.MAX_VALUE).<br />
-     * The maximum number of pages to move when closing a database.
-     */
-    public final int maxCompactCount = get("MAX_COMPACT_COUNT",
-            Integer.MAX_VALUE);
-    /**
      * Database setting <code>MAX_COMPACT_TIME</code> (default: 200).<br />
      * The maximum time in milliseconds used to compact a database when closing.
      */
@@ -185,9 +178,9 @@ public class DbSettings extends SettingsBase {
     public final boolean rowId = get("ROWID", true);
     
     /**
-     * Database setting <code>COMPATIBILITY_MODE</code> (default: REGULAR).<br />
+     * Database setting <code>SQL_MODE</code> (default: REGULAR).<br />
      */
-    public final String compatibilityMode = get("COMPATIBILITY_MODE", Mode.REGULAR);
+    public final String sqlMode = get("SQL_MODE", Mode.REGULAR);
     /**
      * Database setting <code>MAX_QUERY_TIMEOUT</code> (default: 0).<br />
      * The maximum timeout of a query in milliseconds. The default is 0, meaning
@@ -206,13 +199,13 @@ public class DbSettings extends SettingsBase {
      * (default: SELECT 1 FROM DUAL).<br />
      * The default sql to validation jdbc connection.
      */
-    public String validationQuery = get("VALIDATION_QUERY", "SELECT 1 FROM DUAL");
+    public String validationQuery = get("VALIDATION_QUERY", "");
     /**
      * Database setting <code>DEFAULT_VALIDATION_QUERYT_IMEOUT</code>
      * (default: -1).<br />
      * The default time to execute validation sql.
      */
-    public int validationQueryTimeout = get("VALIDATION_QUERYT_IMEOUT", -1);
+    public int validationQueryTimeout = get("VALIDATION_QUERY_TIMEOUT", -1);
     /**
      * Database setting <code>OPTIMIZE_MERGING</code> (default: false).<br />
      * Use union select for query multi-table in same shard.

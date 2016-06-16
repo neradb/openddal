@@ -15,6 +15,7 @@
  */
 package com.openddal.server;
 
+import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -61,7 +62,7 @@ public abstract class NettyServer {
     public NettyServer(ServerArgs args) {
         this.args = args;
     }
-    
+
     public Engine getDdalEngine() {
         return ddalEngine;
     }
@@ -73,11 +74,12 @@ public abstract class NettyServer {
 
         try {
             if (!StringUtils.isNullOrEmpty(args.configFile)) {
-                System.setProperty("ddal.engineConfigLocation",args.configFile);
+                System.setProperty("ddal.engineConfigLocation", args.configFile);
             }
-            LOGGER.info("{} server init ddal-engine from {}", getServerName(), 
-                    SysProperties.ENGINE_CONFIG_LOCATION);
-            ddalEngine = Engine.getImplicitInstance();
+            LOGGER.info("{} server init ddal-engine from {}", getServerName(), SysProperties.ENGINE_CONFIG_LOCATION);
+            Properties prop = new Properties();
+            prop.setProperty(Engine.ENGINE_CONFIG_PROPERTY_NAME, SysProperties.ENGINE_CONFIG_LOCATION);
+            ddalEngine = Engine.getImplicitEngine(prop);
             LOGGER.info("{} server ddal-engine inited.", getServerName());
         } catch (Exception e) {
             LOGGER.error("Exception happen when init ddal-engine ", e);

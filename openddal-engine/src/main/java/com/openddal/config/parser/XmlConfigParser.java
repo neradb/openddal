@@ -37,6 +37,7 @@ import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceException;
 import com.openddal.config.DefaultDataSourceProvider;
 import com.openddal.config.GlobalTableRule;
+import com.openddal.config.SequnceConfig;
 import com.openddal.config.Shard;
 import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.ShardedTableRule;
@@ -110,26 +111,15 @@ public class XmlConfigParser {
     }
 
     private void parseElement(XNode xNode) {
-        parseSettings(xNode.evalNodes("/ddal-config/settings/property"));
+        parseSettings(xNode.evalNode("/ddal-config/settings"));
         parseShards(xNode.evalNodes("/ddal-config/cluster/shard"));
         parseDataSource(xNode.evalNodes("/ddal-config/dataNodes/datasource"));
         parseRuleAlgorithm(xNode.evalNodes("/ddal-config/algorithms/ruleAlgorithm"));
         parseSchemaConfig(xNode.evalNode("/ddal-config/schema"));
     }
 
-    private void parseSettings(List<XNode> xNodes) {
-        Properties prop = new Properties();
-        for (XNode xNode : xNodes) {
-            String proName = xNode.getStringAttribute("name");
-            String proValue = xNode.getStringAttribute("value");
-            if (StringUtils.isNullOrEmpty(proName)) {
-                throw new ParsingException("Error parsing ddal-config XML . Cause: propery's name required.");
-            }
-            if (StringUtils.isNullOrEmpty(proValue)) {
-                throw new ParsingException("Error parsing ddal-config XML . Cause: propery's value required.");
-            }
-            prop.setProperty(proName, proValue);
-        }
+    private void parseSettings(XNode xNode) {
+        Properties prop = xNode.getChildrenAsProperties();
         configuration.settings = prop;
     }
 
@@ -232,6 +222,14 @@ public class XmlConfigParser {
         }
         configuration.tableRules.add(tableRule);
     }
+    private void addSequnceConfIfNotDuplicate(SequnceConfig seq) {
+        for (SequnceConfig item : configuration.sequnces) {
+            if (seq.getName().equalsIgnoreCase(item.getName())) {
+                throw new ParsingException("Duplicate sequnce name '" + seq.getName() + "' in schema.");
+            }
+        }
+        configuration.sequnces.add(seq);
+    }
 
     private void parseSchemaConfig(XNode xNode) {
         String name = xNode.getStringAttribute("name");
@@ -251,6 +249,11 @@ public class XmlConfigParser {
         xNodes = xNode.evalNodes("table");
         for (XNode tableNode : xNodes) {
             parseTableConfig(tableNode);
+        }
+        
+        xNodes = xNode.evalNodes("sequence");
+        for (XNode tableNode : xNodes) {
+            parseSequenceConfig(tableNode);
         }
 
     }
@@ -601,6 +604,18 @@ public class XmlConfigParser {
     private class RuleAlgorithmConfig {
         private String clazz;
         private Properties properties;
+    }
+    
+    
+    private void parseSequenceConfig(XNode tableNode) {
+        String name = tableNode.getStringAttribute("name");
+        if (StringUtils.isNullOrEmpty(name)) {
+            throw new ParsingException("Sequence attribute 'name' is required.");
+        }
+        Properties prop = tableNode.getChildrenAsProperties();
+        SequnceConfig seq = new SequnceConfig(name);
+        seq.setProperties(prop);
+        addSequnceConfIfNotDuplicate(seq);
     }
 
 }

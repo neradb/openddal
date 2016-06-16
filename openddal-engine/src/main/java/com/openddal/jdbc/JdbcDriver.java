@@ -110,7 +110,7 @@ public class JdbcDriver implements java.sql.Driver {
             if (info == null) {
                 info = new Properties();
             }
-            Properties prop = parseUrl(url);
+            Properties prop = parseUrl(url, info);
             Engine engine = Engine.getImplicitEngine(prop);
             SessionInterface session = engine.createSession(info);
             return new JdbcConnection(session);
@@ -190,9 +190,20 @@ public class JdbcDriver implements java.sql.Driver {
     }
 
 
-    private Properties parseUrl(String url) {
+    private Properties parseUrl(String url,Properties defaults) {
         Properties prop = new Properties();
         DbSettings defaultSettings = DbSettings.getDefaultSettings();
+        for (Object k : defaults.keySet()) {
+            String key = k.toString();
+            if (prop.containsKey(key)) {
+                throw DbException.get(ErrorCode.DUPLICATE_PROPERTY_1, key);
+            }
+            Object value = defaults.get(k);
+            if (defaultSettings.containsKey(key)) {
+                prop.put(key, value);
+            }
+        }
+        
         int idx = url.indexOf(';');
         if (idx >= 0) {
             String settings = url.substring(idx + 1);
@@ -221,8 +232,8 @@ public class JdbcDriver implements java.sql.Driver {
             }
         }
         String configLocation = url.substring(Constants.START_URL.length());
-        prop.put("ENGINE_CONFIG_LOCATION", configLocation);
+        prop.put(Engine.ENGINE_CONFIG_PROPERTY_NAME, configLocation);
         return prop;
     }
-
+    
 }

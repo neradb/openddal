@@ -134,7 +134,7 @@
 90109=View {0} is invalid: {1}
 90111=Error accessing database table with SQL statement {0}, cause: {1}
 90112=Row not found when trying to delete from index {0}
-90113=Unsupported connection setting {0}
+90113=Unsupported property setting {0}
 90114=Constant {0} already exists
 90115=Constant {0} not found
 90116=Literals of this kind are not allowed
@@ -159,7 +159,7 @@
 90135=The database is open in exclusive mode; can not open additional connections
 90136=Unsupported outer join condition: {0}
 90137=Can only assign to a variable, not to: {0}
-90138=Invalid database name: {0}
+90138=Invalid engine configuration file: {0}
 90139=The public static Java method was not found: {0}
 90140=The result set is readonly. You may need to use conn.createStatement(.., ResultSet.CONCUR_UPDATABLE).
 90141=Sharding column {0} not found in table {1}

@@ -1879,7 +1879,7 @@ public class ErrorCode {
      * DriverManager.getConnection("jdbc:h2:~/test/te");
      * </pre>
      */
-    public static final int INVALID_DATABASE_NAME_1 = 90138;
+    public static final int INVALID_ENGINE_CONFIG_1 = 90138;
 
     /**
      * The error with code <code>90139</code> is thrown when

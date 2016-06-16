@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -87,9 +88,9 @@ public class Database {
     public Database(Configuration configuration) {
         this.configuration = configuration;
         this.compareMode = CompareMode.getInstance(null, 0);
-        this.dbSettings = DbSettings.getDefaultSettings();
+        this.dbSettings = getDbSettings(configuration.settings);
 
-        this.mode = Mode.getInstance(dbSettings.compatibilityMode);
+        this.mode = Mode.getInstance(dbSettings.sqlMode);
         this.traceSystem = new TraceSystem();
         this.trace = traceSystem.getTrace(Trace.DATABASE);
 
@@ -173,6 +174,19 @@ public class Database {
             sysSession.close();
         }
 
+    }
+    
+    public DbSettings getDbSettings(Properties setting) {
+        DbSettings defaultSettings = DbSettings.getDefaultSettings();
+        HashMap<String, String> s = New.hashMap();
+        for (Object k : setting.keySet()) {
+            String key = k.toString();
+            if (!defaultSettings.containsKey(key)) {
+                throw DbException.get(ErrorCode.UNSUPPORTED_SETTING_1, key);
+            }
+            s.put(key, setting.getProperty(key));
+        }
+        return DbSettings.getInstance(s);
     }
 
     /**

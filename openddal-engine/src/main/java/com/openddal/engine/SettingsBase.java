@@ -15,11 +15,11 @@
  */
 package com.openddal.engine;
 
+import java.util.HashMap;
+
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.util.Utils;
-
-import java.util.HashMap;
 
 /**
  * The base class for settings.
@@ -74,7 +74,7 @@ public class SettingsBase {
      * @return the setting
      */
     protected String get(String key, String defaultValue) {
-        StringBuilder buff = new StringBuilder("ddal.");
+        StringBuilder buff = new StringBuilder();
         boolean nextUpper = false;
         for (char c : key.toCharArray()) {
             if (c == '_') {
@@ -85,11 +85,12 @@ public class SettingsBase {
                 nextUpper = false;
             }
         }
-        String sysProperty = buff.toString();
-        String v = settings.get(key);
+        String property = buff.toString();
+        String sysProperty = "ddal." + buff.toString();
+        String v = settings.get(property);
         if (v == null) {
             v = Utils.getProperty(sysProperty, defaultValue);
-            settings.put(key, v);
+            settings.put(property, v);
         }
         return v;
     }

@@ -54,7 +54,18 @@ public final class SessionFactoryBuilder {
         if (settings == null) {
             throw new IllegalArgumentException();
         }
-        configuration.settings = settings;
+        if(configuration.settings == null) {
+            configuration.settings = settings;
+        } else {
+            for (Object k : settings.keySet()) {
+                String key = k.toString();
+                if (configuration.settings.containsKey(key)) {
+                    throw new IllegalArgumentException("Duplicate property " + key);
+                }
+                String value = settings.getProperty(key);
+                settings.put(key, value);
+            }
+        }
         return this;
     }
 

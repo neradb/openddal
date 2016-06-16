@@ -3,10 +3,10 @@
 <ddal-config>
 
 	<settings>
-		<property name="ddal.compatibilityMode" value="MySQL" />
-		<property name="ddal.queryTimeout" value="3000" />
-		<property name="ddal.validationQuery" value="select 1" />
-		<property name="ddal.validationQueryTimeout" value="1000" />
+		<property name="sqlMode" value="MySQL" />
+		<property name="defaultQueryTimeout" value="3000" />
+		<property name="validationQuery" value="select 1" />
+		<property name="validationQueryTimeout" value="1000" />
 	</settings>
 
 	<schema name="SCHEMA_MAIN" force="false">
@@ -58,6 +58,10 @@
 		<table name="customer_login_log">
 			<node shard="shard0" name="t_customer_login_log"/>
 		</table>
+		
+		<sequence name="seq_customer">
+			<property name="sqlMode" value="MySQL" />
+		</sequence>
 
 	</schema>
 

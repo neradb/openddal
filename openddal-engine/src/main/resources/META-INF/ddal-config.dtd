@@ -65,7 +65,7 @@
                 >
         <!ELEMENT tables (table+)>
                 
-        <!ELEMENT sequence (#PCDATA)>
+        <!ELEMENT sequence (property*)>
         <!ATTLIST sequence
                 name CDATA #REQUIRED
                 >
