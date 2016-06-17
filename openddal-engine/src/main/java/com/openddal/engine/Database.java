@@ -27,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.openddal.config.Configuration;
+import com.openddal.config.SequenceConfig;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
@@ -40,7 +41,6 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
-import com.openddal.repo.Repository;
 import com.openddal.route.RoutingHandler;
 import com.openddal.route.RoutingHandlerImpl;
 import com.openddal.util.BitField;
@@ -163,10 +163,10 @@ public class Database {
              * newIndexColumns, newIndexType); this.addSchemaObject(index); }
              */
 
-            for (TableRule tableRule : configuration.sequnces) {
-                String identifier = tableRule.getName();
+            for (SequenceConfig config : configuration.sequnces) {
+                String identifier = config.getName();
                 identifier = identifier(identifier);
-                Sequence sequence = new Sequence(mainSchema, identifier, 1L, 1L, null, null, null, false, false);
+                Sequence sequence = repository.loadSequence(config);
                 this.addSchemaObject(sequence);
             }
 

@@ -37,6 +37,6 @@ public class Configuration {
     public final List<TableRule> tableRules = New.arrayList();
 
     public final List<TableRule> nodedIndexs = New.arrayList();
-    public final List<SequnceConfig> sequnces = New.arrayList();
+    public final List<SequenceConfig> sequnces = New.arrayList();
     
 }

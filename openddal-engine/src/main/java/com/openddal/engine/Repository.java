@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.repo;
+package com.openddal.engine;
 
+import com.openddal.config.SequenceConfig;
 import com.openddal.config.TableRule;
+import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
-import com.openddal.engine.Database;
 import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.tx.Transaction;
 
@@ -32,6 +33,8 @@ public interface Repository {
     String getName();
     
     TableMate loadMataData(TableRule tableRule);
+    
+    Sequence loadSequence(SequenceConfig config);
 
     Transaction beginTransaction();
 
@@ -40,7 +43,7 @@ public interface Repository {
     String getDefaultShardName();
     
     boolean isAsyncSupported();
-
+    
     void close();
 
 }

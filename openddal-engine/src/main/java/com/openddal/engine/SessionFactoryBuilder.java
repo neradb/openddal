@@ -7,7 +7,7 @@ import java.util.Properties;
 import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceProvider;
 import com.openddal.config.GlobalTableRule;
-import com.openddal.config.SequnceConfig;
+import com.openddal.config.SequenceConfig;
 import com.openddal.config.Shard;
 import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.ShardedTableRule;
@@ -108,8 +108,13 @@ public final class SessionFactoryBuilder {
         return this;
     }
 
-    public SessionFactoryBuilder addSequnce(SequnceConfig sequnce) {
-        validateTableRule(sequnce);
+    public SessionFactoryBuilder addSequnce(SequenceConfig sequnce) {
+        if (sequnce == null) {
+            throw new IllegalArgumentException();
+        }
+        if (StringUtils.isNullOrEmpty(sequnce.getName())) {
+            throw new IllegalArgumentException();
+        }
         configuration.sequnces.add(sequnce);
         return this;
     }

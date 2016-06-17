@@ -35,6 +35,7 @@ import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
+import com.openddal.engine.Repository;
 import com.openddal.message.Trace;
 import com.openddal.repo.ha.DataSourceMarker;
 import com.openddal.repo.ha.Failover;

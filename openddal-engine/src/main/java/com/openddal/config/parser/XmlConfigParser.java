@@ -37,7 +37,7 @@ import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceException;
 import com.openddal.config.DefaultDataSourceProvider;
 import com.openddal.config.GlobalTableRule;
-import com.openddal.config.SequnceConfig;
+import com.openddal.config.SequenceConfig;
 import com.openddal.config.Shard;
 import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.ShardedTableRule;
@@ -222,8 +222,8 @@ public class XmlConfigParser {
         }
         configuration.tableRules.add(tableRule);
     }
-    private void addSequnceConfIfNotDuplicate(SequnceConfig seq) {
-        for (SequnceConfig item : configuration.sequnces) {
+    private void addSequnceConfIfNotDuplicate(SequenceConfig seq) {
+        for (SequenceConfig item : configuration.sequnces) {
             if (seq.getName().equalsIgnoreCase(item.getName())) {
                 throw new ParsingException("Duplicate sequnce name '" + seq.getName() + "' in schema.");
             }
@@ -613,7 +613,7 @@ public class XmlConfigParser {
             throw new ParsingException("Sequence attribute 'name' is required.");
         }
         Properties prop = tableNode.getChildrenAsProperties();
-        SequnceConfig seq = new SequnceConfig(name);
+        SequenceConfig seq = new SequenceConfig(name);
         seq.setProperties(prop);
         addSequnceConfIfNotDuplicate(seq);
     }
