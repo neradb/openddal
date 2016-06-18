@@ -30,12 +30,17 @@ import javax.sql.DataSource;
 import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceException;
 import com.openddal.config.DataSourceProvider;
+import com.openddal.config.SequenceRule;
 import com.openddal.config.Shard;
 import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.TableRule;
+import com.openddal.dbobject.schema.Schema;
+import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Repository;
+import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.repo.ha.DataSourceMarker;
 import com.openddal.repo.ha.Failover;
@@ -68,7 +73,7 @@ public abstract class JdbcRepository implements Repository {
     public void init(Database database) {
         //database not init completed
         Configuration configuration = database.getConfiguration();
-        this.defaultShardName = configuration.defaultShardName;
+        this.defaultShardName = configuration.publicDB;
         this.validationQuery = database.getSettings().validationQuery;
         this.validationQueryTimeout = database.getSettings().validationQueryTimeout;
         this.dataSourceProvider = configuration.provider;
@@ -159,7 +164,7 @@ public abstract class JdbcRepository implements Repository {
         return this.shardMaping.size();
     }
     @Override
-    public String getDefaultShardName() {
+    public String getPublicDB() {
         return defaultShardName;
     }
 
@@ -290,16 +295,20 @@ public abstract class JdbcRepository implements Repository {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.engine.Repository#loadMataData(com.openddal.config.
-     * TableRule)
-     */
     @Override
-    public TableMate loadMataData(TableRule tableRule) {
+    public TableMate loadMataData(Schema schema, TableRule tableRule) {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    @Override
+    public Sequence loadMataData(Schema schema, SequenceRule sequenceRule) {
+        String strategy = sequenceRule.getStrategy();
+        if ("hilo".equals(strategy)) {
+            return new TableHiLoGenerator(schema, sequenceRule);
+        } else {
+            throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, strategy + " sequence");
+        }
     }
 
     /*

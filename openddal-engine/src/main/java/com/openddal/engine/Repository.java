@@ -15,8 +15,9 @@
  */
 package com.openddal.engine;
 
-import com.openddal.config.SequenceConfig;
+import com.openddal.config.SequenceRule;
 import com.openddal.config.TableRule;
+import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.works.WorkerFactory;
@@ -32,15 +33,15 @@ public interface Repository {
 
     String getName();
     
-    TableMate loadMataData(TableRule tableRule);
+    TableMate loadMataData(Schema schema, TableRule tableRule);
     
-    Sequence loadSequence(SequenceConfig config);
+    Sequence loadMataData(Schema schema, SequenceRule sequenceRule);
 
     Transaction beginTransaction();
 
     WorkerFactory getWorkerFactory();
     
-    String getDefaultShardName();
+    String getPublicDB();
     
     boolean isAsyncSupported();
     

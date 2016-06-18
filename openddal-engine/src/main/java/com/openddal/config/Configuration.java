@@ -32,11 +32,11 @@ public class Configuration {
     public Properties settings;
     public List<Shard> cluster;
     public DataSourceProvider provider;
-    public String defaultShardName;
+    public String publicDB;
 
     public final List<TableRule> tableRules = New.arrayList();
 
     public final List<TableRule> nodedIndexs = New.arrayList();
-    public final List<SequenceConfig> sequnces = New.arrayList();
+    public final List<SequenceRule> sequnces = New.arrayList();
     
 }

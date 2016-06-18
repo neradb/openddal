@@ -29,9 +29,9 @@ public class ObjectNode implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String catalog;
-
     private String shardName;
+
+    private String catalog;
 
     private String schema;
 
@@ -134,6 +134,15 @@ public class ObjectNode implements Serializable {
         if (!StringUtils.isNullOrEmpty(schema)) {
             fullName.append(schema).append(".");
         }
+        fullName.append(objectName);
+        if (!StringUtils.isNullOrEmpty(suffix)) {
+            fullName.append(suffix);
+        }
+        return fullName.toString();
+    }
+
+    public String getQualifiedObjectName() {
+        StringBuilder fullName = new StringBuilder();
         fullName.append(objectName);
         if (!StringUtils.isNullOrEmpty(suffix)) {
             fullName.append(suffix);

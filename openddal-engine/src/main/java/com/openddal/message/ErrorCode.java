@@ -1910,7 +1910,7 @@ public class ErrorCode {
 
     public static final int ALLOWED_SCANTABLE_ERROR = 90143;
     
-    public static final int REPOSITORY_BINDING_ERROR_1 = 90145;
+    public static final int REPOSITORY_BINDING_ERROR_1 = 90144;
     
     public static final int REPOSITORY_BINDING_ERROR_2 = 90145;
     

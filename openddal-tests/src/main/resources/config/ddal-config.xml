@@ -59,8 +59,9 @@
 			<node shard="shard0" name="t_customer_login_log"/>
 		</table>
 		
-		<sequence name="seq_customer">
-			<property name="sqlMode" value="MySQL" />
+		<sequence name="customer_seq" strategy="hilo">
+			<property name="shard" value="shard0" />
+			<property name="cacheSize" value="1" />
 		</sequence>
 
 	</schema>

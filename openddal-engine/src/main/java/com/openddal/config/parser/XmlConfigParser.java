@@ -37,7 +37,7 @@ import com.openddal.config.Configuration;
 import com.openddal.config.DataSourceException;
 import com.openddal.config.DefaultDataSourceProvider;
 import com.openddal.config.GlobalTableRule;
-import com.openddal.config.SequenceConfig;
+import com.openddal.config.SequenceRule;
 import com.openddal.config.Shard;
 import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.ShardedTableRule;
@@ -222,8 +222,8 @@ public class XmlConfigParser {
         }
         configuration.tableRules.add(tableRule);
     }
-    private void addSequnceConfIfNotDuplicate(SequenceConfig seq) {
-        for (SequenceConfig item : configuration.sequnces) {
+    private void addSequnceConfIfNotDuplicate(SequenceRule seq) {
+        for (SequenceRule item : configuration.sequnces) {
             if (seq.getName().equalsIgnoreCase(item.getName())) {
                 throw new ParsingException("Duplicate sequnce name '" + seq.getName() + "' in schema.");
             }
@@ -233,13 +233,12 @@ public class XmlConfigParser {
 
     private void parseSchemaConfig(XNode xNode) {
         String name = xNode.getStringAttribute("name");
-        String defaultShardName = xNode.getStringAttribute("default");
+        String publicDB = xNode.getStringAttribute("public");
         boolean forceLoadTableMate = xNode.getBooleanAttribute("force", true);
         if (StringUtils.isNullOrEmpty(name)) {
-            // throw new ParsingException("schema attribute 'name' is
-            // required.");
+            throw new ParsingException("schema attribute 'name' is required.");
         }
-        configuration.defaultShardName = defaultShardName;
+        configuration.publicDB = publicDB;
         configuration.forceLoadTableMate = forceLoadTableMate;
 
         List<XNode> xNodes = xNode.evalNodes("tableGroup");
@@ -396,10 +395,10 @@ public class XmlConfigParser {
             name = StringUtils.isNullOrEmpty(name) ? tableName : name;
             tableRule.setMetadataNode(new ObjectNode(shard, catalog, schema, name, null));
         } else {
-            if (StringUtils.isNullOrEmpty(configuration.defaultShardName)) {
+            if (StringUtils.isNullOrEmpty(configuration.publicDB)) {
                 throw new ParsingException("Need config schema defaultShardName if not config table node");
             }
-            tableRule.setMetadataNode(new ObjectNode(configuration.defaultShardName, tableName));
+            tableRule.setMetadataNode(new ObjectNode(configuration.publicDB, tableName));
         }
         return tableRule;
     }
@@ -609,11 +608,17 @@ public class XmlConfigParser {
     
     private void parseSequenceConfig(XNode tableNode) {
         String name = tableNode.getStringAttribute("name");
+        String strategy = tableNode.getStringAttribute("strategy");
         if (StringUtils.isNullOrEmpty(name)) {
             throw new ParsingException("Sequence attribute 'name' is required.");
         }
         Properties prop = tableNode.getChildrenAsProperties();
-        SequenceConfig seq = new SequenceConfig(name);
+        String shardName = prop.getProperty("shard");
+        if (StringUtils.isNullOrEmpty(configuration.publicDB) && StringUtils.isNullOrEmpty(shardName)) {
+            throw new ParsingException("Sequence property 'shard' is required if no public shard.");
+        }
+        SequenceRule seq = new SequenceRule(name);
+        seq.setStrategy(strategy);
         seq.setProperties(prop);
         addSequnceConfIfNotDuplicate(seq);
     }

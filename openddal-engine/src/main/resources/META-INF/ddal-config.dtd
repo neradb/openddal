@@ -23,7 +23,7 @@
         <!ELEMENT schema (tableGroup*, table*, sequence*)>
         <!ATTLIST schema
                 name CDATA #REQUIRED
-                default CDATA #IMPLIED
+                public CDATA #IMPLIED
                 force (true|false) #IMPLIED
                 >
 
@@ -68,6 +68,7 @@
         <!ELEMENT sequence (property*)>
         <!ATTLIST sequence
                 name CDATA #REQUIRED
+                strategy (hilo|seqhilo|snowflake) #REQUIRED
                 >
 
         <!ELEMENT property (#PCDATA)>

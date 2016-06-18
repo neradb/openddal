@@ -247,15 +247,23 @@ public class TableMate extends Table {
         for (int retry = 0;; retry++) {
             try {
                 Connection conn = null;
-                String tableName = matadataNode.getCompositeObjectName();
                 String shardName = matadataNode.getShardName();
+                String tableName = matadataNode.getQualifiedObjectName();
+                String catalog = matadataNode.getCatalog();
+                String schema = matadataNode.getSchema();
                 try {
                     JdbcRepository dsRepository = (JdbcRepository) database.getRepository();
                     DataSource dataSource = dsRepository.getDataSourceByShardName(shardName);
                     Navigator optional = Navigator.build().shardName(shardName).readOnly(false);
                     conn = session.applyConnection(dataSource, optional);
                     tableName = database.identifier(tableName);
-                    tryReadMetaData(conn, tableName);
+                    if (catalog != null) {
+                        catalog = database.identifier(catalog);
+                    }
+                    if (schema != null) {
+                        schema = database.identifier(schema);
+                    }
+                    tryReadMetaData(conn, catalog, schema, tableName);
                     return;
                 } catch (Exception e) {
                     throw DbException.convert(e);
@@ -271,7 +279,8 @@ public class TableMate extends Table {
 
     }
 
-    private void tryReadMetaData(Connection conn, String tableName) throws SQLException {
+    private void tryReadMetaData(Connection conn, String oCatalog, String oSchema, String tableName)
+            throws SQLException {
 
         DatabaseMetaData meta = conn.getMetaData();
         storesLowerCase = meta.storesLowerCaseIdentifiers();
@@ -279,7 +288,7 @@ public class TableMate extends Table {
         storesMixedCaseQuoted = meta.storesMixedCaseQuotedIdentifiers();
         supportsMixedCaseIdentifiers = meta.supportsMixedCaseIdentifiers();
 
-        ResultSet rs = meta.getTables(null, null, tableName, null);
+        ResultSet rs = meta.getTables(oCatalog, oSchema, tableName, null);
         if (rs.next() && rs.next()) {
             throw DbException.get(ErrorCode.SCHEMA_NAME_MUST_MATCH, tableName);
         }

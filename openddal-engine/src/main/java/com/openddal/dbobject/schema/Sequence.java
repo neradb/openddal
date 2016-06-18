@@ -27,7 +27,7 @@ import com.openddal.message.ErrorCode;
  */
 public class Sequence extends SchemaObject {
 
-    public static final int DEFAULT_CACHE_SIZE = 32;
+    public static final int DEFAULT_CACHE_SIZE = 100;
 
     private long value;
     private long increment;
@@ -46,10 +46,8 @@ public class Sequence extends SchemaObject {
      * @param startValue the first value to return
      * @param increment the increment count
      */
-    public Sequence(Schema schema, int id, String name, long startValue,
-            long increment) {
-        this(schema, id, name, startValue, increment, null, null, null, false,
-                true);
+    public Sequence(Schema schema, String name, long startValue, long increment) {
+        this(schema, name, startValue, increment, null, null, null, false, false);
     }
 
     /**
@@ -67,7 +65,7 @@ public class Sequence extends SchemaObject {
      * @param belongsToTable whether this sequence belongs to a table (for
      *            auto-increment columns)
      */
-    public Sequence(Schema schema, int id, String name, Long startValue,
+    public Sequence(Schema schema, String name, Long startValue,
             Long increment, Long cacheSize, Long minValue, Long maxValue,
             boolean cycle, boolean belongsToTable) {
         initSchemaObjectBase(schema, name);
@@ -169,7 +167,7 @@ public class Sequence extends SchemaObject {
         throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1,"sequence");
     }
 
-    public synchronized long getCurrentValue() {
+    public long getCurrentValue() {
         throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1,"sequence");
     }
     
