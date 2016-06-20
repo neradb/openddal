@@ -15,9 +15,13 @@
  */
 package com.openddal.excutor.cursor;
 
-import com.openddal.command.dml.Select;
+import java.util.ArrayList;
+
+import com.openddal.dbobject.index.IndexCondition;
+import com.openddal.dbobject.table.RangeTable;
+import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.excutor.ExecutionFramework;
+import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
@@ -25,41 +29,22 @@ import com.openddal.result.SearchRow;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
+public class SearchCursor implements Cursor {
 
     private final TableFilter tableFilter;
+    private Table table;
     private Cursor cursor;
     private boolean alwaysFalse;
 
     public SearchCursor(TableFilter tableFilter) {
-        super(tableFilter.getSelect());
         this.tableFilter = tableFilter;
+        this.table = tableFilter.getTable();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.excutor.ExecutionFramework#doPrepare()
-     */
-    @Override
-    public void doPrepare() {
 
-    }
-
-    @Override
-    public String doExplain() {
-        return null;
-    }
-
-    /**
-     * Re-evaluate the start and end values of the index search for rows.
-     *
-     * @param s the session
-     * @param indexConditions the index conditions
-     */
-    public void doQuery() {
-        if (!alwaysFalse) {
-
+    public void find(Session s, ArrayList<IndexCondition> indexConditions) {
+        if(table instanceof RangeTable) {
+            this.cursor = find(s, (RangeTable)table);
         }
     }
 
@@ -108,6 +93,12 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
     @Override
     public boolean previous() {
         throw DbException.throwInternalError();
+    }
+
+    public Cursor find(Session session, RangeTable table) {
+        long min = table.getMin(session), start = min;
+        long max = table.getMax(session), end = max;
+        return new RangeCursor(start, end);
     }
 
 }

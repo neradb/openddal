@@ -44,12 +44,8 @@ public class SequenceTestCase extends BaseTestCase {
             stmt = conn.createStatement();
             for (int i = 0; i < 100; i++) {
                 rs = stmt.executeQuery("select customer_seq.nextval");
-                printResultSet(rs);
-                rs.close();
-            }
-            for (int i = 0; i < 100; i++) {
-                rs = stmt.executeQuery("select customer_seq.currval from dual");
-                printResultSet(rs);
+                rs.next();
+                System.out.println(i + " times " + rs.getLong(1));
                 rs.close();
             }
         } catch (Exception e) {

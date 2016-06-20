@@ -301,7 +301,7 @@ public class TableFilter implements ColumnResolver {
         if (state == AFTER_LAST) {
             return false;
         } else if (state == BEFORE_FIRST) {
-            cursor.query();
+            cursor.find(session, indexConditions);
             if (!cursor.isAlwaysFalse()) {
                 if (nestedJoin != null) {
                     nestedJoin.reset();

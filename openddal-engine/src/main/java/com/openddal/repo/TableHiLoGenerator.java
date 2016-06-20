@@ -15,6 +15,7 @@ import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.StringUtils;
@@ -86,6 +87,13 @@ public class TableHiLoGenerator extends Sequence {
         String catalog = params.getProperty("catalog");
         String schema = params.getProperty("schema");
         String tableName = params.getProperty("tableName", DEF_TABLE);
+        tableName = database.identifier(tableName);
+        if (catalog != null) {
+            catalog = database.identifier(catalog);
+        }
+        if (schema != null) {
+            schema = database.identifier(schema);
+        }
         tableNode = new ObjectNode(shardName, catalog, schema, tableName, null);
         nameValue = StringUtils.toLowerEnglish(getName());
         nameColumnName = params.getProperty("nameColumnName", DEF_NAME_COLUMN);
@@ -100,7 +108,8 @@ public class TableHiLoGenerator extends Sequence {
 
         this.dataSource = repo.getDataSourceByShardName(shardName);
         this.optimizer = new HiloOptimizer(incrementSize);
-        createTableIfNotExits();
+        
+        this.createTableIfNotExits();
     }
 
     protected int getIntProperty(Properties params, String key, int def) {
@@ -119,13 +128,6 @@ public class TableHiLoGenerator extends Sequence {
         String tableName = tableNode.getQualifiedObjectName();
         String catalog = tableNode.getCatalog();
         String schema = tableNode.getSchema();
-        tableName = database.identifier(tableName);
-        if (catalog != null) {
-            catalog = database.identifier(catalog);
-        }
-        if (schema != null) {
-            schema = database.identifier(schema);
-        }
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
@@ -133,7 +135,7 @@ public class TableHiLoGenerator extends Sequence {
             conn = dataSource.getConnection();
             DatabaseMetaData meta = conn.getMetaData();
             rs = meta.getTables(catalog, schema, tableName, null);
-            if (rs.next() && rs.next()) {
+            if (!rs.next()) {
                 stmt = conn.createStatement();
                 stmt.execute(buildCreateQuery());
             }
@@ -189,57 +191,64 @@ public class TableHiLoGenerator extends Sequence {
 
     @Override
     public synchronized long getCurrentValue() {
+        if (optimizer.value < 1) {
+            throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1,
+                    "sequence " + nameValue + ".currval is not yet defined in this session");
+        }
         return optimizer.value - 1;
     }
 
     public long queryNextValue() throws SQLException {
-        final Connection connection = dataSource.getConnection();
-        long value = initialValue;
+        Connection connection = null;
+        long value;
         int rows;
-        do {
-            final PreparedStatement selectPS = connection.prepareStatement(selectQuery);
-
-            try {
-                selectPS.setString(1, nameValue);
-                final ResultSet selectRS = selectPS.executeQuery();
-                if (!selectRS.next()) {
-                    value = initialValue;
-                    final PreparedStatement insertPS = connection.prepareStatement(insertQuery);
-                    try {
-                        insertPS.setString(1, nameValue);
-                        insertPS.setLong(2, value);
-                        insertPS.executeUpdate();
-                    } finally {
-                        insertPS.close();
+        try {
+            do {
+                connection = dataSource.getConnection();
+                PreparedStatement selectPS = connection.prepareStatement(selectQuery);
+                try {
+                    selectPS.setString(1, nameValue);
+                    final ResultSet selectRS = selectPS.executeQuery();
+                    if (!selectRS.next()) {
+                        value = initialValue;
+                        PreparedStatement insertPS = connection.prepareStatement(insertQuery);
+                        try {
+                            insertPS.setString(1, nameValue);
+                            insertPS.setLong(2, value);
+                            insertPS.executeUpdate();
+                        } finally {
+                            insertPS.close();
+                        }
+                    } else {
+                        long rsValue = selectRS.getLong(1);
+                        if (selectRS.wasNull()) {
+                            throw new SQLException(nameValue + " " + valueColumnName + " is null");
+                        }
+                        value = rsValue;
                     }
-                } else {
-                    long rsValue = selectRS.getLong(1);
-                    if (selectRS.wasNull()) {
-                        rsValue = 1;
-                    }
-                    value = rsValue;
+                    selectRS.close();
+                } catch (SQLException e) {
+                    throw e;
+                } finally {
+                    selectPS.close();
                 }
-                selectRS.close();
-            } catch (SQLException e) {
-                throw e;
-            } finally {
-                selectPS.close();
-            }
 
-            final PreparedStatement updatePS = connection.prepareStatement(updateQuery);
-            try {
-                long updateValue = value;
-                updatePS.setLong(1, ++updateValue);
-                updatePS.setLong(2, value);
-                updatePS.setString(3, nameValue);
-                rows = updatePS.executeUpdate();
-            } catch (SQLException e) {
-                throw e;
-            } finally {
-                updatePS.close();
-            }
-        } while (rows == 0);
-
+                final PreparedStatement updatePS = connection.prepareStatement(updateQuery);
+                try {
+                    long updateValue = value + 1;
+                    updatePS.setLong(1, updateValue);
+                    updatePS.setLong(2, value);
+                    updatePS.setString(3, nameValue);
+                    rows = updatePS.executeUpdate();
+                } catch (SQLException e) {
+                    throw e;
+                } finally {
+                    updatePS.close();
+                }
+            } while (rows == 0);
+        } finally {
+            JdbcUtils.closeSilently(connection);
+        }
         accessCount++;
 
         return value;
