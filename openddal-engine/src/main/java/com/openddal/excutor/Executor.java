@@ -18,6 +18,7 @@
 
 package com.openddal.excutor;
 
+import com.openddal.excutor.cursor.Cursor;
 import com.openddal.message.DbException;
 
 /**
@@ -36,7 +37,7 @@ public interface Executor {
      * @return the result cursor
      * @throws DbException if it is not a query
      */
-    void query();
+    Cursor query();
 
     /**
      * Execute the statement.

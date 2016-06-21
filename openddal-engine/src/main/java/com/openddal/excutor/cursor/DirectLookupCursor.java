@@ -56,8 +56,8 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
      * @see com.openddal.excutor.ExecutionFramework#isQuery()
      */
     @Override
-    protected void doQuery() {
-
+    protected Cursor doQuery() {
+        return this;
     }
 
     @Override

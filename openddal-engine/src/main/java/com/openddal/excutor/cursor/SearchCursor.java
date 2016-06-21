@@ -16,37 +16,45 @@
 package com.openddal.excutor.cursor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
+import com.openddal.command.dml.Select;
+import com.openddal.command.expression.Expression;
+import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.index.IndexCondition;
+import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.RangeTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.engine.Session;
+import com.openddal.dbobject.table.TableMate;
+import com.openddal.dbobject.table.TableView;
+import com.openddal.excutor.ExecutionFramework;
+import com.openddal.excutor.works.QueryWorker;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingResult;
+import com.openddal.util.New;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class SearchCursor implements Cursor {
+public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
 
     private final TableFilter tableFilter;
     private Table table;
     private Cursor cursor;
     private boolean alwaysFalse;
-
+    
     public SearchCursor(TableFilter tableFilter) {
+        super(tableFilter.getSelect());
         this.tableFilter = tableFilter;
         this.table = tableFilter.getTable();
     }
 
-
-    public void find(Session s, ArrayList<IndexCondition> indexConditions) {
-        if(table instanceof RangeTable) {
-            this.cursor = find(s, (RangeTable)table);
-        }
-    }
 
     /**
      * Check if the result is empty for sure.
@@ -95,10 +103,67 @@ public class SearchCursor implements Cursor {
         throw DbException.throwInternalError();
     }
 
-    public Cursor find(Session session, RangeTable table) {
+    private Cursor find(RangeTable table) {
         long min = table.getMin(session), start = min;
         long max = table.getMax(session), end = max;
         return new RangeCursor(start, end);
+    }
+    
+    
+    private Cursor find(TableMate tableMate) {
+        Expression filter = tableFilter.getFilterCondition();
+        if (filter != null) {
+            filter = filter.optimize(session);
+        }
+        Expression join = tableFilter.getJoinCondition();
+        if (join != null) {
+            join = join.optimize(session);
+        }
+        ArrayList<IndexCondition> routingCds = tableFilter.getIndexConditions();
+        RoutingResult result = routingHandler.doRoute(session, tableMate, routingCds);
+        ObjectNode[] selectNodes = result.getSelectNodes();
+        if (session.getDatabase().getSettings().optimizeMerging) {
+            selectNodes = result.group();
+        }
+        List<QueryWorker> workers = New.arrayList(selectNodes.length);
+        for (ObjectNode objectNode : selectNodes) {
+            QueryWorker worker = queryHandlerFactory.createQueryWorker(tableFilter, objectNode);
+            workers.add(worker);
+        }
+        return invokeQueryWorker(workers);
+    }
+    
+    private Cursor find(TableView tableView) {
+        return null;
+    }
+
+    
+
+    protected Cursor doQuery() {
+        if(table instanceof RangeTable) {
+            RangeTable rangeTable = (RangeTable)table;
+            this.cursor = find(rangeTable);
+        } else if(table instanceof TableMate) {
+            TableMate tableMate = (TableMate)table;
+            this.cursor = find(tableMate);
+        } else if(table instanceof TableView) {
+            TableView tableView = (TableView)table;
+            this.cursor = find(tableView);
+        } else {
+            DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, table.getClass().getName());
+        }
+        return this;
+    }
+
+
+    protected void doPrepare() {
+        HashSet<Column> columns = New.hashSet();
+        prepared.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
+    }
+
+    @Override
+    protected String doExplain() {
+        return null;
     }
 
 }

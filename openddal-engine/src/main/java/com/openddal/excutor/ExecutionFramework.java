@@ -99,9 +99,9 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
     }
 
     @Override
-    public final void query() {
+    public final Cursor query() {
         prepare();
-        doQuery();
+        return doQuery();
     }
 
     @Override
@@ -118,7 +118,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
     }
 
-    protected void doQuery() {
+    protected Cursor doQuery() {
         throw DbException.get(ErrorCode.METHOD_ONLY_ALLOWED_FOR_QUERY);
     }
 

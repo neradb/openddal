@@ -21,8 +21,6 @@ import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.Table;
-import com.openddal.dbobject.table.TableFilter;
-import com.openddal.util.New;
 
 /**
  * The visitor pattern is used to iterate through all expressions of a query
@@ -248,22 +246,5 @@ public class ExpressionVisitor {
      */
     public int getType() {
         return type;
-    }
-
-    /**
-     * Get the set of columns of all tables.
-     *
-     * @param filters the filters
-     * @return the set of columns
-     */
-    public static HashSet<Column> allColumnsForTableFilters(TableFilter[] filters) {
-        HashSet<Column> allColumnsSet = New.hashSet();
-        for (int i = 0; i < filters.length; i++) {
-            if (filters[i].getSelect() != null) {
-                filters[i].getSelect().isEverything(
-                        ExpressionVisitor.getColumnsVisitor(allColumnsSet));
-            }
-        }
-        return allColumnsSet;
     }
 }

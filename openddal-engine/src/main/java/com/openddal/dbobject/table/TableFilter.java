@@ -93,8 +93,6 @@ public class TableFilter implements ColumnResolver {
     private ArrayList<Column> naturalJoinColumns;
     private boolean foundOne;
     private Expression fullCondition;
-    private ArrayList<Expression> expressions;
-
     /**
      * Create a new table filter object.
      *
@@ -301,7 +299,7 @@ public class TableFilter implements ColumnResolver {
         if (state == AFTER_LAST) {
             return false;
         } else if (state == BEFORE_FIRST) {
-            cursor.find(session, indexConditions);
+            cursor.query();
             if (!cursor.isAlwaysFalse()) {
                 if (nestedJoin != null) {
                     nestedJoin.reset();
@@ -849,9 +847,6 @@ public class TableFilter implements ColumnResolver {
         return nestedJoin;
     }
 
-    /**
-     * @return the indexConditions
-     */
     public ArrayList<IndexCondition> getIndexConditions() {
         return indexConditions;
     }
