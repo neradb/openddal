@@ -15,16 +15,15 @@
  */
 package com.openddal.route.algorithm;
 
-import com.openddal.route.rule.RuleEvaluateException;
-import com.openddal.route.rule.ObjectNode;
-import com.openddal.util.StringUtils;
-import com.openddal.value.Value;
-import com.openddal.value.ValueTimestamp;
-
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
+
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RuleEvaluateException;
+import com.openddal.util.StringUtils;
+import com.openddal.value.Value;
+import com.openddal.value.ValueTimestamp;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -44,7 +43,7 @@ public class RollingPartitioner extends CommonPartitioner {
     private int rollingType;
 
     @Override
-    public void initialize(List<ObjectNode> tableNodes) {
+    public void initialize(ObjectNode[] tableNodes) {
         super.initialize(tableNodes);
         if (StringUtils.isNullOrEmpty(rollingBy)) {
             throw new IllegalArgumentException("rollingBy is require.");
@@ -150,7 +149,7 @@ public class RollingPartitioner extends CommonPartitioner {
         }
         Integer end;
         if (endValue == null) {
-            end = getTableNodes().size() - 1;
+            end = getTableNodes().length - 1;
         } else {
             end = partition(endValue);
         }

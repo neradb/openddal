@@ -15,12 +15,10 @@
  */
 package com.openddal.route.algorithm;
 
-import com.openddal.route.rule.RuleEvaluateException;
 import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RuleEvaluateException;
 import com.openddal.util.MurmurHash;
 import com.openddal.value.Value;
-
-import java.util.List;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -44,7 +42,7 @@ public class HashBucketPartitioner extends CommonPartitioner {
     }
 
     @Override
-    public void initialize(List<ObjectNode> tableNodes) {
+    public void initialize(ObjectNode[] tableNodes) {
         super.initialize(tableNodes);
         partitionUtil = new PartitionUtil(HASH_BUCKET_SIZE, count, length);
     }

@@ -18,8 +18,6 @@ package com.openddal.route.algorithm;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.value.Value;
 
-import java.util.List;
-
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
@@ -30,7 +28,7 @@ public interface Partitioner {
      *
      * @param tableNodes
      */
-    void initialize(List<ObjectNode> tableNodes);
+    void initialize(ObjectNode[] tableNodes);
 
     /**
      * represent the sql condition: column=xx

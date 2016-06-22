@@ -43,11 +43,35 @@ public class SequenceTestCase extends BaseTestCase {
             conn = getConnection();
             stmt = conn.createStatement();
             for (int i = 0; i < 100; i++) {
-                rs = stmt.executeQuery("select customer_seq.nextval");
+                rs = stmt.executeQuery("select customer_seq.nextval dual");
                 rs.next();
                 System.out.println(i + " times " + rs.getLong(1));
                 rs.close();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail();
+        } finally {
+            JdbcUtils.closeSilently(rs);
+            JdbcUtils.closeSilently(stmt);
+            JdbcUtils.closeSilently(conn);
+        }
+    }
+
+    @Test
+    public void tesetInsertSeqValue() throws Exception {
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            conn = getConnection();
+            stmt = conn.createStatement();
+            int rows = stmt.executeUpdate(
+                    "insert into CUSTOMERS values(customer_seq.nextval, 1000, '马云', '大老', '1965-01-20')");
+            System.out.println(rows);
+            rs = stmt.executeQuery("select last_insert_id()");
+            rs.next();
+            System.out.println("LAST_INSERT_ID: " + rs.getLong(1));
         } catch (Exception e) {
             e.printStackTrace();
             Assert.fail();

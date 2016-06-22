@@ -63,10 +63,12 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
         ArrayList<Expression[]> list = prepared.getList();
         Column[] columns = prepared.getColumns();
         Map<Column, Expression> valueMap = prepared.getDuplicateKeyAssignmentMap();
-        Column[] ruleColumns = table.getRuleColumns();
-        for (Column column : ruleColumns) {
-            if(valueMap.get(column) != null) {
-                throw DbException.get(ErrorCode.SHARDING_COLUMNS_CANNOT_BE_MODIFIED, column.getName());
+        if (valueMap != null) {
+            Column[] ruleColumns = table.getRuleColumns();
+            for (Column column : ruleColumns) {
+                if (valueMap.get(column) != null) {
+                    throw DbException.get(ErrorCode.SHARDING_COLUMNS_CANNOT_BE_MODIFIED, column.getName());
+                }
             }
         }
         int listSize = list.size();

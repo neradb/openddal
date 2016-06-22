@@ -43,7 +43,7 @@
 			</nodes>
 			<tableRule>
 				<columns>${table.ruleColumns}</columns>
-				<algorithm>order_partitioner</algorithm>
+				<algorithm>customer_partitioner</algorithm>
 			</tableRule>
 		</tableGroup>
 

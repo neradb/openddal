@@ -14,6 +14,7 @@ import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.config.TableRuleGroup;
 import com.openddal.config.parser.XmlConfigParser;
+import com.openddal.route.algorithm.Partitioner;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.StringUtils;
 import com.openddal.util.Utils;
@@ -258,6 +259,16 @@ public final class SessionFactoryBuilder {
         vaildateCluster(configuration.cluster);
         for (TableRule table : configuration.tableRules) {
             validateTableRule(table);
+            if (table instanceof ShardedTableRule) {
+                ShardedTableRule shardedTable = (ShardedTableRule) table;
+                Partitioner partitioner = shardedTable.getPartitioner();
+                try {
+                    partitioner.initialize(shardedTable.getObjectNodes());
+                } catch (Exception e) {
+                    String name = table.getName();
+                    throw new IllegalStateException("initialize partitioner for table " + name + " error.", e);
+                }
+            }
         }
         if (configuration.provider == null) {
             throw new IllegalArgumentException("DataSourceProvider is required.");

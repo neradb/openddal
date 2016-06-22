@@ -34,7 +34,7 @@ public abstract class CommonPartitioner implements Partitioner {
 
     private int defaultNodeIndex = -1;
 
-    private List<ObjectNode> tableNodes;
+    private ObjectNode[] tableNodes;
 
     protected static int[] toIntArray(String string) {
         String[] split = StringUtils.arraySplit(string, ',', true);
@@ -62,11 +62,11 @@ public abstract class CommonPartitioner implements Partitioner {
     /**
      * @return the tableNodes
      */
-    public List<ObjectNode> getTableNodes() {
+    public ObjectNode[] getTableNodes() {
         return tableNodes;
     }
 
-    public void initialize(List<ObjectNode> tableNodes) {
+    public void initialize(ObjectNode[] tableNodes) {
         this.tableNodes = tableNodes;
     }
 
@@ -90,7 +90,7 @@ public abstract class CommonPartitioner implements Partitioner {
     }
 
     protected Integer[] allNodes() {
-        Integer[] result = new Integer[tableNodes.size()];
+        Integer[] result = new Integer[tableNodes.length];
         for (int i = 0; i < result.length; i++) {
             result[i] = i;
         }

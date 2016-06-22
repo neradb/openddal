@@ -70,4 +70,23 @@ public class ExplainTestCase extends BaseTestCase {
         }
     }
 
+    @Test
+    public void tesetAlterTableExplain() throws Exception {
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            conn = getConnection();
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery("EXPLAIN PLAN FOR ALTER TABLE  CUSTOMERS ADD IF NOT EXISTS GMT_TIME TIME");
+            printResultSet(rs);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JdbcUtils.closeSilently(rs);
+            JdbcUtils.closeSilently(stmt);
+            JdbcUtils.closeSilently(conn);
+        }
+    }
+
 }
