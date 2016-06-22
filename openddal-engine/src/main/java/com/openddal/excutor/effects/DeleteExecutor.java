@@ -15,11 +15,10 @@
  */
 package com.openddal.excutor.effects;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.openddal.command.dml.Delete;
-import com.openddal.dbobject.index.IndexCondition;
+import com.openddal.dbobject.index.ConditionExtractor;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.excutor.ExecutionFramework;
@@ -34,6 +33,8 @@ import com.openddal.util.New;
 public class DeleteExecutor extends ExecutionFramework<Delete> {
     
     private List<UpdateWorker> workers;
+    private boolean alwaysFalse;
+
     /**
      * @param prepared
      */
@@ -45,27 +46,37 @@ public class DeleteExecutor extends ExecutionFramework<Delete> {
     public void doPrepare() {
         TableFilter tableFilter = prepared.getTableFilter();
         TableMate table = getTableMate(tableFilter);
-        table.check();
-        ArrayList<IndexCondition> where = tableFilter.getIndexConditions();
-        RoutingResult rr = routingHandler.doRoute(session, table, where);
-        ObjectNode[] selectNodes = rr.getSelectNodes();
-        workers = New.arrayList(selectNodes.length);
-        for (ObjectNode objectNode : selectNodes) {
-            UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode);
-            workers.add(worker);
+        ConditionExtractor extractor = new ConditionExtractor(tableFilter);
+        alwaysFalse = extractor.isAlwaysFalse();
+        if(!alwaysFalse) {
+            RoutingResult rr = routingHandler.doRoute(table, 
+                    extractor.getStart(),extractor.getEnd(), extractor.getInColumns());
+            ObjectNode[] selectNodes = rr.getSelectNodes();
+            workers = New.arrayList(selectNodes.length);
+            for (ObjectNode objectNode : selectNodes) {
+                UpdateWorker worker = queryHandlerFactory.createUpdateWorker(prepared, objectNode);
+                workers.add(worker);
+            }
         }
+        
     }
 
 
     
     @Override
     public int doUpdate() {
+        if(this.alwaysFalse) {
+            return 0;
+        }
         return invokeUpdateWorker(workers);
     }
 
 
     @Override
     protected String doExplain() {
+        if(this.alwaysFalse) {
+            return "always false statement";
+        }
         return explainForWorker(workers);
     }
 

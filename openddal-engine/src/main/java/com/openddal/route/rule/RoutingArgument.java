@@ -15,9 +15,10 @@
  */
 package com.openddal.route.rule;
 
-import com.openddal.value.Value;
-
 import java.util.List;
+
+import com.openddal.util.New;
+import com.openddal.value.Value;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -38,6 +39,12 @@ public class RoutingArgument {
 
     public RoutingArgument() {
         this.argumentType = NONE_ROUTING_ARGUMENT;
+    }
+    
+    public RoutingArgument(Value value) {
+        this.argumentType = FIXED_ROUTING_ARGUMENT;
+        this.values = New.arrayList(1);
+        this.values.add(value);
     }
 
     public RoutingArgument(List<Value> values) {

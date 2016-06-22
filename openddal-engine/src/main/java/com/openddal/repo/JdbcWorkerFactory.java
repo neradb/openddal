@@ -50,7 +50,10 @@ public class JdbcWorkerFactory implements WorkerFactory {
 
     @Override
     public QueryWorker createQueryWorker(TableFilter filter, ObjectNode node) {
-        return null;
+        SQLTranslated translated = repo.getSQLTranslator().translate(filter, node);
+        JdbcQueryWorker handler = new JdbcQueryWorker(filter.getSession(), node.getShardName(), translated.sql,
+                translated.params);
+        return handler;
     }
 
     @Override

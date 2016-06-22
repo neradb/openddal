@@ -23,40 +23,28 @@ import com.openddal.result.SearchRow;
  */
 public class ViewCursor implements Cursor {
 
-    /* (non-Javadoc)
-     * @see com.suning.snfddal.dbobject.index.Cursor#get()
-     */
     @Override
     public Row get() {
         // TODO Auto-generated method stub
         return null;
     }
 
-    /* (non-Javadoc)
-     * @see com.suning.snfddal.dbobject.index.Cursor#getSearchRow()
-     */
     @Override
     public SearchRow getSearchRow() {
         // TODO Auto-generated method stub
         return null;
     }
 
-    /* (non-Javadoc)
-     * @see com.suning.snfddal.dbobject.index.Cursor#next()
-     */
     @Override
     public boolean next() {
         // TODO Auto-generated method stub
         return false;
     }
 
-    /* (non-Javadoc)
-     * @see com.suning.snfddal.dbobject.index.Cursor#previous()
-     */
     @Override
     public boolean previous() {
         // TODO Auto-generated method stub
         return false;
     }
-
+    
 }

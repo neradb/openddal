@@ -780,4 +780,50 @@ public class MySQLTranslator implements SQLTranslator {
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
     }
 
+    @Override
+    public SQLTranslated translate(TableFilter filter, ObjectNode node) {
+
+        // can not use the field sqlStatement because the parameter
+        // indexes may be incorrect: ? may be in fact ?2 for a subquery
+        // but indexes may be set manually as well
+        if (node instanceof GroupObjectNode) {
+            return translate(filter, (GroupObjectNode) node);
+        }
+        List<Value> params = New.arrayList(10);
+        Column[] columns = filter.getSearchColumns();
+        StatementBuilder buff = new StatementBuilder("SELECT");
+
+        int visibleColumnCount = columns.length;
+        for (int i = 0; i < visibleColumnCount; i++) {
+            buff.appendExceptFirst(",");
+            buff.append(' ');
+            buff.append(identifier(columns[i].getName()));
+        }
+        buff.append(" FROM ");
+        buff.append(identifier(node.getCompositeObjectName()));
+        Expression condition = filter.getFilterCondition();
+        if (condition != null) {
+            buff.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
+        }
+        return SQLTranslated.build().sql(buff.toString()).sqlParams(params);
+    
+    }
+    
+    
+    @Override
+    public SQLTranslated translate(TableFilter filter, GroupObjectNode node) {
+        ObjectNode[] items = node.getItems();
+        List<Value> params = New.arrayList(10 * items.length);
+        StatementBuilder sql = new StatementBuilder("SELECT * FROM (");
+        for (ObjectNode objectNode : items) {
+            SQLTranslated translated = translate(filter, objectNode);
+            sql.appendExceptFirst(" UNION ALL ");
+            sql.append(translated.sql);
+            params.addAll(translated.params);
+        }
+        sql.append(" ) ");
+        return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
+    
+    }
+
 }

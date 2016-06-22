@@ -18,13 +18,14 @@
 
 package com.openddal.route;
 
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import com.openddal.dbobject.index.IndexCondition;
+import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
-import com.openddal.engine.Session;
 import com.openddal.result.SearchRow;
 import com.openddal.route.rule.RoutingResult;
+import com.openddal.value.Value;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -35,6 +36,6 @@ public interface RoutingHandler {
 
     RoutingResult doRoute(TableMate table, SearchRow row);
 
-    RoutingResult doRoute(Session session, TableMate table, List<IndexCondition> indexConditions);
+    RoutingResult doRoute(TableMate table, SearchRow first, SearchRow last, Map<Column, Set<Value>> inColumns);
 
 }

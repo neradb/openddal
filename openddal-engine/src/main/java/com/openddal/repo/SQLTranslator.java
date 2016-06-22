@@ -73,4 +73,8 @@ public interface SQLTranslator {
 
     SQLTranslated translate(Update update, ObjectNode node, Row row);
 
+    SQLTranslated translate(TableFilter filter, ObjectNode node);
+
+    SQLTranslated translate(TableFilter filter, GroupObjectNode node);
+
 }

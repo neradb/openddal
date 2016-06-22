@@ -9,6 +9,7 @@ import java.util.Set;
 import com.openddal.command.dml.Select;
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.TableRule;
+import com.openddal.dbobject.index.ConditionExtractor;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
@@ -30,6 +31,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     private Cursor cursor;
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryWorker> queryHandlers;
+    private boolean alwaysFalse;
 
     public DirectLookupCursor(Select select) {
         super(select);
@@ -37,6 +39,16 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
 
     @Override
     protected void doPrepare() {
+        ArrayList<TableFilter> topFilters = prepared.getTopFilters();
+        for (TableFilter tf : topFilters) {
+            ConditionExtractor extractor = new ConditionExtractor(tf);
+            boolean alwaysFalse = extractor.isAlwaysFalse();
+            if(alwaysFalse) {
+                this.alwaysFalse = alwaysFalse;
+                return;
+            }
+        }
+        
         RoutingResult rr = doRoute(prepared);
         ObjectNode[] selectNodes = rr.getSelectNodes();
         if (session.getDatabase().getSettings().optimizeMerging) {
@@ -50,13 +62,12 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     }
 
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.excutor.ExecutionFramework#isQuery()
-     */
+
     @Override
     protected Cursor doQuery() {
+        if(alwaysFalse) {
+            return ResultCursor.EMPTY_CURSOR;
+        }
         return this;
     }
 
@@ -90,8 +101,9 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         if (!shards.isEmpty()) {
             for (TableFilter tf : shards) {
                 TableMate table = getTableMate(tf);
-                ArrayList<IndexCondition> routeConds = tf.getIndexConditions();
-                RoutingResult r = routingHandler.doRoute(session, table, routeConds);
+                ConditionExtractor extractor = new ConditionExtractor(tf);
+                RoutingResult r = routingHandler.doRoute(table, 
+                        extractor.getStart(), extractor.getEnd(), extractor.getInColumns());
                 result = (result == null || r.compareTo(result) < 0) ? r : result;
             }
         } else if (!fixeds.isEmpty()) {

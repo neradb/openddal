@@ -19,15 +19,15 @@
 package com.openddal.route;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
-import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
-import com.openddal.engine.Session;
 import com.openddal.result.SearchRow;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingArgument;
@@ -43,8 +43,10 @@ import com.openddal.value.Value;
 public class RoutingHandlerImpl implements RoutingHandler {
 
     private RoutingCalculator trc;
+    private Database database;
 
     public RoutingHandlerImpl(Database database) {
+        this.database = database;
         this.trc = new RoutingCalculatorImpl();
     }
 
@@ -105,18 +107,38 @@ public class RoutingHandlerImpl implements RoutingHandler {
     }
 
     @Override
-    public RoutingResult doRoute(Session session, TableMate table, List<IndexCondition> idxConds) {
+    public RoutingResult doRoute(TableMate table, SearchRow first, SearchRow last, Map<Column, Set<Value>> inColumns) {
         TableRule tr = table.getTableRule();
         if (tr instanceof ShardedTableRule)
             try {
-                RoutingAnalyzer analysor = new RoutingAnalyzer(table, idxConds);
-                if (analysor.isAlwaysFalse()) {
-                    return RoutingResult.emptyResult();
-                }
                 Column[] ruleCols = table.getRuleColumns();
                 List<RoutingArgument> args = New.arrayList(ruleCols.length);
                 for (Column ruleCol : ruleCols) {
-                    RoutingArgument arg = analysor.doAnalyse(session, ruleCol);
+                    RoutingArgument arg;
+                    int idx = ruleCol.getColumnId();
+                    Value startV = first == null ? null : first.getValue(idx);
+                    Value endV = last == null ? null : last.getValue(idx);
+                    if(startV != null && endV != null) {
+                        //handle EQUAL,EQUAL_NULL_SAFE,IS_NULL
+                        if(database.compare(startV, endV) == 0) {
+                            // an X=? condition will produce less rows than
+                            // an X IN(..) condition
+                            arg = new RoutingArgument(startV);
+                        } else if(inColumns.get(ruleCol) != null) {
+                            Set<Value> values = inColumns.get(ruleCol);
+                            arg = new RoutingArgument(New.arrayList(values));
+                        } else {
+                            arg = new RoutingArgument(startV, endV);
+                        }
+                        
+                    } else if(inColumns.get(ruleCol) != null) {
+                        Set<Value> values = inColumns.get(ruleCol);
+                        arg = new RoutingArgument(New.arrayList(values));
+                    } else if(startV != null || endV != null){
+                        arg = new RoutingArgument(startV, endV);
+                    } else {
+                        arg = new RoutingArgument();
+                    }                    
                     args.add(arg);
                 }
                 RoutingResult rr;

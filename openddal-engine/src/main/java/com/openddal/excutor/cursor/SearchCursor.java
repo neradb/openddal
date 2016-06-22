@@ -15,14 +15,13 @@
  */
 package com.openddal.excutor.cursor;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionVisitor;
-import com.openddal.dbobject.index.IndexCondition;
+import com.openddal.dbobject.index.ConditionExtractor;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.RangeTable;
 import com.openddal.dbobject.table.Table;
@@ -48,13 +47,12 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
     private Table table;
     private Cursor cursor;
     private boolean alwaysFalse;
-    
+
     public SearchCursor(TableFilter tableFilter) {
         super(tableFilter.getSelect());
         this.tableFilter = tableFilter;
         this.table = tableFilter.getTable();
     }
-
 
     /**
      * Check if the result is empty for sure.
@@ -108,8 +106,7 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
         long max = table.getMax(session), end = max;
         return new RangeCursor(start, end);
     }
-    
-    
+
     private Cursor find(TableMate tableMate) {
         Expression filter = tableFilter.getFilterCondition();
         if (filter != null) {
@@ -119,8 +116,13 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
         if (join != null) {
             join = join.optimize(session);
         }
-        ArrayList<IndexCondition> routingCds = tableFilter.getIndexConditions();
-        RoutingResult result = routingHandler.doRoute(session, tableMate, routingCds);
+        ConditionExtractor extractor = new ConditionExtractor(tableFilter);
+        this.alwaysFalse = extractor.isAlwaysFalse();
+        if (extractor.isAlwaysFalse()) {
+            return ResultCursor.EMPTY_CURSOR;
+        }
+        RoutingResult result = routingHandler.doRoute(tableMate, 
+                extractor.getStart(), extractor.getStart(), extractor.getInColumns());
         ObjectNode[] selectNodes = result.getSelectNodes();
         if (session.getDatabase().getSettings().optimizeMerging) {
             selectNodes = result.group();
@@ -132,29 +134,26 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
         }
         return invokeQueryWorker(workers);
     }
-    
+
     private Cursor find(TableView tableView) {
         return null;
     }
 
-    
-
     protected Cursor doQuery() {
-        if(table instanceof RangeTable) {
-            RangeTable rangeTable = (RangeTable)table;
+        if (table instanceof RangeTable) {
+            RangeTable rangeTable = (RangeTable) table;
             this.cursor = find(rangeTable);
-        } else if(table instanceof TableMate) {
-            TableMate tableMate = (TableMate)table;
+        } else if (table instanceof TableMate) {
+            TableMate tableMate = (TableMate) table;
             this.cursor = find(tableMate);
-        } else if(table instanceof TableView) {
-            TableView tableView = (TableView)table;
+        } else if (table instanceof TableView) {
+            TableView tableView = (TableView) table;
             this.cursor = find(tableView);
         } else {
             DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, table.getClass().getName());
         }
         return this;
     }
-
 
     protected void doPrepare() {
         HashSet<Column> columns = New.hashSet();
@@ -165,5 +164,4 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
     protected String doExplain() {
         return null;
     }
-
 }
