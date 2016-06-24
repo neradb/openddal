@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.engine;
+package com.openddal.engine.spi;
 
 import com.openddal.config.SequenceRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
+import com.openddal.engine.Database;
 import com.openddal.excutor.works.WorkerFactory;
-import com.openddal.tx.Transaction;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -37,7 +37,7 @@ public interface Repository {
     
     Sequence loadMataData(Schema schema, SequenceRule sequenceRule);
 
-    Transaction beginTransaction();
+    Transaction newTransaction();
 
     WorkerFactory getWorkerFactory();
     

@@ -37,6 +37,7 @@ import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.MetaTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
+import com.openddal.engine.spi.Repository;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;

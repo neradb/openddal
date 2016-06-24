@@ -64,17 +64,6 @@ public class TransactionCommand extends Prepared {
         case CommandInterface.ROLLBACK_TO_SAVEPOINT:
             session.rollbackToSavepoint(savepointName);
             break;
-        case CommandInterface.PREPARE_COMMIT:
-            session.prepareCommit(transactionName);
-            break;
-        case CommandInterface.COMMIT_TRANSACTION:
-            session.getUser().checkAdmin();
-            session.setPreparedTransaction(transactionName, true);
-            break;
-        case CommandInterface.ROLLBACK_TRANSACTION:
-            session.getUser().checkAdmin();
-            session.setPreparedTransaction(transactionName, false);
-            break;
         default:
             DbException.throwInternalError("type=" + type);
         }

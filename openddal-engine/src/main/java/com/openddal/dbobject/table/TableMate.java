@@ -43,7 +43,6 @@ import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.repo.JdbcRepository;
-import com.openddal.repo.Navigator;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.MathUtils;
@@ -254,8 +253,7 @@ public class TableMate extends Table {
                 try {
                     JdbcRepository dsRepository = (JdbcRepository) database.getRepository();
                     DataSource dataSource = dsRepository.getDataSourceByShardName(shardName);
-                    Navigator optional = Navigator.build().shardName(shardName).readOnly(false);
-                    conn = session.applyConnection(dataSource, optional);
+                    conn = dataSource.getConnection();
                     tableName = database.identifier(tableName);
                     if (catalog != null) {
                         catalog = database.identifier(catalog);

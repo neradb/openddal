@@ -66,9 +66,8 @@ public class SequenceTestCase extends BaseTestCase {
         try {
             conn = getConnection();
             stmt = conn.createStatement();
-            int rows = stmt.executeUpdate(
+            stmt.executeUpdate(
                     "insert into CUSTOMERS values(customer_seq.nextval, 1000, '马云', '大老', '1965-01-20')");
-            System.out.println(rows);
             rs = stmt.executeQuery("select last_insert_id()");
             rs.next();
             System.out.println("LAST_INSERT_ID: " + rs.getLong(1));

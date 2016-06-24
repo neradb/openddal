@@ -13,37 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.tx;
-
-import java.sql.SQLException;
+package com.openddal.engine.spi;
 
 /**
  * Wraps a database connection. Handles the connection lifecycle that comprises:
  * its creation, preparation, commit/rollback and close.
  */
 public interface Transaction {
-        
-    long getId();
-
     /**
      * Commit inner database connection.
-     *
-     * @throws SQLException
      */
-    void commit() throws SQLException;
+    void commit();
 
     /**
      * Rollback inner database connection.
-     *
-     * @throws SQLException
      */
-    void rollback() throws SQLException;
+    void rollback();
 
     /**
      * Close inner database connection.
-     *
-     * @throws SQLException
      */
-    void close() throws SQLException;
+    void close();
 
 }

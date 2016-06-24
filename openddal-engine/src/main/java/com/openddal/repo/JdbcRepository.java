@@ -38,14 +38,15 @@ import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
-import com.openddal.engine.Repository;
+import com.openddal.engine.spi.Repository;
+import com.openddal.engine.spi.Transaction;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.repo.ha.DataSourceMarker;
 import com.openddal.repo.ha.Failover;
 import com.openddal.repo.ha.SmartDataSource;
-import com.openddal.tx.Transaction;
+import com.openddal.repo.tx.JdbcTransaction;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
@@ -62,7 +63,8 @@ public abstract class JdbcRepository implements Repository {
 
     private final HashMap<String, DataSource> shardMaping = New.hashMap();
     private final HashMap<String, DataSource> idMapping = New.hashMap();
-    
+
+    private Database database;
     private String defaultShardName;
     private DataSourceProvider dataSourceProvider;
     private Trace trace;
@@ -71,7 +73,8 @@ public abstract class JdbcRepository implements Repository {
     private ScheduledExecutorService scheduledExecutor;
 
     public void init(Database database) {
-        //database not init completed
+        // database not init completed
+        this.database = database;
         Configuration configuration = database.getConfiguration();
         this.defaultShardName = configuration.publicDB;
         this.validationQuery = database.getSettings().validationQuery;
@@ -156,6 +159,10 @@ public abstract class JdbcRepository implements Repository {
         this.validationQueryTimeout = validationQueryTimeout;
     }
 
+    public Database getDatabase() {
+        return database;
+    }
+    
     public Trace getTrace() {
         return trace;
     }
@@ -163,6 +170,7 @@ public abstract class JdbcRepository implements Repository {
     public int shardCount() {
         return this.shardMaping.size();
     }
+
     @Override
     public String getPublicDB() {
         return defaultShardName;
@@ -174,7 +182,6 @@ public abstract class JdbcRepository implements Repository {
         }
         return shardMaping.get(defaultShardName);
     }
-
 
     public void close() {
         if (scheduledExecutor != null) {
@@ -289,7 +296,7 @@ public abstract class JdbcRepository implements Repository {
         }
 
     }
-    
+
     @Override
     public boolean isAsyncSupported() {
         return false;
@@ -311,18 +318,15 @@ public abstract class JdbcRepository implements Repository {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.engine.Repository#beginTransaction()
-     */
-    @Override
-    public Transaction beginTransaction() {
-        // TODO Auto-generated method stub
-        return null;
-    }
 
+    @Override
+    public Transaction newTransaction() {
+        return new JdbcTransaction(this);
+    }
+    
 
     public abstract SQLTranslator getSQLTranslator();
+
+
 
 }

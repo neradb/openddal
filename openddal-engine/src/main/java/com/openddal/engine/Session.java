@@ -16,15 +16,10 @@
 package com.openddal.engine;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Random;
-
-import javax.sql.DataSource;
 
 import com.openddal.command.Command;
 import com.openddal.command.CommandInterface;
@@ -34,6 +29,8 @@ import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
+import com.openddal.engine.spi.Repository;
+import com.openddal.engine.spi.Transaction;
 import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.excutor.works.WorkerFactoryProxy;
 import com.openddal.jdbc.JdbcConnection;
@@ -42,7 +39,6 @@ import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
 import com.openddal.result.LocalResult;
-import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.SmallLRUCache;
 import com.openddal.value.Value;
@@ -70,7 +66,6 @@ public class Session implements SessionInterface {
     private final int id;
     private final long sessionStart = System.currentTimeMillis();
     private final int queryCacheSize;
-    private final Map<String, Connection> connectionHolder = New.concurrentHashMap();
     private boolean autoCommit = true;
     private Random random;
     private Value lastIdentity = ValueLong.get(0);
@@ -80,13 +75,13 @@ public class Session implements SessionInterface {
     private HashMap<String, Index> localTempTableIndexes;
 
     private Command currentCommand;
+    private Transaction tx;
     private boolean allowLiterals;
     private String currentSchemaName;
     private String[] schemaSearchPath;
     private Trace trace;
     private HashMap<String, Value> unlinkLobMap;
     private int systemIdentifier;
-    private String currentTransactionName;
     private volatile long cancelAt;
     private boolean closed;
     private long transactionStart;
@@ -99,6 +94,7 @@ public class Session implements SessionInterface {
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
     private int transactionIsolation;
+    private final Repository repository;
     private final WorkerFactoryProxy workerHolder;
 
     public Session(Database database, User user, int id) {
@@ -108,7 +104,8 @@ public class Session implements SessionInterface {
         this.queryTimeout = database.getSettings().defaultQueryTimeout;
         this.queryCacheSize = database.getSettings().queryCacheSize;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
-        this.workerHolder = new WorkerFactoryProxy(database.getRepository().getWorkerFactory());
+        this.repository = database.getRepository();
+        this.workerHolder = new WorkerFactoryProxy(repository.getWorkerFactory());
     }
 
 
@@ -254,7 +251,15 @@ public class Session implements SessionInterface {
     }
 
     public void setAutoCommit(boolean b) {
+        if (this.autoCommit == b) {
+            return;
+        }
         autoCommit = b;
+
+        if (this.tx != null) {
+            this.tx.commit();
+            this.tx = null;
+        }
     }
 
     public User getUser() {
@@ -343,7 +348,6 @@ public class Session implements SessionInterface {
      * @param ddl if the statement was a data definition statement
      */
     public void commit() {
-        currentTransactionName = null;
         transactionStart = 0;
         
         if (temporaryLobs != null) {
@@ -354,39 +358,6 @@ public class Session implements SessionInterface {
         }
         cleanTempTables(false);
         endTransaction();
-
-        boolean commit = true;
-        List<SQLException> commitExceptions = New.arrayList();
-        StringBuilder buf = new StringBuilder();
-        for (Map.Entry<String, Connection> entry : connectionHolder.entrySet()) {
-            if (commit) {
-                try {
-                    entry.getValue().commit();
-                    buf.append("\ncommit shard " + entry.getKey() + " transaction succeed.");
-                } catch (SQLException ex) {
-                    commit = false;
-                    commitExceptions.add(ex);
-                    buf.append("\ncommit shard " + entry.getKey() + " transaction failure.");
-                }
-            } else {
-                // after unsucessfull commit we must try to rollback
-                // remaining connections
-                try {
-                    entry.getValue().rollback();
-                    buf.append("\nrollback shard " + entry.getKey() + " transaction succeed.");
-                } catch (SQLException ex) {
-                    buf.append("\nrollback shard " + entry.getKey() + " transaction failure.");
-                }
-            }
-        }
-        if (commitExceptions.isEmpty()) {
-            trace.debug("commit multiple group transaction succeed. commit track list:{0}", buf);
-        } else {
-            trace.error(commitExceptions.get(0), "fail to commit multiple group transaction. commit track list:{0}",
-                    buf);
-            DbException.convert(commitExceptions.get(0));
-        }
-
     }
 
     private void endTransaction() {
@@ -401,22 +372,8 @@ public class Session implements SessionInterface {
      * Fully roll back the current transaction.
      */
     public void rollback() {
-        currentTransactionName = null;
-
         cleanTempTables(false);
         endTransaction();
-
-        List<SQLException> rollbackExceptions = New.arrayList();
-        for (Map.Entry<String, Connection> entry : connectionHolder.entrySet()) {
-            try {
-                entry.getValue().rollback();
-            } catch (SQLException ex) {
-                rollbackExceptions.add(ex);
-            }
-        }
-        if (!rollbackExceptions.isEmpty()) {
-            throw DbException.convert(rollbackExceptions.get(0));
-        }
     }
 
     /**
@@ -468,13 +425,7 @@ public class Session implements SessionInterface {
     public void close() {
         if (!closed) {
             try {
-                for (Connection conn : connectionHolder.values()) {
-                    JdbcUtils.closeSilently(conn);
-                }
-                workerHolder.close();
-                connectionHolder.clear();
-                cleanTempTables(true);
-                database.removeSession(this);
+                
             } finally {
                 closed = true;
             }
@@ -557,30 +508,6 @@ public class Session implements SessionInterface {
         rollbackTo(savepoint, false);
     }
 
-    /**
-     * Prepare the given transaction.
-     *
-     * @param transactionName the name of the transaction
-     */
-    public void prepareCommit(String transactionName) {
-        throw DbException.getUnsupportedException("Does not support two-phase commit.");
-    }
-
-    /**
-     * Commit or roll back the given transaction.
-     *
-     * @param transactionName the name of the transaction
-     * @param commit          true for commit, false for rollback
-     */
-    public void setPreparedTransaction(String transactionName, boolean commit) {
-        if (currentTransactionName != null && currentTransactionName.equals(transactionName)) {
-            if (commit) {
-                commit();
-            } else {
-                rollback();
-            }
-        }
-    }
 
     @Override
     public boolean isClosed() {
@@ -715,8 +642,12 @@ public class Session implements SessionInterface {
     /**
      * Begin a transaction.
      */
-    public void begin() {
-        autoCommit = false;
+    public void begin() {        
+        if(tx == null) {
+            autoCommit = false;
+            transactionStart = getTransactionStart();
+            tx = repository.newTransaction();
+        }
     }
 
     public long getSessionStart() {
@@ -776,6 +707,15 @@ public class Session implements SessionInterface {
     public Value getTransactionId() {
         return ValueString.get("" + id);
     }
+    
+    /**
+     * Get the transaction to use for this session.
+     *
+     * @return the transaction
+     */
+    public Transaction getTransaction() {
+        return currentTransaction;
+    }
 
     /**
      * Get the next object id.
@@ -827,23 +767,6 @@ public class Session implements SessionInterface {
 
     public void setReadOnly(boolean readOnly) {
         this.readOnly = readOnly;
-    }
-
-    public Connection applyConnection(DataSource ds, com.openddal.repo.Navigator optional) throws SQLException {
-        Connection conn = ds.getConnection();
-        if (conn.getAutoCommit() != getAutoCommit()) {
-            conn.setAutoCommit(getAutoCommit());
-        }
-        if (getTransactionIsolation() != 0) {
-            if (conn.getTransactionIsolation() != getTransactionIsolation()) {
-                conn.setTransactionIsolation(getTransactionIsolation());
-            }
-        }
-        if (conn.isReadOnly() != isReadOnly()) {
-            conn.setReadOnly(isReadOnly());
-        }
-
-        return conn;
     }
     
     public WorkerFactory getQueryHandlerFactory() {

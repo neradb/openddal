@@ -28,7 +28,6 @@ import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
-import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -70,10 +69,27 @@ public abstract class JdbcWorker {
     }
 
     protected Connection doGetConnection(Navigator chooser) throws SQLException {
-        JdbcRepository dataSourceRepository = (JdbcRepository) session.getDatabase().getRepository();
-        DataSource dataSource = dataSourceRepository.getDataSourceByShardName(chooser.shardName);
-        Connection conn = session.applyConnection(dataSource, chooser);
+        session.getTransactionId();
+        JdbcRepository repo = (JdbcRepository) session.getDatabase().getRepository();
+        DataSource dataSource = repo.getDataSourceByShardName(chooser.shardName);
+        Connection conn = dataSource.getConnection();
+        if (conn.getAutoCommit() != session.getAutoCommit()) {
+            conn.setAutoCommit(session.getAutoCommit());
+        }
+        if (session.getTransactionIsolation() != 0) {
+            if (conn.getTransactionIsolation() != session.getTransactionIsolation()) {
+                conn.setTransactionIsolation(session.getTransactionIsolation());
+            }
+        }
+        if (conn.isReadOnly() != session.isReadOnly()) {
+            conn.setReadOnly(session.isReadOnly());
+        }        
         return conn;
+    }
+    
+    
+    protected void closeConnection(String shardName, Connection conn) throws SQLException {
+        
     }
 
     /**
@@ -109,12 +125,28 @@ public abstract class JdbcWorker {
     }
 
     public void close() {
-        JdbcUtils.closeSilently(opendResultSet);
-        JdbcUtils.closeSilently(opendStatement);
-        JdbcUtils.closeSilently(opendConnection);
-        opendResultSet = null;
-        opendStatement = null;
-        opendConnection = null;
+        if(opendResultSet != null) {
+            try {
+                opendResultSet.close();
+                opendResultSet = null;
+            } catch (SQLException e) {
+                trace.error(e, "close ResultSet error.");
+            }
+        }
+        if(opendStatement != null) {
+            try {
+                opendStatement.close();
+            } catch (SQLException e) {
+                trace.error(e, "close statement error.");
+            }
+        }
+        if(opendConnection != null) {
+            try {
+                closeConnection(this.shardName, opendConnection);
+            } catch (SQLException e) {
+                trace.error(e, "close connection error.");
+            }
+        }
     }
 
     public String explain() {
