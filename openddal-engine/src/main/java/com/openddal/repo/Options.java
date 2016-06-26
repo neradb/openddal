@@ -21,7 +21,7 @@ package com.openddal.repo;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class Navigator {
+public class Options {
 
     public static final int DEFAULT_TRYTIMES = 3;
 
@@ -31,8 +31,8 @@ public class Navigator {
     public boolean readOnly;
 
 
-    public static Navigator build() {
-        Navigator optional = new Navigator();
+    public static Options build() {
+        Options optional = new Options();
         return optional;
     }
 
@@ -40,7 +40,7 @@ public class Navigator {
     /**
      * @param dbid the dbid to set
      */
-    public Navigator dbid(String dbid) {
+    public Options dbid(String dbid) {
         this.dbid = dbid;
         return this;
     }
@@ -49,7 +49,7 @@ public class Navigator {
     /**
      * @param shardName the shardName to set
      */
-    public Navigator shardName(String shardName) {
+    public Options shardName(String shardName) {
         this.shardName = shardName;
         return this;
     }
@@ -58,7 +58,7 @@ public class Navigator {
     /**
      * @param readOnly the readOnly to set
      */
-    public Navigator readOnly(boolean readOnly) {
+    public Options readOnly(boolean readOnly) {
         this.readOnly = readOnly;
         return this;
     }
@@ -66,7 +66,7 @@ public class Navigator {
     /**
      * @param retry the retry to set
      */
-    public Navigator retry(int retry) {
+    public Options retry(int retry) {
         this.retry = retry;
         return this;
     }

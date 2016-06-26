@@ -51,10 +51,8 @@ import com.openddal.util.JdbcUtils;
 import com.openddal.util.Utils;
 import com.openddal.value.CompareMode;
 import com.openddal.value.Value;
-import com.openddal.value.ValueInt;
 import com.openddal.value.ValueLobDb;
 import com.openddal.value.ValueNull;
-import com.openddal.value.ValueString;
 
 /**
  * <p>
@@ -74,11 +72,9 @@ public class JdbcConnection extends TraceObject implements Connection {
     private SessionInterface session;
     private CommandInterface commit, rollback;
     private CommandInterface getGeneratedKeys;
-    private CommandInterface setQueryTimeout, getQueryTimeout;
     private int savepointId;
     private String catalog;
     private Statement executingStatement;
-    private int queryTimeoutCache = -1;
 
     /**
      * INTERNAL
@@ -571,8 +567,6 @@ public class JdbcConnection extends TraceObject implements Connection {
         commit = closeAndSetNull(commit);
         rollback = closeAndSetNull(rollback);
         getGeneratedKeys = closeAndSetNull(getGeneratedKeys);
-        getQueryTimeout = closeAndSetNull(getQueryTimeout);
-        setQueryTimeout = closeAndSetNull(setQueryTimeout);
     }
 
     /**
@@ -833,24 +827,14 @@ public class JdbcConnection extends TraceObject implements Connection {
      */
     int getQueryTimeout() throws SQLException {
         try {
-            if (queryTimeoutCache == -1) {
-                checkClosed();
-                getQueryTimeout = prepareCommand("SELECT VALUE FROM INFORMATION_SCHEMA.SETTINGS "
-                        + "WHERE NAME=?", getQueryTimeout);
-                getQueryTimeout.getParameters().get(0)
-                        .setValue(ValueString.get("QUERY_TIMEOUT"), false);
-                ResultInterface result = getQueryTimeout.executeQuery(0, false);
-                result.next();
-                int queryTimeout = result.currentRow()[0].getInt();
-                result.close();
-                if (queryTimeout != 0) {
-                    // round to the next second, otherwise 999 millis would
-                    // return 0 seconds
-                    queryTimeout = (queryTimeout + 999) / 1000;
-                }
-                queryTimeoutCache = queryTimeout;
+            checkClosed();
+            int queryTimeout = session.getQueryTimeout();
+            if (queryTimeout != 0) {
+                // round to the next second, otherwise 999 millis would
+                // return 0 seconds
+                queryTimeout = (queryTimeout + 999) / 1000;
             }
-            return queryTimeoutCache;
+            return queryTimeout;
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -863,10 +847,7 @@ public class JdbcConnection extends TraceObject implements Connection {
         try {
             debugCodeCall("setQueryTimeout", seconds);
             checkClosed();
-            setQueryTimeout = prepareCommand("SET QUERY_TIMEOUT ?", setQueryTimeout);
-            setQueryTimeout.getParameters().get(0).setValue(ValueInt.get(seconds * 1000), false);
-            setQueryTimeout.executeUpdate();
-            queryTimeoutCache = seconds;
+            session.setQueryTimeout(seconds * 1000);
         } catch (Exception e) {
             throw logAndConvert(e);
         }

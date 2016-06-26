@@ -211,7 +211,6 @@ public abstract class Command implements CommandInterface {
         Object sync = session;
         boolean callStop = true;
         synchronized (sync) {
-            Session.Savepoint rollback = session.setSavepoint();
             session.setCurrentCommand(this);
             try {
                 while (true) {
@@ -234,11 +233,6 @@ public abstract class Command implements CommandInterface {
                     callStop = false;
                     database.shutdownImmediately();
                     throw e;
-                }
-                if (s.getErrorCode() == ErrorCode.DEADLOCK_1) {
-                    session.rollback();
-                } else {
-                    session.rollbackTo(rollback, false);
                 }
                 throw e;
             } finally {

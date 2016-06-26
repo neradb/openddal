@@ -37,8 +37,8 @@ public class WorkerFactoryProxy implements WorkerFactory {
     private final WorkerFactory target;
     private final List<Worker> pendingClose = New.linkedList();
 
-    public WorkerFactoryProxy(WorkerFactory target) {
-        this.target = target;
+    public WorkerFactoryProxy(Session session) {
+        this.target = session.getDatabase().getRepository().getWorkerFactory();
     }
 
     @Override

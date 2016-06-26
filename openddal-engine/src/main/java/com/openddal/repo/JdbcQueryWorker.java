@@ -44,7 +44,7 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
     @Override
     public Cursor executeQuery() {
         try {
-            Navigator optional = Navigator.build().shardName(shardName).readOnly(true);
+            Options optional = Options.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }

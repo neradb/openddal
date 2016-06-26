@@ -16,6 +16,7 @@
 package com.openddal.engine;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,8 +30,6 @@ import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
-import com.openddal.engine.spi.Repository;
-import com.openddal.engine.spi.Transaction;
 import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.excutor.works.WorkerFactoryProxy;
 import com.openddal.jdbc.JdbcConnection;
@@ -38,6 +37,8 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
+import com.openddal.repo.tx.ConnectionHolder;
+import com.openddal.repo.tx.ConnectionHolder.Callback;
 import com.openddal.result.LocalResult;
 import com.openddal.util.New;
 import com.openddal.util.SmallLRUCache;
@@ -75,7 +76,6 @@ public class Session implements SessionInterface {
     private HashMap<String, Index> localTempTableIndexes;
 
     private Command currentCommand;
-    private Transaction tx;
     private boolean allowLiterals;
     private String currentSchemaName;
     private String[] schemaSearchPath;
@@ -94,7 +94,7 @@ public class Session implements SessionInterface {
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
     private int transactionIsolation;
-    private final Repository repository;
+    private final ConnectionHolder connectionHolder;
     private final WorkerFactoryProxy workerHolder;
 
     public Session(Database database, User user, int id) {
@@ -104,8 +104,8 @@ public class Session implements SessionInterface {
         this.queryTimeout = database.getSettings().defaultQueryTimeout;
         this.queryCacheSize = database.getSettings().queryCacheSize;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
-        this.repository = database.getRepository();
-        this.workerHolder = new WorkerFactoryProxy(repository.getWorkerFactory());
+        this.workerHolder = new WorkerFactoryProxy(this);
+        this.connectionHolder = new ConnectionHolder(this);
     }
 
 
@@ -255,11 +255,6 @@ public class Session implements SessionInterface {
             return;
         }
         autoCommit = b;
-
-        if (this.tx != null) {
-            this.tx.commit();
-            this.tx = null;
-        }
     }
 
     public User getUser() {
@@ -376,40 +371,10 @@ public class Session implements SessionInterface {
         endTransaction();
     }
 
-    /**
-     * Partially roll back the current transaction.
-     *
-     * @param savepoint  the savepoint to which should be rolled back
-     * @param trimToSize if the list should be trimmed
-     */
-    public void rollbackTo(Savepoint savepoint, boolean trimToSize) {
-        int index = savepoint == null ? 0 : savepoint.logIndex;
-        if (savepoints != null) {
-            String[] names = new String[savepoints.size()];
-            savepoints.keySet().toArray(names);
-            for (String name : names) {
-                Savepoint sp = savepoints.get(name);
-                int savepointIndex = sp.logIndex;
-                if (savepointIndex > index) {
-                    savepoints.remove(name);
-                }
-            }
-        }
-    }
 
     @Override
     public boolean hasPendingTransaction() {
-        return false;
-    }
-
-    /**
-     * Create a savepoint to allow rolling back to this state.
-     *
-     * @return the savepoint
-     */
-    public Savepoint setSavepoint() {
-        Savepoint sp = new Savepoint();
-        return sp;
+        return connectionHolder.hasConnection();
     }
 
     public int getId() {
@@ -484,11 +449,20 @@ public class Session implements SessionInterface {
      *
      * @param name the savepoint name
      */
-    public void addSavepoint(String name) {
+    public void addSavepoint(final String name) {
         if (savepoints == null) {
             savepoints = database.newStringMap();
         }
         Savepoint sp = new Savepoint();
+        final HashMap<String, java.sql.Savepoint> binds = New.hashMap();
+        connectionHolder.foreach(new Callback<String>() {
+            public String handle(String shardName, Connection connection) throws SQLException {
+                java.sql.Savepoint savepoint = connection.setSavepoint(name);
+                binds.put(shardName, savepoint);
+                return shardName;
+            }
+        });
+        sp.joins = binds;
         savepoints.put(name, sp);
     }
 
@@ -501,11 +475,17 @@ public class Session implements SessionInterface {
         if (savepoints == null) {
             throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
         }
-        Savepoint savepoint = savepoints.get(name);
+        final Savepoint savepoint = savepoints.get(name);
         if (savepoint == null) {
             throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
         }
-        rollbackTo(savepoint, false);
+        connectionHolder.foreach(savepoint.joins.keySet(), new Callback<String>() {
+            public String handle(String shardName, Connection connection) throws SQLException {
+                connection.rollback(savepoint.joins.get(shardName));
+                return shardName;
+            }
+        });
+        savepoints.remove(name);
     }
 
 
@@ -642,12 +622,9 @@ public class Session implements SessionInterface {
     /**
      * Begin a transaction.
      */
-    public void begin() {        
-        if(tx == null) {
-            autoCommit = false;
-            transactionStart = getTransactionStart();
-            tx = repository.newTransaction();
-        }
+    public void begin() {
+        autoCommit = false;
+        transactionStart = getTransactionStart();
     }
 
     public long getSessionStart() {
@@ -708,14 +685,6 @@ public class Session implements SessionInterface {
         return ValueString.get("" + id);
     }
     
-    /**
-     * Get the transaction to use for this session.
-     *
-     * @return the transaction
-     */
-    public Transaction getTransaction() {
-        return currentTransaction;
-    }
 
     /**
      * Get the next object id.
@@ -759,6 +728,7 @@ public class Session implements SessionInterface {
                 throw DbException.getInvalidValueException("transaction isolation", level);
         }
         transactionIsolation = level;
+        connectionHolder.foreach(connectionHolder.setIsolation(level));
     }
 
     public boolean isReadOnly() {
@@ -774,20 +744,8 @@ public class Session implements SessionInterface {
     }
 
 
-    /**
-     * Represents a savepoint (a position in a transaction to where one can roll
-     * back to).
-     */
     public static class Savepoint {
-        /**
-         * The undo log index.
-         */
-        int logIndex;
-
-        /**
-         * The transaction savepoint id.
-         */
-        long transactionSavepoint;
+        HashMap<String, java.sql.Savepoint> joins;
     }
 
 }

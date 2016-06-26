@@ -40,7 +40,7 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
     @Override
     public int executeUpdate() {
         try {
-            Navigator optional = Navigator.build().shardName(shardName).readOnly(true);
+            Options optional = Options.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }

@@ -67,8 +67,8 @@ public class SmartSupport {
         while (selected != null) {
             try {
                 tryList.add(selected);
-                return (username != null) ? database.getConnection(selected, username, password)
-                        : database.getConnection(selected);
+                return (username != null) ? database.haGet(selected, username, password)
+                        : database.haGet(selected);
             } catch (SQLException e) {
                 selected = dataSource.doRoute(readOnly, tryList);
             }

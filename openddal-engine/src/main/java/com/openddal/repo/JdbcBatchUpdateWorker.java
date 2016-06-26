@@ -47,7 +47,7 @@ public class JdbcBatchUpdateWorker extends JdbcWorker implements BatchUpdateWork
             if (array == null || array.size() < 1) {
                 throw new IllegalArgumentException();
             }
-            Navigator optional = Navigator.build().shardName(shardName).readOnly(true);
+            Options optional = Options.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }

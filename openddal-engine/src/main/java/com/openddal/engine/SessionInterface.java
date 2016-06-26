@@ -126,4 +126,20 @@ public interface SessionInterface extends Closeable {
      */
     void setTransactionIsolation(int level);
 
+    /**
+     * Gets the current query timeout in millisecond. This method will return 0
+     * if no query timeout is set.
+     *
+     * @return the timeout in millisecond
+     */
+    int getQueryTimeout();
+
+    /**
+     * Sets the current query timeout in millisecond.
+     *
+     * @param queryTimeout the timeout in millisecond - 0 means no timeout,
+     *            values smaller 0 will throw an exception
+     */
+    void setQueryTimeout(int queryTimeout);
+
 }

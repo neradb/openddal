@@ -46,7 +46,6 @@ import com.openddal.message.Trace;
 import com.openddal.repo.ha.DataSourceMarker;
 import com.openddal.repo.ha.Failover;
 import com.openddal.repo.ha.SmartDataSource;
-import com.openddal.repo.tx.JdbcTransaction;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
@@ -189,7 +188,7 @@ public abstract class JdbcRepository implements Repository {
         }
     }
 
-    public Connection getConnection(DataSourceMarker selected) throws SQLException {
+    public Connection haGet(DataSourceMarker selected) throws SQLException {
         DataSource dataSource = selected.getDataSource();
         try {
             return dataSource.getConnection();
@@ -201,7 +200,7 @@ public abstract class JdbcRepository implements Repository {
 
     }
 
-    public Connection getConnection(DataSourceMarker selected, String username, String password) throws SQLException {
+    public Connection haGet(DataSourceMarker selected, String username, String password) throws SQLException {
         DataSource dataSource = selected.getDataSource();
         try {
             return dataSource.getConnection(username, password);
@@ -318,15 +317,18 @@ public abstract class JdbcRepository implements Repository {
         }
     }
 
+    public ConnectionProvider getConnectionProvider() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
     @Override
     public Transaction newTransaction() {
-        return new JdbcTransaction(this);
+        return null;
     }
     
 
     public abstract SQLTranslator getSQLTranslator();
-
 
 
 }

@@ -13,30 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.engine.spi;
+package com.openddal.repo;
+
+import java.sql.Connection;
 
 /**
- * Wraps a database connection. Handles the connection lifecycle that comprises:
- * its creation, preparation, commit/rollback and close.
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ *
  */
-public interface Transaction {
+public interface ConnectionProvider {
 
-    void setAutoCommit(boolean autoCommit);
+    Connection getConnection(Options options);
 
-    void setIsolation(int level);
-
-    void setReadOnly(boolean readOnly);
-
-    void begin();
-
-    void commit();
-
-    void rollback();
-
-    void addSavepoint(String name);
-
-    void rollbackToSavepoint(String name);
-
-    void close();
-
+    void closeConnection(Connection connection, Options options);
 }

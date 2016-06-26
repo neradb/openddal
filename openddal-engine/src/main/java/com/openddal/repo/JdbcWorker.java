@@ -68,22 +68,12 @@ public abstract class JdbcWorker {
         return DbException.get(ErrorCode.ERROR_ACCESSING_DATABASE_TABLE_2, e, sql, e.toString());
     }
 
-    protected Connection doGetConnection(Navigator chooser) throws SQLException {
+    protected Connection doGetConnection(Options options) throws SQLException {
         session.getTransactionId();
         JdbcRepository repo = (JdbcRepository) session.getDatabase().getRepository();
-        DataSource dataSource = repo.getDataSourceByShardName(chooser.shardName);
+        DataSource dataSource = repo.getDataSourceByShardName(options.shardName);
         Connection conn = dataSource.getConnection();
-        if (conn.getAutoCommit() != session.getAutoCommit()) {
-            conn.setAutoCommit(session.getAutoCommit());
-        }
-        if (session.getTransactionIsolation() != 0) {
-            if (conn.getTransactionIsolation() != session.getTransactionIsolation()) {
-                conn.setTransactionIsolation(session.getTransactionIsolation());
-            }
-        }
-        if (conn.isReadOnly() != session.isReadOnly()) {
-            conn.setReadOnly(session.isReadOnly());
-        }        
+
         return conn;
     }
     
