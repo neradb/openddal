@@ -64,14 +64,14 @@ public class ConnectionHolder implements ConnectionProvider {
     @Override
     public synchronized Connection getConnection(Options options) {
         Connection conn;
-        if (!session.getAutoCommit()) {
+        if (session.getAutoCommit()) {
+            conn = getRawConnection(options);
+        } else {
             conn = connectionMap.get(options.shardName);
             if (conn == null) {
                 conn = getRawConnection(options);
                 connectionMap.put(options.shardName, conn);
             }
-        } else {
-            conn = getRawConnection(options);
         }
         return conn;
     }

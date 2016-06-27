@@ -535,20 +535,6 @@ public class JdbcConnection extends TraceObject implements Connection {
                 try {
                     if (!session.isClosed()) {
                         try {
-                            if (session.hasPendingTransaction()) {
-                                // roll back unless that would require to
-                                // re-connect (the transaction can't be rolled
-                                // back after re-connecting)
-                                try {
-                                    rollbackInternal();
-                                } catch (DbException e) {
-                                    // ignore if the connection is broken
-                                    // right now
-                                    if (e.getErrorCode() != ErrorCode.CONNECTION_BROKEN_1) {
-                                        throw e;
-                                    }
-                                }
-                            }
                             closePreparedCommands();
                         } finally {
                             session.close();
@@ -600,6 +586,9 @@ public class JdbcConnection extends TraceObject implements Connection {
                 debugCode("setAutoCommit(" + autoCommit + ");");
             }
             checkClosed();
+            if (autoCommit && !session.getAutoCommit()) {
+                commit();
+            }
             session.setAutoCommit(autoCommit);
         } catch (Exception e) {
             throw logAndConvert(e);

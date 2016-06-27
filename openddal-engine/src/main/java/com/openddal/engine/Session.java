@@ -90,8 +90,8 @@ public class Session implements SessionInterface {
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
     private int transactionIsolation;
+    private final Transaction transaction;
     private final WorkerFactoryProxy workerHolder;
-    private Transaction transaction;
 
     public Session(Database database, User user, int id) {
         this.id = id;
@@ -100,7 +100,9 @@ public class Session implements SessionInterface {
         this.queryTimeout = database.getSettings().defaultQueryTimeout;
         this.queryCacheSize = database.getSettings().queryCacheSize;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
+        this.transaction = database.getRepository().newTransaction(this);
         this.workerHolder = new WorkerFactoryProxy(this);
+
     }
 
 
@@ -249,7 +251,7 @@ public class Session implements SessionInterface {
         if (autoCommit == b) {
             return;
         }
-        if(transaction != null) {
+        if (!getAutoCommit()) {
             commit();
         }
         autoCommit = b;
@@ -342,9 +344,7 @@ public class Session implements SessionInterface {
      */
     public void commit() {
         try {
-            if(transaction != null) {
-                transaction.commit();
-            }
+            transaction.commit();
         } finally {
             endTransaction();
         }
@@ -355,9 +355,7 @@ public class Session implements SessionInterface {
      */
     public void rollback() {
         try {
-            if(transaction != null) {
-                transaction.rollback();
-            }
+            transaction.rollback();
         } finally {
             endTransaction();
         }
@@ -365,9 +363,7 @@ public class Session implements SessionInterface {
 
     private void endTransaction() {
         transactionStart = 0;
-        transaction = null;
         savepoints = null;
-        
         if (temporaryLobs != null) {
             for (Value v : temporaryLobs) {
                 v.close();
@@ -403,9 +399,10 @@ public class Session implements SessionInterface {
     public void close() {
         if (!closed) {
             try {
-                if (!getAutoCommit() && transaction != null) {
-                    transaction.rollback();
+                if (!getAutoCommit()) {
+                    rollback();
                 }
+                transaction.close();
                 database.removeSession(this);
             } finally {
                 closed = true;
@@ -597,7 +594,7 @@ public class Session implements SessionInterface {
      * Begin a transaction.
      */
     public void begin() {
-        setAutoCommit(false);        
+        setAutoCommit(false);
     }
 
     public long getSessionStart() {
@@ -655,14 +652,18 @@ public class Session implements SessionInterface {
 
 
     public Value getTransactionId() {
+        if (transaction == null) {
+            return ValueNull.INSTANCE;
+        }
         String strId = Long.toString(transaction.getId());
         return ValueString.get(strId);
     }
     
-    public synchronized Transaction getTransaction() {
-        if(transaction == null || transaction.isClosed()) {
-            transaction = database.getRepository().newTransaction(this);
-        }
+
+    public Transaction getTransaction() {
+        // Invoked by query thread, don't use the session object to sync,
+        // the main thread locked session object on Command.executeXXX and
+        // Statement.executeInternal,so transaction is final
         return transaction;
     }
     /**
