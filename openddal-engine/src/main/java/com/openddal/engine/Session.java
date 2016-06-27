@@ -380,12 +380,6 @@ public class Session implements SessionInterface {
         }
     }
 
-
-    @Override
-    public boolean hasPendingTransaction() {
-        return transaction != null;
-    }
-
     public int getId() {
         return id;
     }

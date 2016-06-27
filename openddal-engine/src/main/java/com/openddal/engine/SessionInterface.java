@@ -56,13 +56,6 @@ public interface SessionInterface extends Closeable {
     boolean isClosed();
 
     /**
-     * Check whether this session has a pending transaction.
-     *
-     * @return true if it has
-     */
-    boolean hasPendingTransaction();
-
-    /**
      * Cancel the current or next command (called when closing a connection).
      */
     void cancel();
