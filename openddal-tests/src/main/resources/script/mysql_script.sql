@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS customers,address,order_items,order_status,orders,product,product_category,customer_logs;
+DROP TABLE IF EXISTS customers,address,order_items,order_status,orders,product,product_category,customer_login_log;
 
 
 CREATE TABLE IF NOT EXISTS `customers` (
@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `product` (
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 
-CREATE TABLE IF NOT EXISTS `customer_logs` (
+CREATE TABLE IF NOT EXISTS `customer_login_log` (
   `id` int(11) NOT NULL,
   `customer_id` int(11) NOT NULL,
   `logintime` datetime NOT NULL,

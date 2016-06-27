@@ -38,6 +38,7 @@ import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
+import com.openddal.engine.Session;
 import com.openddal.engine.spi.Repository;
 import com.openddal.engine.spi.Transaction;
 import com.openddal.message.DbException;
@@ -46,6 +47,7 @@ import com.openddal.message.Trace;
 import com.openddal.repo.ha.DataSourceMarker;
 import com.openddal.repo.ha.Failover;
 import com.openddal.repo.ha.SmartDataSource;
+import com.openddal.repo.tx.JdbcTransaction;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
@@ -318,13 +320,33 @@ public abstract class JdbcRepository implements Repository {
     }
 
     public ConnectionProvider getConnectionProvider() {
-        // TODO Auto-generated method stub
-        return null;
+        return new ConnectionProvider() {
+            @Override
+            public Connection getConnection(Options options) {
+                DataSource ds = getDataSourceByShardName(options.shardName);
+                try {
+                    return ds.getConnection();
+                } catch (SQLException e) {
+                    throw DbException.convert(e);
+                }
+            }
+
+            @Override
+            public void closeConnection(Connection connection, Options options) {
+                if(connection != null) {
+                    try {
+                        connection.close();
+                    } catch (SQLException e) {
+                        throw DbException.convert(e);
+                    }
+                }
+            }
+        };
     }
 
     @Override
-    public Transaction newTransaction() {
-        return null;
+    public Transaction newTransaction(Session session) {
+        return new JdbcTransaction(session);
     }
     
 

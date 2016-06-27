@@ -20,14 +20,10 @@ package com.openddal.engine.spi;
  * its creation, preparation, commit/rollback and close.
  */
 public interface Transaction {
-
-    void setAutoCommit(boolean autoCommit);
-
+    
     void setIsolation(int level);
 
     void setReadOnly(boolean readOnly);
-
-    void begin();
 
     void commit();
 
@@ -36,7 +32,11 @@ public interface Transaction {
     void addSavepoint(String name);
 
     void rollbackToSavepoint(String name);
+    
+    boolean isClosed();
 
     void close();
+
+    Long getId();
 
 }

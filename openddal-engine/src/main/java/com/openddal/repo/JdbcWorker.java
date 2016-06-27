@@ -22,12 +22,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 
-import javax.sql.DataSource;
-
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
+import com.openddal.repo.tx.JdbcTransaction;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -69,17 +68,17 @@ public abstract class JdbcWorker {
     }
 
     protected Connection doGetConnection(Options options) throws SQLException {
-        session.getTransactionId();
-        JdbcRepository repo = (JdbcRepository) session.getDatabase().getRepository();
-        DataSource dataSource = repo.getDataSourceByShardName(options.shardName);
-        Connection conn = dataSource.getConnection();
-
-        return conn;
+        JdbcTransaction tx = (JdbcTransaction)session.getTransaction();
+        ConnectionProvider connProvider = tx.getConnectionProvider();
+        System.out.println(connProvider + "xxxx");
+        return connProvider.getConnection(options);
     }
     
     
     protected void closeConnection(String shardName, Connection conn) throws SQLException {
-        
+        JdbcTransaction tx = (JdbcTransaction)session.getTransaction();
+        ConnectionProvider connProvider = tx.getConnectionProvider();
+        connProvider.closeConnection(conn, Options.build().shardName(shardName));
     }
 
     /**

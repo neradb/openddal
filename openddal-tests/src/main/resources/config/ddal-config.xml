@@ -4,7 +4,7 @@
 
 	<settings>
 		<property name="sqlMode" value="MySQL" />
-		<property name="defaultQueryTimeout" value="3000" />
+		<property name="defaultQueryTimeout" value="3000000" />
 		<property name="validationQuery" value="select 1" />
 		<property name="validationQueryTimeout" value="1000" />
 	</settings>

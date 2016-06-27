@@ -21,6 +21,7 @@ import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
+import com.openddal.engine.Session;
 import com.openddal.excutor.works.WorkerFactory;
 
 /**
@@ -37,7 +38,7 @@ public interface Repository {
     
     Sequence loadMataData(Schema schema, SequenceRule sequenceRule);
 
-    Transaction newTransaction();
+    Transaction newTransaction(Session session);
 
     WorkerFactory getWorkerFactory();
     

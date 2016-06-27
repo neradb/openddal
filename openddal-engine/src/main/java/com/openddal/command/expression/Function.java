@@ -17,7 +17,6 @@ package com.openddal.command.expression;
 
 import static com.openddal.util.ToChar.toChar;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -1800,39 +1799,6 @@ public class Function extends Expression implements FunctionCall {
                 }
                 break;
             }
-            case CSVWRITE: {
-                session.getUser().checkAdmin();
-                Connection conn = session.createConnection(false);
-                Csv csv = new Csv();
-                String options = v2 == null ? null : v2.getString();
-                String charset = null;
-                if (options != null && options.indexOf('=') >= 0) {
-                    charset = csv.setOptions(options);
-                } else {
-                    charset = options;
-                    String fieldSeparatorWrite = v3 == null ? null : v3.getString();
-                    String fieldDelimiter = v4 == null ? null : v4.getString();
-                    String escapeCharacter = v5 == null ? null : v5.getString();
-                    Value v6 = getNullOrValue(session, args, values, 6);
-                    String nullString = v6 == null ? null : v6.getString();
-                    Value v7 = getNullOrValue(session, args, values, 7);
-                    String lineSeparator = v7 == null ? null : v7.getString();
-                    setCsvDelimiterEscape(csv, fieldSeparatorWrite, fieldDelimiter,
-                            escapeCharacter);
-                    csv.setNullString(nullString);
-                    if (lineSeparator != null) {
-                        csv.setLineSeparator(lineSeparator);
-                    }
-                }
-                try {
-                    int rows = csv.write(conn, v0.getString(), v1.getString(),
-                            charset);
-                    result = ValueInt.get(rows);
-                } catch (SQLException e) {
-                    throw DbException.convert(e);
-                }
-                break;
-            }
             case SET: {
                 Variable var = (Variable) args[0];
                 session.setVariable(var.getName(), v1);
@@ -1869,6 +1835,7 @@ public class Function extends Expression implements FunctionCall {
             case COMPRESS:
             case FILE_READ:
             case LINK_SCHEMA:
+            case CSVWRITE:
                 throw DbException.throwInternalError("function unimplemented. tyle=" + info.type);
             default:
                 throw DbException.throwInternalError("type=" + info.type);

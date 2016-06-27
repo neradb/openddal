@@ -15,110 +15,161 @@
  */
 package com.openddal.repo.tx;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.openddal.engine.Session;
 import com.openddal.engine.spi.Transaction;
-import com.openddal.message.Trace;
+import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.repo.ConnectionProvider;
+import com.openddal.repo.tx.ConnectionHolder.Callback;
+import com.openddal.util.New;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
 public class JdbcTransaction implements Transaction {
-
+    private final static AtomicLong ID_GENERATOR = new AtomicLong(1);
+    private boolean closed;
+    private final long transactionId;
     private final Session session;
-    private final Trace trace;
-    private final ConnectionHolder connectionHolder;
-
+    private Map<String, CombinedSavepoint> savepoints;
+    private ConnectionHolder connHolder;
 
     public JdbcTransaction(Session session) {
         this.session = session;
-        this.trace = session.getDatabase().getTrace(Trace.TRANSACTION);
-        this.connectionHolder = new ConnectionHolder(session);
+        this.transactionId = ID_GENERATOR.getAndIncrement();
+        this.connHolder = new ConnectionHolder(session);
     }
 
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#setAutoCommit(boolean)
-     */
     @Override
-    public void setAutoCommit(boolean autoCommit) {
-        // TODO Auto-generated method stub
+    public void setIsolation(final int level) {
+        checkClosed();
+        connHolder.foreach(new Callback<String>() {
+            @Override
+            public String handle(String shardName, Connection connection) throws SQLException {
+                connection.setTransactionIsolation(level);
+                return shardName;
+            }
+        });
 
     }
 
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#setIsolation(int)
-     */
     @Override
-    public void setIsolation(int level) {
-        // TODO Auto-generated method stub
+    public void setReadOnly(final boolean readOnly) {
+        checkClosed();
+        connHolder.foreach(new Callback<String>() {
+            @Override
+            public String handle(String shardName, Connection connection) throws SQLException {
+                connection.setReadOnly(readOnly);
+                return shardName;
+            }
+        });
 
     }
 
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#setReadOnly(boolean)
-     */
-    @Override
-    public void setReadOnly(boolean readOnly) {
-        // TODO Auto-generated method stub
 
-    }
-
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#begin()
-     */
-    @Override
-    public void begin() {
-        // TODO Auto-generated method stub
-
-    }
-
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#commit()
-     */
     @Override
     public void commit() {
-        // TODO Auto-generated method stub
-
+        checkClosed();
+        connHolder.foreach(new Callback<String>() {
+            @Override
+            public String handle(String shardName, Connection connection) throws SQLException {
+                connection.commit();
+                return shardName;
+            }
+        });
+        connHolder.closeAndClear();
     }
 
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#rollback()
-     */
     @Override
     public void rollback() {
-        // TODO Auto-generated method stub
-
+        checkClosed();
+        connHolder.foreach(new Callback<String>() {
+            @Override
+            public String handle(String shardName, Connection connection) throws SQLException {
+                connection.rollback();
+                return shardName;
+            }
+        });
+        connHolder.closeAndClear();
     }
 
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#addSavepoint(java.lang.String)
-     */
     @Override
-    public void addSavepoint(String name) {
-        // TODO Auto-generated method stub
-
+    public void addSavepoint(final String name) {
+        checkClosed();
+        if (savepoints == null) {
+            savepoints = session.getDatabase().newStringMap();
+        }
+        final Map<String, Savepoint> binds = New.hashMap();
+        connHolder.foreach(new Callback<String>() {
+            @Override
+            public String handle(String shardName, Connection connection) throws SQLException {
+                Savepoint savepoint = connection.setSavepoint(name);
+                binds.put(shardName, savepoint);
+                return shardName;
+            }
+        });
+        CombinedSavepoint sp = new CombinedSavepoint();
+        sp.combined = binds;
+        savepoints.put(name, sp);
     }
 
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#rollbackToSavepoint(java.lang.String)
-     */
     @Override
     public void rollbackToSavepoint(String name) {
-        // TODO Auto-generated method stub
-
+        checkClosed();
+        if (savepoints == null) {
+            throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
+        }
+        final CombinedSavepoint savepoint = savepoints.get(name);
+        if (savepoint == null) {
+            throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
+        }
+        connHolder.foreach(savepoint.combined.keySet(), new Callback<String>() {
+            public String handle(String shardName, Connection connection) throws SQLException {
+                connection.rollback(savepoint.combined.get(shardName));
+                return shardName;
+            }
+        });
+        savepoints.remove(savepoint);
     }
 
-    /* (non-Javadoc)
-     * @see com.openddal.engine.spi.Transaction#close()
-     */
+    public void checkClosed() {
+        if (closed) {
+            throw DbException.get(ErrorCode.OBJECT_CLOSED);
+        }
+    }
+
     @Override
     public void close() {
-        // TODO Auto-generated method stub
-
+        if (!closed) {
+            connHolder.closeAndClear();
+            closed = true;
+        }
+    }
+    
+    @Override
+    public boolean isClosed() {
+        return closed;
     }
 
     public ConnectionProvider getConnectionProvider() {
-        return connectionHolder;
+        return connHolder;
     }
+
+    @Override
+    public Long getId() {
+        return transactionId;
+    }
+
+    
+    public static class CombinedSavepoint {
+        Map<String, Savepoint> combined;
+    }
+
 }

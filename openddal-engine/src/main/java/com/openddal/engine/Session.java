@@ -16,7 +16,6 @@
 package com.openddal.engine;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,15 +29,13 @@ import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
+import com.openddal.engine.spi.Transaction;
 import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.excutor.works.WorkerFactoryProxy;
-import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceSystem;
-import com.openddal.repo.tx.ConnectionHolder;
-import com.openddal.repo.tx.ConnectionHolder.Callback;
 import com.openddal.result.LocalResult;
 import com.openddal.util.New;
 import com.openddal.util.SmallLRUCache;
@@ -80,7 +77,6 @@ public class Session implements SessionInterface {
     private String currentSchemaName;
     private String[] schemaSearchPath;
     private Trace trace;
-    private HashMap<String, Value> unlinkLobMap;
     private int systemIdentifier;
     private volatile long cancelAt;
     private boolean closed;
@@ -94,8 +90,8 @@ public class Session implements SessionInterface {
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
     private int transactionIsolation;
-    private final ConnectionHolder connectionHolder;
     private final WorkerFactoryProxy workerHolder;
+    private Transaction transaction;
 
     public Session(Database database, User user, int id) {
         this.id = id;
@@ -105,7 +101,6 @@ public class Session implements SessionInterface {
         this.queryCacheSize = database.getSettings().queryCacheSize;
         this.currentSchemaName = Constants.SCHEMA_MAIN;
         this.workerHolder = new WorkerFactoryProxy(this);
-        this.connectionHolder = new ConnectionHolder(this);
     }
 
 
@@ -251,8 +246,11 @@ public class Session implements SessionInterface {
     }
 
     public void setAutoCommit(boolean b) {
-        if (this.autoCommit == b) {
+        if (autoCommit == b) {
             return;
+        }
+        if(transaction != null) {
+            commit();
         }
         autoCommit = b;
     }
@@ -343,7 +341,32 @@ public class Session implements SessionInterface {
      * @param ddl if the statement was a data definition statement
      */
     public void commit() {
+        try {
+            if(transaction != null) {
+                transaction.commit();
+            }
+        } finally {
+            endTransaction();
+        }
+    }
+    
+    /**
+     * Fully roll back the current transaction.
+     */
+    public void rollback() {
+        try {
+            if(transaction != null) {
+                transaction.rollback();
+            }
+        } finally {
+            endTransaction();
+        }
+    }
+
+    private void endTransaction() {
         transactionStart = 0;
+        transaction = null;
+        savepoints = null;
         
         if (temporaryLobs != null) {
             for (Value v : temporaryLobs) {
@@ -351,30 +374,20 @@ public class Session implements SessionInterface {
             }
             temporaryLobs.clear();
         }
-        cleanTempTables(false);
-        endTransaction();
-    }
-
-    private void endTransaction() {
-        if (unlinkLobMap != null && unlinkLobMap.size() > 0) {
-            // need to flush the transaction log, because we can't unlink lobs
-            // if the commit record is not written
-            unlinkLobMap = null;
+        
+        if (localTempTables != null && localTempTables.size() > 0) {
+            synchronized (database) {
+                for (Table table : New.arrayList(localTempTables.values())) {
+                    localTempTables.remove(table.getName());
+                }
+            }
         }
-    }
-
-    /**
-     * Fully roll back the current transaction.
-     */
-    public void rollback() {
-        cleanTempTables(false);
-        endTransaction();
     }
 
 
     @Override
     public boolean hasPendingTransaction() {
-        return connectionHolder.hasConnection();
+        return transaction != null;
     }
 
     public int getId() {
@@ -390,22 +403,16 @@ public class Session implements SessionInterface {
     public void close() {
         if (!closed) {
             try {
-                
+                if (!getAutoCommit() && transaction != null) {
+                    transaction.rollback();
+                }
+                database.removeSession(this);
             } finally {
                 closed = true;
             }
         }
     }
 
-    private void cleanTempTables(boolean closeSession) {
-        if (localTempTables != null && localTempTables.size() > 0) {
-            synchronized (database) {
-                for (Table table : New.arrayList(localTempTables.values())) {
-                    localTempTables.remove(table.getName());
-                }
-            }
-        }
-    }
 
     public Random getRandom() {
         if (random == null) {
@@ -454,15 +461,7 @@ public class Session implements SessionInterface {
             savepoints = database.newStringMap();
         }
         Savepoint sp = new Savepoint();
-        final HashMap<String, java.sql.Savepoint> binds = New.hashMap();
-        connectionHolder.foreach(new Callback<String>() {
-            public String handle(String shardName, Connection connection) throws SQLException {
-                java.sql.Savepoint savepoint = connection.setSavepoint(name);
-                binds.put(shardName, savepoint);
-                return shardName;
-            }
-        });
-        sp.joins = binds;
+        sp.savepointName = name;
         savepoints.put(name, sp);
     }
 
@@ -479,12 +478,9 @@ public class Session implements SessionInterface {
         if (savepoint == null) {
             throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
         }
-        connectionHolder.foreach(savepoint.joins.keySet(), new Callback<String>() {
-            public String handle(String shardName, Connection connection) throws SQLException {
-                connection.rollback(savepoint.joins.get(shardName));
-                return shardName;
-            }
-        });
+        if(transaction != null) {
+            transaction.rollbackToSavepoint(name);
+        }
         savepoints.remove(name);
     }
 
@@ -565,28 +561,6 @@ public class Session implements SessionInterface {
     }
 
     /**
-     * Create an internal connection. This connection is used when initializing
-     * triggers, and when calling user defined functions.
-     *
-     * @param columnList if the url should be 'jdbc:columnlist:connection'
-     * @return the internal connection
-     */
-    public JdbcConnection createConnection(boolean columnList) {
-        throw DbException.getUnsupportedException("TODO");
-    }
-
-    /**
-     * Do not unlink this LOB value at commit any longer.
-     *
-     * @param v the value
-     */
-    public void unlinkAtCommitStop(Value v) {
-        if (unlinkLobMap != null) {
-            unlinkLobMap.remove(v.toString());
-        }
-    }
-
-    /**
      * Get the next system generated identifiers. The identifier returned does
      * not occur within the given SQL statement.
      *
@@ -623,8 +597,7 @@ public class Session implements SessionInterface {
      * Begin a transaction.
      */
     public void begin() {
-        autoCommit = false;
-        transactionStart = getTransactionStart();
+        setAutoCommit(false);        
     }
 
     public long getSessionStart() {
@@ -682,10 +655,16 @@ public class Session implements SessionInterface {
 
 
     public Value getTransactionId() {
-        return ValueString.get("" + id);
+        String strId = Long.toString(transaction.getId());
+        return ValueString.get(strId);
     }
     
-
+    public synchronized Transaction getTransaction() {
+        if(transaction == null || transaction.isClosed()) {
+            transaction = database.getRepository().newTransaction(this);
+        }
+        return transaction;
+    }
     /**
      * Get the next object id.
      *
@@ -717,6 +696,9 @@ public class Session implements SessionInterface {
     }
 
     public void setTransactionIsolation(int level) {
+        if(transactionIsolation == level) {
+            return;
+        }
         switch (level) {
             case Connection.TRANSACTION_NONE:
             case Connection.TRANSACTION_READ_UNCOMMITTED:
@@ -727,8 +709,10 @@ public class Session implements SessionInterface {
             default:
                 throw DbException.getInvalidValueException("transaction isolation", level);
         }
+        if(transaction != null) {
+            transaction.setIsolation(level);
+        }
         transactionIsolation = level;
-        connectionHolder.foreach(connectionHolder.setIsolation(level));
     }
 
     public boolean isReadOnly() {
@@ -736,6 +720,12 @@ public class Session implements SessionInterface {
     }
 
     public void setReadOnly(boolean readOnly) {
+        if(this.readOnly == readOnly) {
+            return;
+        }
+        if(transaction != null) {
+            transaction.setReadOnly(readOnly);
+        }
         this.readOnly = readOnly;
     }
     
@@ -745,7 +735,7 @@ public class Session implements SessionInterface {
 
 
     public static class Savepoint {
-        HashMap<String, java.sql.Savepoint> joins;
+        String savepointName;
     }
 
 }
