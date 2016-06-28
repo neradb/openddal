@@ -44,6 +44,7 @@ public abstract class JdbcWorker {
     protected Connection opendConnection;
     protected PreparedStatement opendStatement;
     protected ResultSet opendResultSet;
+    protected boolean closed;
 
     public JdbcWorker(Session session, String shardName, String sql, List<Value> params) {
         super();
@@ -62,20 +63,19 @@ public abstract class JdbcWorker {
      * @param ex the exception from the remote database
      * @return the wrapped exception
      */
-    protected static DbException wrapException(String sql, Exception ex) {
+    protected static DbException wrapException(String sql, SQLException ex) {
         SQLException e = DbException.toSQLException(ex);
         return DbException.get(ErrorCode.ERROR_ACCESSING_DATABASE_TABLE_2, e, sql, e.toString());
     }
 
-    protected Connection doGetConnection(Options options) throws SQLException {
+    protected Connection doGetConnection(Options options) {
         JdbcTransaction tx = (JdbcTransaction)session.getTransaction();
         ConnectionProvider connProvider = tx.getConnectionProvider();
-        System.out.println(connProvider + "xxxx");
         return connProvider.getConnection(options);
     }
     
     
-    protected void closeConnection(String shardName, Connection conn) throws SQLException {
+    protected void closeConnection(String shardName, Connection conn) {
         JdbcTransaction tx = (JdbcTransaction)session.getTransaction();
         ConnectionProvider connProvider = tx.getConnectionProvider();
         connProvider.closeConnection(conn, Options.build().shardName(shardName));
@@ -112,29 +112,35 @@ public abstract class JdbcWorker {
 
         }
     }
-
+    
     public void close() {
-        if(opendResultSet != null) {
-            try {
-                opendResultSet.close();
-                opendResultSet = null;
-            } catch (SQLException e) {
-                trace.error(e, "close ResultSet error.");
+        try {
+            if (opendResultSet != null) {
+                try {
+                    opendResultSet.close();
+                    opendResultSet = null;
+                } catch (SQLException e) {
+                    trace.error(e, "close ResultSet error.");
+                }
             }
-        }
-        if(opendStatement != null) {
-            try {
-                opendStatement.close();
-            } catch (SQLException e) {
-                trace.error(e, "close statement error.");
+            if (opendStatement != null) {
+                try {
+                    opendStatement.close();
+                } catch (SQLException e) {
+                    trace.error(e, "close statement error.");
+                }
             }
-        }
-        if(opendConnection != null) {
-            try {
-                closeConnection(this.shardName, opendConnection);
-            } catch (SQLException e) {
-                trace.error(e, "close connection error.");
-            }
+            if (opendConnection != null) {
+                try {
+                    closeConnection(this.shardName, opendConnection);
+                } catch (Exception e) {
+                    trace.error(e, "close connection error.");
+                }
+            } 
+        } finally {
+            opendResultSet = null;
+            opendStatement = null;
+            opendConnection = null;
         }
     }
 

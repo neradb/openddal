@@ -44,7 +44,7 @@ public class ScriptRunnerTestCase extends BaseTestCase {
 
     private void runOn(Connection conn) {
         ScriptRunner runner = new ScriptRunner(conn);
-        runner.setAutoCommit(true);
+        runner.setAutoCommit(false);
         runner.setStopOnError(true);
 
         String resource = "script/mysql_script.sql";

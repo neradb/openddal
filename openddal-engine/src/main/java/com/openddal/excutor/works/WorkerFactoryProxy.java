@@ -1,11 +1,8 @@
 package com.openddal.excutor.works;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.openddal.command.ddl.AlterTableAddConstraint;
 import com.openddal.command.ddl.AlterTableAlterColumn;
@@ -35,7 +32,7 @@ import com.openddal.util.New;
 public class WorkerFactoryProxy implements WorkerFactory {
 
     private final WorkerFactory target;
-    private final List<Worker> pendingClose = New.linkedList();
+    private final Set<Worker> workerHolder = New.hashSet();
 
     public WorkerFactoryProxy(Session session) {
         this.target = session.getDatabase().getRepository().getWorkerFactory();
@@ -45,126 +42,126 @@ public class WorkerFactoryProxy implements WorkerFactory {
     public QueryWorker createQueryWorker(Select select, ObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
         QueryWorker handler = target.createQueryWorker(select, node, consistencyTableNodes);
-        handler = newWorkerProxy(handler, QueryWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public QueryWorker createQueryWorker(TableFilter filter, ObjectNode node) {
         QueryWorker handler = target.createQueryWorker(filter, node);
-        handler = newWorkerProxy(handler, QueryWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public QueryWorker createQueryWorker(Call call, ObjectNode node) {
         QueryWorker handler = target.createQueryWorker(call, node);
-        handler = newWorkerProxy(handler, QueryWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(Insert insert, ObjectNode node, Row ... rows) {
         UpdateWorker handler = target.createUpdateWorker(insert, node, rows);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(Update update, ObjectNode node, Row row) {
         UpdateWorker handler = target.createUpdateWorker(update, node, row);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(Delete delete, ObjectNode node) {
         UpdateWorker handler = target.createUpdateWorker(delete, node);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(Replace replace, ObjectNode node, Row ... rows) {
         UpdateWorker handler = target.createUpdateWorker(replace, node, rows);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(Merge merge, ObjectNode node, Row ... rows) {
         UpdateWorker handler = target.createUpdateWorker(merge, node, rows);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(Call call, ObjectNode node) {
         UpdateWorker handler = target.createUpdateWorker(call, node);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(CreateTable createTable, ObjectNode node, ObjectNode refNode) {
         UpdateWorker handler = target.createUpdateWorker(createTable, node, refNode);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(DropTable dropTable, ObjectNode node) {
         UpdateWorker handler = target.createUpdateWorker(dropTable, node);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(TruncateTable truncateTable, ObjectNode node) {
         UpdateWorker handler = target.createUpdateWorker(truncateTable, node);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(AlterTableAddConstraint alterTableAddConstraint, ObjectNode node, ObjectNode refNode) {
         UpdateWorker handler = target.createUpdateWorker(alterTableAddConstraint, node, refNode);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(AlterTableAlterColumn alterTableAlterColumn, ObjectNode node) {
         UpdateWorker handler = target.createUpdateWorker(alterTableAlterColumn, node);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(AlterTableRename alterTableRename, ObjectNode node) {
         UpdateWorker handler = target.createUpdateWorker(alterTableRename, node);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(AlterTableDropConstraint alterTableRename, ObjectNode node) {
         UpdateWorker handler = target.createUpdateWorker(alterTableRename, node);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(CreateIndex createIndex, ObjectNode indexNode, ObjectNode tableNode) {
         UpdateWorker handler = target.createUpdateWorker(createIndex, indexNode, tableNode);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
     @Override
     public UpdateWorker createUpdateWorker(DropIndex dropIndex, ObjectNode indexNode, ObjectNode tableNode) {
         UpdateWorker handler = target.createUpdateWorker(dropIndex, indexNode, tableNode);
-        handler = newWorkerProxy(handler, UpdateWorker.class);
+        handler = holdeWorker(handler);
         return handler;
     }
 
@@ -173,13 +170,13 @@ public class WorkerFactoryProxy implements WorkerFactory {
         List<BatchUpdateWorker> batchWorkers = target.mergeToBatchUpdateWorker(session, workers);
         List<BatchUpdateWorker> batchWorkerProxys = New.arrayList(batchWorkers.size());
         for (BatchUpdateWorker batchWorker : batchWorkers) {
-            batchWorkerProxys.add(newWorkerProxy(batchWorker, BatchUpdateWorker.class));
+            batchWorkerProxys.add(holdeWorker(batchWorker));
         }
         return batchWorkerProxys;
     }
 
     public synchronized void close() {
-        List<Worker> workers = New.arrayList(pendingClose);
+        List<Worker> workers = New.arrayList(workerHolder);
         for (Worker worker : workers) {
             try {
                 worker.close();
@@ -190,7 +187,7 @@ public class WorkerFactoryProxy implements WorkerFactory {
     }
 
     public synchronized void cancel() {
-        List<Worker> workers = New.arrayList(pendingClose);
+        List<Worker> workers = New.arrayList(workerHolder);
         for (Worker worker : workers) {
             try {
                 worker.cancel();
@@ -200,56 +197,17 @@ public class WorkerFactoryProxy implements WorkerFactory {
         }
     }
 
-    public synchronized boolean hasRuningWorker() {
-        return !pendingClose.isEmpty();
-    }
-
-    private synchronized void removeWorker(Worker worker) {
-        pendingClose.remove(worker);
+    public synchronized boolean hasHoldeWorker() {
+        return !workerHolder.isEmpty();
     }
 
     private synchronized void addWorker(Worker worker) {
-        pendingClose.add(worker);
+        workerHolder.add(worker);
     }
     
-    @SuppressWarnings("unchecked")
-    private <T extends Worker> T newWorkerProxy(T target, Class<T> interfaceClass) {
-        InvocationHandler handler = new WorkerProxy(target);
-        ClassLoader cl = target.getClass().getClassLoader();
-        return (T) Proxy.newProxyInstance(cl, new Class[]{interfaceClass}, handler);
-    }
-
-    private class WorkerProxy implements InvocationHandler {
-        
-        private Worker target;
-
-        private WorkerProxy(Worker target) {
-            this.target = target;
-        }
-        
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            try {
-                Object invoke = method.invoke(target, args);
-                if ("close".equals(method.getName())) {
-                    try {
-                        invoke = method.invoke(target, args);
-                    } finally {
-                        removeWorker(target);
-                    }
-                } else if ("executeUpdate".equals(method.getName()) || "executeQuery".equals(method.getName())
-                        || "executeBatchUpdate".equals(method.getName())) {
-                    addWorker(target);
-                    invoke = method.invoke(target, args);
-                } else {
-                    invoke = method.invoke(target, args);
-                }
-                return invoke;
-            } catch (InvocationTargetException ex) {
-                throw ex.getTargetException();
-            }
-        }
-
+    private <T extends Worker> T holdeWorker(T target) {
+        addWorker(target);
+        return target;
     }
 
 

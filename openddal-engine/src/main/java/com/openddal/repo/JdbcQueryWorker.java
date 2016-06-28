@@ -15,6 +15,7 @@
  */
 package com.openddal.repo;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import com.openddal.engine.Session;
@@ -66,7 +67,7 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
             }
             opendResultSet = opendStatement.executeQuery();
             return new AutoCloseCursor(new ResultCursor(session, opendResultSet), this);
-        } catch (Exception e) {
+        } catch (SQLException e) {
             close();
             StatementBuilder buff = new StatementBuilder();
             buff.append(shardName).append(" executing executeQuery error:").append(sql);

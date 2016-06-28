@@ -176,11 +176,14 @@ public class DbSettings extends SettingsBase {
      * If set, each table has a pseudo-column _ROWID_.
      */
     public final boolean rowId = get("ROWID", true);
-    
     /**
      * Database setting <code>SQL_MODE</code> (default: REGULAR).<br />
      */
     public final String sqlMode = get("SQL_MODE", Mode.REGULAR);
+    /**
+     * Database setting <code>TRANSACTION_MODE</code> (default: null).<br />
+     */
+    public final String transactionMode = get("TRANSACTION_MODE", null);
     /**
      * Database setting <code>MAX_QUERY_TIMEOUT</code> (default: 0).<br />
      * The maximum timeout of a query in milliseconds. The default is 0, meaning
@@ -196,10 +199,10 @@ public class DbSettings extends SettingsBase {
     public String defaultTableEngine = get("DEFAULT_TABLE_ENGINE", null);
     /**
      * Database setting <code>DEFAULT_VALIDATION_QUERY</code>
-     * (default: SELECT 1 FROM DUAL).<br />
+     * (default: null).<br />
      * The default sql to validation jdbc connection.
      */
-    public String validationQuery = get("VALIDATION_QUERY", "");
+    public String validationQuery = get("VALIDATION_QUERY", null);
     /**
      * Database setting <code>DEFAULT_VALIDATION_QUERYT_IMEOUT</code>
      * (default: -1).<br />

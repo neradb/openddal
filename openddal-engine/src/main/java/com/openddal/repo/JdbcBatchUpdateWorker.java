@@ -15,6 +15,7 @@
  */
 package com.openddal.repo;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -81,7 +82,7 @@ public class JdbcBatchUpdateWorker extends JdbcWorker implements BatchUpdateWork
                 trace.debug("{0} executeUpdate: {1} affected.", shardName, Arrays.toString(affected));
             }
             return rows;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             error(e);
             throw wrapException(sql, e);
         } finally {

@@ -198,5 +198,12 @@ public class InsertExecutor extends ExecutionFramework<Insert> implements Result
 
     }
 
+    @Override
+    protected boolean needReprepare() {
+        return true;
+    }
+    
+    
+
 
 }

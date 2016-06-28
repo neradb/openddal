@@ -74,7 +74,6 @@ public class SequenceTestCase extends BaseTestCase {
             }
             conn.commit();
         } catch (Exception e) {
-            e.printStackTrace();
             Assert.fail();
         } finally {
             JdbcUtils.closeSilently(rs);

@@ -15,6 +15,7 @@
  */
 package com.openddal.repo;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import com.openddal.engine.Session;
@@ -40,7 +41,7 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
     @Override
     public int executeUpdate() {
         try {
-            Options optional = Options.build().shardName(shardName).readOnly(true);
+            Options optional = Options.build().shardName(shardName).readOnly(false);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Fetching connection from DataSource.", shardName);
             }
@@ -64,7 +65,7 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
                 trace.debug("{0} executeUpdate: {1} affected.", shardName, rows);
             }
             return rows;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             StatementBuilder buff = new StatementBuilder();
             buff.append(shardName).append(" executing executeUpdate error:").append(sql);
             if (params != null && 0 < params.size()) {

@@ -1,14 +1,18 @@
 package com.openddal.excutor.works;
 
 public interface Worker {
-
-    void close();
+    
     /**
-     * cancel a currently running PreparedExecutor. This operation will cancel all
-     * opened JDBC statements and close all opened JDBC connections
+     * close the worker
+     */
+    void close();
+
+    /**
+     * cancel a currently running PreparedExecutor. This operation will cancel
+     * all opened JDBC statements and close all opened JDBC connections
      */
     void cancel();
-    
+
     /**
      * Get the handler with the execution explain.
      *

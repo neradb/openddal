@@ -25,7 +25,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.openddal.command.Prepared;
-import com.openddal.command.expression.Parameter;
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
@@ -50,7 +49,6 @@ import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
-import com.openddal.value.Value;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -66,8 +64,6 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
     protected final WorkerFactory queryHandlerFactory;
 
     private boolean isPrepared;
-    private List<Parameter> lastParams;
-
     /**
      * @param prepared
      */
@@ -83,12 +79,10 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
 
     @Override
     public final void prepare() {
-        List<Parameter> params = prepared.getParameters();
-        if (isPrepared && sameParamsAsLast(params, lastParams)) {
+        if (isPrepared && !needReprepare()) {
             return;
         }
         doPrepare();
-        lastParams = params;
         isPrepared = true;
     }
 
@@ -276,20 +270,8 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         return null;
     }
 
-    private boolean sameParamsAsLast(List<Parameter> params, List<Parameter> lastParams) {
-        Database db = session.getDatabase();
-        params = params == null ? New.<Parameter> arrayList() : params;
-        lastParams = lastParams == null ? New.<Parameter> arrayList() : lastParams;
-        if (params.size() != lastParams.size()) {
-            return false;
-        }
-        for (int i = 0; i < params.size(); i++) {
-            Value a = params.get(i).getParamValue(), b = params.get(i).getParamValue();
-            if (a.getType() != b.getType() || !db.areEqual(a, b)) {
-                return false;
-            }
-        }
-        return true;
+    protected boolean needReprepare() {
+        return false;
     }
 
     protected static TableMate getTableMate(TableFilter filter) {

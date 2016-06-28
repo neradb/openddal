@@ -6,27 +6,34 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.repo.ConnectionProvider;
 import com.openddal.repo.JdbcRepository;
 import com.openddal.repo.Options;
 import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 
 public class ConnectionHolder implements ConnectionProvider {
 
     private final Session session;
+    private final HolderStrategy holderStrategy;
     private final ConnectionProvider target;
     private final Trace trace;
     private Map<String, Connection> connectionMap = New.hashMap();
     private final Closer closer = new Closer();
-    
+
     public ConnectionHolder(Session session) {
+        Database database = session.getDatabase();
+        JdbcRepository repository = (JdbcRepository) database.getRepository();
         this.session = session;
-        this.trace = session.getDatabase().getTrace(Trace.TRANSACTION);
-        JdbcRepository repository = (JdbcRepository) session.getDatabase().getRepository();
+        this.trace = database.getTrace(Trace.TRANSACTION);
         this.target = repository.getConnectionProvider();
+        String mode = database.getSettings().transactionMode;
+        this.holderStrategy = transactionMode(mode);
     }
 
     public synchronized <T> List<T> foreach(Callback<T> callback) throws DbException {
@@ -59,19 +66,13 @@ public class ConnectionHolder implements ConnectionProvider {
         return results;
     }
 
-    
-
     @Override
     public synchronized Connection getConnection(Options options) {
         Connection conn;
         if (session.getAutoCommit()) {
             conn = getRawConnection(options);
         } else {
-            conn = connectionMap.get(options.shardName);
-            if (conn == null) {
-                conn = getRawConnection(options);
-                connectionMap.put(options.shardName, conn);
-            }
+            conn = getConnectionWithStrategy(options);
         }
         return conn;
     }
@@ -91,6 +92,72 @@ public class ConnectionHolder implements ConnectionProvider {
         List<String> foreach = foreach(closer);
         connectionMap.clear();
         return foreach;
+    }
+
+    /**
+     * Each shard have a database connection, the worker thread may concurrently
+     * use a shard connection executing SQL (such as executing ddl statement),
+     * If the JDBC driver is spec-compliant, then technically yes, the object is
+     * thread-safe, MySQL Connector/J, all methods to execute statements lock
+     * the connection with a synchronized block.
+     * 
+     * @param options
+     * @return
+     */
+    protected Connection getConnectionWithStrategy(Options options) {
+        String shardName = options.shardName;
+        Connection conn;
+        switch (holderStrategy) {
+        case STRICTLY:
+            if (connectionMap.isEmpty()) {
+                conn = getRawConnection(options);
+                connectionMap.put(shardName, conn);
+            } else {
+                conn = connectionMap.get(shardName);
+                if (conn == null) {
+                    String lastTransactionNode = connectionMap.keySet().iterator().next();
+                    throw DbException.get(ErrorCode.GENERAL_ERROR_1,
+                            "STRICTLY transaction mode not supported operation on multi-node, opend on "
+                                    + lastTransactionNode + " and try on " + shardName);
+                }
+            }
+            break;
+        case ALLOW_CROSS_SHARD_READ:
+            if(options.readOnly) {
+                conn = connectionMap.get(shardName);
+                if(conn == null) {
+                    conn = getRawConnectionForReadOnly(options);
+                }
+            } else {
+                if (connectionMap.isEmpty()) {
+                    conn = getRawConnection(options);
+                    connectionMap.put(shardName, conn);
+                } else {
+                    conn = connectionMap.get(shardName);
+                    if (conn == null) {
+                        String lastTransactionNode = connectionMap.keySet().iterator().next();
+                        throw DbException.get(ErrorCode.GENERAL_ERROR_1,
+                                "ALLOW_READ_CROSS_DB transaction mode not supported writing operation on multi-node, opend on "
+                                        + lastTransactionNode + " and try on " + shardName);
+                    }
+                }
+            }
+            
+            break;
+
+        case BESTEFFORTS_1PC:
+            conn = connectionMap.get(shardName);
+            if (conn == null) {
+                conn = getRawConnection(options);
+                connectionMap.put(shardName, conn);
+            }
+            break;
+
+        default:
+            throw DbException.getInvalidValueException("transactionMode", holderStrategy);
+        }
+        return conn;
+
     }
 
     /**
@@ -117,14 +184,37 @@ public class ConnectionHolder implements ConnectionProvider {
         }
         return conn;
     }
+    
+    private Connection getRawConnectionForReadOnly(Options options) {
+        try {
+            Connection conn = target.getConnection(options);
+            conn.setAutoCommit(true);
+            conn.setReadOnly(true);
+            if (session.getTransactionIsolation() != 0) {
+                if (conn.getTransactionIsolation() != session.getTransactionIsolation()) {
+                    conn.setTransactionIsolation(session.getTransactionIsolation());
+                }
+            }
+            return conn;
+        } catch (SQLException e) {
+            throw DbException.convert(e);
+        }
+    }
 
-
+    private HolderStrategy transactionMode(String mode) {
+        try {
+            HolderStrategy holderStrategy = StringUtils.isNullOrEmpty(mode) ? HolderStrategy.BESTEFFORTS_1PC
+                    : HolderStrategy.valueOf(mode);
+            return holderStrategy;
+        } catch (Exception e) {
+            throw DbException.getInvalidValueException("transactionMode", mode);
+        }
+    }
 
     public static interface Callback<T> {
         T handle(String shardName, Connection connection) throws SQLException;
     }
 
-    
     private class Closer implements Callback<String> {
         @Override
         public String handle(String name, Connection connection) throws SQLException {
@@ -132,11 +222,15 @@ public class ConnectionHolder implements ConnectionProvider {
                 target.closeConnection(connection, Options.build().shardName(name));
             } catch (Exception e) {
                 trace.error(e, "Close {0} connection error", name);
-                //throw DbException.convert(e);
+                // throw DbException.convert(e);
             }
             return name;
         }
 
     };
+
+    enum HolderStrategy {
+        STRICTLY, ALLOW_CROSS_SHARD_READ, BESTEFFORTS_1PC
+    }
 
 }
