@@ -15,10 +15,10 @@
  */
 package com.openddal.command;
 
+import java.util.ArrayList;
+
 import com.openddal.command.expression.ParameterInterface;
 import com.openddal.result.ResultInterface;
-
-import java.util.ArrayList;
 
 /**
  * Represents a SQL statement.
@@ -440,11 +440,6 @@ public interface CommandInterface {
      * The type of a BEGIN {WORK|TRANSACTION} statement.
      */
     int BEGIN = 83;
-
-    int TRANSACTION_READONLY_TRUE = 80;
-    int TRANSACTION_READONLY_FALSE = 81;
-    int TRANSACTION_ISOLATION = 82;
-
 
     /**
      * Get command type.

@@ -57,15 +57,15 @@ public abstract class JdbcWorker {
     }
 
     /**
-     * Wrap a SQL exception that occurred while accessing a linked table.
+     * Wrap a SQL exception that occurred while data accessing.
      *
      * @param sql the SQL statement
      * @param ex the exception from the remote database
      * @return the wrapped exception
      */
-    protected static DbException wrapException(String sql, SQLException ex) {
+    protected static DbException wrapException(String operation, String shardName, String sql, Exception ex) {
         SQLException e = DbException.toSQLException(ex);
-        return DbException.get(ErrorCode.ERROR_ACCESSING_DATABASE_TABLE_2, e, sql, e.toString());
+        return DbException.get(ErrorCode.ERROR_ACCESSING_DATABASE_TABLE_2, e, operation, shardName, sql, e.toString());
     }
 
     protected Connection doGetConnection(Options options) {

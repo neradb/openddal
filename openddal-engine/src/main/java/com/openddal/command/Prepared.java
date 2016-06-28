@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.Parameter;
 import com.openddal.engine.Session;
+import com.openddal.excutor.Executor;
+import com.openddal.excutor.ExecutorFactory;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
@@ -211,7 +213,12 @@ public abstract class Prepared {
      * @throws DbException if it is a query
      */
     public int update() {
-        throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
+        ExecutorFactory ef = session.getExecutorFactory();
+        Executor executor = ef.newExecutor(this);
+        if (executor == null) {
+            throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
+        }
+        return executor.update();
     }
 
     /**
@@ -286,7 +293,13 @@ public abstract class Prepared {
      * @return the execution plan
      */
     public String explainPlan() {
-        return null;
+        ExecutorFactory ef = session.getExecutorFactory();
+        Executor executor = ef.newExecutor(this);
+        if (executor == null) {
+            return null;
+        }
+        return executor.explain();
+
     }
 
     /**

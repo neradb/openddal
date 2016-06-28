@@ -18,7 +18,6 @@ package com.openddal.command.ddl;
 import com.openddal.command.CommandInterface;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.DropTableExecutor;
 
 /**
  * This class represents the statement
@@ -32,14 +31,12 @@ public class DropTable extends SchemaCommand {
     private String tableName;
     private DropTable next;
     private int dropAction;
-    private DropTableExecutor executor;
 
     public DropTable(Session session, Schema schema) {
         super(session, schema);
         dropAction = session.getDatabase().getSettings().dropRestrict ?
                 AlterTableAddConstraint.RESTRICT :
                 AlterTableAddConstraint.CASCADE;
-        executor = new DropTableExecutor(this);
     }
 
     /**
@@ -93,14 +90,5 @@ public class DropTable extends SchemaCommand {
     public DropTable getNext() {
         return next;
     }
-
-    @Override
-    public DropTableExecutor getExecutor() {
-        if(executor == null) {
-            executor = new DropTableExecutor(this);
-        }
-        return executor;
-    }
-
     
 }

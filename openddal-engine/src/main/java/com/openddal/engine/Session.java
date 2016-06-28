@@ -30,6 +30,7 @@ import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.spi.Transaction;
+import com.openddal.excutor.ExecutorFactory;
 import com.openddal.excutor.works.WorkerFactory;
 import com.openddal.excutor.works.WorkerFactoryProxy;
 import com.openddal.message.DbException;
@@ -102,7 +103,6 @@ public class Session implements SessionInterface {
         this.currentSchemaName = Constants.SCHEMA_MAIN;
         this.transaction = database.getRepository().newTransaction(this);
         this.workerHolder = new WorkerFactoryProxy(this);
-
     }
 
 
@@ -500,7 +500,7 @@ public class Session implements SessionInterface {
     }
 
     public void doCancel() {
-        workerHolder.cancel();
+        workerHolder.cancelWorkers();
     }
 
     /**
@@ -674,7 +674,7 @@ public class Session implements SessionInterface {
      * set, and deletes all temporary files held by the result sets.
      */
     public void endStatement() {
-        workerHolder.close();
+        workerHolder.closeWorkers();
         closeTemporaryResults();
     }
 
@@ -724,6 +724,10 @@ public class Session implements SessionInterface {
         this.readOnly = readOnly;
     }
     
+    public ExecutorFactory getExecutorFactory() {
+        return database.getExecutorFactory();
+    }
+
     public WorkerFactory getQueryHandlerFactory() {
         return workerHolder;
     }

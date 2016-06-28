@@ -22,7 +22,6 @@ import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.AlterTableAlterColumnExecutor;
 
 /**
  * This class represents the statements
@@ -48,7 +47,6 @@ public class AlterTableAlterColumn extends SchemaCommand {
     private String addAfter;
     private boolean ifNotExists;
     private ArrayList<Column> columnsToAdd;
-    private AlterTableAlterColumnExecutor executor;
     
 
     public AlterTableAlterColumn(Session session, Schema schema) {
@@ -139,14 +137,4 @@ public class AlterTableAlterColumn extends SchemaCommand {
     public void setIfNotExists(boolean ifNotExists) {
         this.ifNotExists = ifNotExists;
     }
-
-    @Override
-    public AlterTableAlterColumnExecutor getExecutor() {
-        if(executor == null) {
-            executor = new AlterTableAlterColumnExecutor(this);
-        }
-        return executor;
-    }
-
-    
 }

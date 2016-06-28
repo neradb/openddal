@@ -25,7 +25,6 @@ import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.UpdateExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
@@ -41,7 +40,6 @@ public class Update extends Prepared {
     private final HashMap<Column, Expression> expressionMap = New.hashMap();
     private Expression condition;
     private TableFilter tableFilter;
-    private UpdateExecutor executor;
     /**
      * The limit expression as specified in the LIMIT clause.
      */
@@ -68,17 +66,6 @@ public class Update extends Prepared {
             Parameter p = (Parameter) expression;
             p.setColumn(column);
         }
-    }
-
-    @Override
-    public int update() {
-        return getExecutor().update();
-    }
-
-
-    @Override
-    public String explainPlan() {
-        return getExecutor().explain();
     }
 
     @Override
@@ -150,13 +137,6 @@ public class Update extends Prepared {
 
     public Expression getLimitExpr() {
         return limitExpr;
-    }
-    
-    public UpdateExecutor getExecutor() {
-        if (executor == null) {
-            executor = new UpdateExecutor(this);
-        }
-        return executor;
     }
     
 

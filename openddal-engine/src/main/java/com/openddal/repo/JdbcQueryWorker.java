@@ -70,9 +70,9 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
         } catch (SQLException e) {
             close();
             StatementBuilder buff = new StatementBuilder();
-            buff.append(shardName).append(" executing executeQuery error:").append(sql);
+            buff.append(sql);
             if (params != null && params.size() > 0) {
-                buff.append("\n{");
+                buff.append(" params{");
                 int i = 1;
                 for (Value v : params) {
                     buff.appendExceptFirst(", ");
@@ -80,9 +80,7 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
                 }
                 buff.append('}');
             }
-            buff.append(';');
-            trace.error(e, buff.toString());
-            throw wrapException(sql, e);
+            throw wrapException("executeQuery", shardName, buff.toString(), e);
         }
 
     }

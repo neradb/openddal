@@ -83,35 +83,28 @@ public class JdbcBatchUpdateWorker extends JdbcWorker implements BatchUpdateWork
             }
             return rows;
         } catch (SQLException e) {
-            error(e);
-            throw wrapException(sql, e);
+            StatementBuilder buff = new StatementBuilder();
+            buff.append(sql);
+            for (List<Value> params : array) {
+                if (params != null) {
+                    if (params != null && params.size() > 0) {
+                        buff.appendExceptFirst(", ");
+                        buff.append("{");
+                        int i = 1;
+                        for (Value v : params) {
+                            if (i > 1) {
+                                buff.append(", ");
+                            }
+                            buff.append(i++).append(": ").append(v.getSQL());
+                        }
+                        buff.append('}');
+                    }
+                }
+            }
+            throw wrapException("executeBatchUpdate", shardName, buff.toString(), e);
         } finally {
             close();
         }
-    }
-
-    /**
-     * @param e
-     */
-    protected void error(Throwable e) {
-        StatementBuilder buff = new StatementBuilder();
-        buff.append(shardName).append(" executing batchUpdate error:").append(sql);
-        for (List<Value> params : array) {
-            if (params != null) {
-                if (params != null && params.size() > 0) {
-                    buff.appendExceptFirst(", ");
-                    buff.append("\n{");
-                    int i = 1;
-                    for (Value v : params) {
-                        buff.appendExceptFirst(", ");
-                        buff.append(i++).append(": ").append(v.getSQL());
-                    }
-                    buff.append('}');
-                }
-            }
-        }
-        buff.append(';');
-        trace.error(e, buff.toString());
     }
 
 }

@@ -23,7 +23,6 @@ import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.CreateTableExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.util.New;
@@ -45,7 +44,6 @@ public class CreateTable extends SchemaCommand {
     private String comment;
     private boolean sortedInsertMode;
     private String charset;
-    private CreateTableExecutor executor;
 
     public CreateTable(Session session, Schema schema) {
         super(session, schema);
@@ -257,13 +255,5 @@ public class CreateTable extends SchemaCommand {
 
     public void setSortedInsertMode(boolean sortedInsertMode) {
         this.sortedInsertMode = sortedInsertMode;
-    }
-
-    @Override
-    public CreateTableExecutor getExecutor() {
-        if(executor == null) {
-            executor = new CreateTableExecutor(this);
-        }
-        return executor;
     }
 }

@@ -64,9 +64,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
     protected final WorkerFactory queryHandlerFactory;
 
     private boolean isPrepared;
-    /**
-     * @param prepared
-     */
+
     public ExecutionFramework(T prepared) {
         this.prepared = prepared;
         this.session = prepared.getSession();
@@ -79,7 +77,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
 
     @Override
     public final void prepare() {
-        if (isPrepared && !needReprepare()) {
+        if (isPrepared) {
             return;
         }
         doPrepare();
@@ -268,10 +266,6 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
             return (TableMate) table;
         }
         return null;
-    }
-
-    protected boolean needReprepare() {
-        return false;
     }
 
     protected static TableMate getTableMate(TableFilter filter) {

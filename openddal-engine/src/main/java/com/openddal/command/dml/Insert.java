@@ -26,7 +26,6 @@ import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.InsertExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
@@ -45,7 +44,6 @@ public class Insert extends Prepared {
     private boolean sortedInsertMode;
     private int rowNumber;
     private boolean insertFromSelect;
-    private InsertExecutor executor;
 
     /**
      * For MySQL-style INSERT ... ON DUPLICATE KEY UPDATE ....
@@ -92,11 +90,6 @@ public class Insert extends Prepared {
     }
 
     @Override
-    public String explainPlan() {
-        return getExecutor().explain();
-    }
-
-    @Override
     public void prepare() {
         if (columns == null) {
             if (list.size() > 0 && list.get(0).length == 0) {
@@ -129,11 +122,6 @@ public class Insert extends Prepared {
                 throw DbException.get(ErrorCode.COLUMN_COUNT_DOES_NOT_MATCH);
             }
         }
-    }
-    
-    @Override
-    public int update() {
-        return getExecutor().update();
     }
 
     @Override
@@ -207,13 +195,6 @@ public class Insert extends Prepared {
 
     public HashMap<Column, Expression> getDuplicateKeyAssignmentMap() {
         return duplicateKeyAssignmentMap;
-    }
-
-    public InsertExecutor getExecutor() {
-        if (executor == null) {
-            executor = new InsertExecutor(this);
-        }
-        return executor;
     }
 
 }

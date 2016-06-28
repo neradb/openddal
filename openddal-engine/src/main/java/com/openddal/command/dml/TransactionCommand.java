@@ -84,6 +84,10 @@ public class TransactionCommand extends Prepared {
         this.transactionName = string;
     }
 
+    public String getTransactionName() {
+        return transactionName;
+    }
+
     @Override
     public ResultInterface queryMeta() {
         return null;

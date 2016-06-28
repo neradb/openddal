@@ -13,34 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.command.ddl;
+package com.openddal.excutor;
 
-import com.openddal.command.CommandInterface;
-import com.openddal.dbobject.table.Table;
-import com.openddal.engine.Session;
+import com.openddal.command.Prepared;
 
 /**
- * This class represents the statement
- * TRUNCATE TABLE
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ *
  */
-public class TruncateTable extends DefineCommand {
-
-    private Table table;
-
-    public TruncateTable(Session session) {
-        super(session);
-    }
-
-    @Override
-    public int getType() {
-        return CommandInterface.TRUNCATE_TABLE;
-    }
-
-    public Table getTable() {
-        return table;
-    }
-
-    public void setTable(Table table) {
-        this.table = table;
-    }
+public interface ExecutorFactory {
+    Executor newExecutor(Prepared prepared);
 }

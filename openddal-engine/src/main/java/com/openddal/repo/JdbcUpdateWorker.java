@@ -67,9 +67,9 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
             return rows;
         } catch (SQLException e) {
             StatementBuilder buff = new StatementBuilder();
-            buff.append(shardName).append(" executing executeUpdate error:").append(sql);
+            buff.append(sql);
             if (params != null && 0 < params.size()) {
-                buff.append("\n{");
+                buff.append(" params{");
                 int i = 1;
                 for (Value v : params) {
                     buff.appendExceptFirst(", ");
@@ -77,9 +77,7 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
                 }
                 buff.append('}');
             }
-            buff.append(';');
-            trace.error(e, buff.toString());
-            throw wrapException(sql, e);
+            throw wrapException("executeUpdate", shardName, buff.toString(), e);
         } finally {
             close();
         }

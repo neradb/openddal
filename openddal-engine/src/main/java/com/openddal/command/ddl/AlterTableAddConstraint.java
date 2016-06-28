@@ -22,7 +22,6 @@ import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.AlterTableAddConstraintExecutor;
 import com.openddal.util.New;
 
 /**
@@ -92,7 +91,6 @@ public class AlterTableAddConstraint extends SchemaCommand {
     private boolean checkExisting;
     private boolean primaryKeyHash;
     private ArrayList<Index> createdIndexes = New.arrayList();
-    private AlterTableAddConstraintExecutor executor;
 
     public AlterTableAddConstraint(Session session, Schema schema, boolean ifNotExists) {
         super(session, schema);
@@ -268,13 +266,5 @@ public class AlterTableAddConstraint extends SchemaCommand {
      */
     public ArrayList<Index> getCreatedIndexes() {
         return createdIndexes;
-    }
-
-    @Override
-    public AlterTableAddConstraintExecutor getExecutor() {
-        if(executor == null) {
-            executor = new AlterTableAddConstraintExecutor(this);
-        }
-        return executor;
     }
 }

@@ -132,7 +132,7 @@
 90107=Cannot drop {0} because {1} depends on it
 90108=Out of memory.
 90109=View {0} is invalid: {1}
-90111=Error accessing database table with SQL statement {0}, cause: {1}
+90111=Error executing {0} on database {1} with SQL statement {2}, cause: {3}
 90112=Row not found when trying to delete from index {0}
 90113=Unsupported property setting {0}
 90114=Constant {0} already exists

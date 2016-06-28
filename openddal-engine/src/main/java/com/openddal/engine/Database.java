@@ -38,6 +38,8 @@ import com.openddal.dbobject.table.MetaTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.spi.Repository;
+import com.openddal.excutor.ExecutorFactory;
+import com.openddal.excutor.ExecutorFactoryImpl;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
@@ -84,6 +86,7 @@ public class Database {
     private RoutingHandler routingHandler;
     private final ThreadPoolExecutor queryExecutor;
     private final Repository repository;
+    private final ExecutorFactory executorFactory;
     private final Configuration configuration;
 
     public Database(Configuration configuration) {
@@ -97,6 +100,7 @@ public class Database {
 
         this.queryExecutor = createQueryExecutor();
         this.repository = bindRepository();
+        this.executorFactory = new ExecutorFactoryImpl();
         openDatabase();
     }
 
@@ -704,9 +708,6 @@ public class Database {
         return routingHandler;
     }
 
-    /**
-     * @return the dataSourceManager
-     */
     public Repository getRepository() {
         return repository;
     }
@@ -714,5 +715,11 @@ public class Database {
     public ThreadPoolExecutor getQueryExecutor() {
         return queryExecutor;
     }
+
+    public ExecutorFactory getExecutorFactory() {
+        return executorFactory;
+    }
+    
+    
 
 }

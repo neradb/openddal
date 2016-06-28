@@ -25,7 +25,6 @@ import com.openddal.dbobject.index.Index;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.MergeExecutor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.ResultInterface;
@@ -44,7 +43,6 @@ public class Merge extends Prepared {
     private Column[] keys;
     private Query query;
     private Prepared update;
-    private MergeExecutor executor;
 
     public Merge(Session session) {
         super(session);
@@ -65,11 +63,6 @@ public class Merge extends Prepared {
      */
     public void addRow(Expression[] expr) {
         list.add(expr);
-    }
-
-    @Override
-    public String explainPlan() {
-        return getExecutor().explain();
     }
 
     @Override
@@ -121,11 +114,6 @@ public class Merge extends Prepared {
         }
         String sql = buff.toString();
         update = session.prepare(sql);
-    }
-    
-    @Override
-    public int update() {
-        return getExecutor().update();
     }
 
     @Override
@@ -189,11 +177,4 @@ public class Merge extends Prepared {
         return update;
     }
     
-    public MergeExecutor getExecutor() {
-        if (executor == null) {
-            executor = new MergeExecutor(this);
-        }
-        return executor;
-    }
-
 }

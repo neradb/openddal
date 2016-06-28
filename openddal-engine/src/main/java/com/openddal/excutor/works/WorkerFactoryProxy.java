@@ -175,20 +175,19 @@ public class WorkerFactoryProxy implements WorkerFactory {
         return batchWorkerProxys;
     }
 
-    public synchronized void close() {
-        List<Worker> workers = New.arrayList(workerHolder);
-        for (Worker worker : workers) {
+    public synchronized void closeWorkers() {
+        for (Worker worker : workerHolder) {
             try {
                 worker.close();
             } catch (Throwable e) {
                 // ignored
             }
         }
+        workerHolder.clear();
     }
 
-    public synchronized void cancel() {
-        List<Worker> workers = New.arrayList(workerHolder);
-        for (Worker worker : workers) {
+    public synchronized void cancelWorkers() {
+        for (Worker worker : workerHolder) {
             try {
                 worker.cancel();
             } catch (Throwable e) {
@@ -200,13 +199,9 @@ public class WorkerFactoryProxy implements WorkerFactory {
     public synchronized boolean hasHoldeWorker() {
         return !workerHolder.isEmpty();
     }
-
-    private synchronized void addWorker(Worker worker) {
-        workerHolder.add(worker);
-    }
     
-    private <T extends Worker> T holdeWorker(T target) {
-        addWorker(target);
+    private synchronized <T extends Worker> T holdeWorker(T target) {
+        workerHolder.add(target);
         return target;
     }
 

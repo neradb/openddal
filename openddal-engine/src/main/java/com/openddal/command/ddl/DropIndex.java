@@ -18,7 +18,6 @@ package com.openddal.command.ddl;
 import com.openddal.command.CommandInterface;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Session;
-import com.openddal.excutor.effects.DropIndexExecutor;
 
 /**
  * This class represents the statement
@@ -29,7 +28,6 @@ public class DropIndex extends SchemaCommand {
     private String indexName;
     private String tableName;
     private boolean ifExists;
-    private DropIndexExecutor executor;
 
     public DropIndex(Session session, Schema schema) {
         super(session, schema);
@@ -63,13 +61,4 @@ public class DropIndex extends SchemaCommand {
     public int getType() {
         return CommandInterface.DROP_INDEX;
     }
-    
-    @Override
-    public DropIndexExecutor getExecutor() {
-        if(executor == null) {
-            executor = new DropIndexExecutor(this);
-        }
-        return executor;
-    }
-
 }
