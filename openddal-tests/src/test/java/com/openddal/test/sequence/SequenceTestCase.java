@@ -81,7 +81,7 @@ public class SequenceTestCase extends BaseTestCase {
             JdbcUtils.closeSilently(conn);
         }
     }
-    @Test
+    //@Test
     public void tesetBatchInsertSeqValue() throws Exception {
         Connection conn = null;
         Statement stmt = null;

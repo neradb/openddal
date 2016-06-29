@@ -16,10 +16,7 @@
 package com.openddal.server;
 
 import java.util.Properties;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor.AbortPolicy;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -28,6 +25,8 @@ import org.slf4j.LoggerFactory;
 import com.openddal.engine.Engine;
 import com.openddal.engine.SysProperties;
 import com.openddal.server.processor.ProcessorFactory;
+import com.openddal.util.ExtendableThreadPoolExecutor;
+import com.openddal.util.ExtendableThreadPoolExecutor.TaskQueue;
 import com.openddal.util.StringUtils;
 import com.openddal.util.Threads;
 
@@ -169,15 +168,12 @@ public abstract class NettyServer {
     }
 
     public ThreadPoolExecutor createUserThreadExecutor() {
-        int corePoolSize = Runtime.getRuntime().availableProcessors();
-        int capacity = 200;
-        int maximumPoolSize = args.maxThreads;
-        int keepAliveTime = args.keepAliveTime;
-        BlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<Runnable>(capacity);
-        ThreadPoolExecutor userExecutor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime,
-                TimeUnit.MILLISECONDS, workQueue, new DefaultThreadFactory("request-processor", true),
-                new AbortPolicy());
-        userExecutor.allowCoreThreadTimeOut(true);
+        TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
+        int poolCoreSize = SysProperties.THREAD_POOL_SIZE_CORE;
+        int poolMaxSize = SysProperties.THREAD_POOL_SIZE_MAX;
+        poolMaxSize = poolMaxSize > poolCoreSize ? poolMaxSize : poolCoreSize;
+        ExtendableThreadPoolExecutor userExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 5L,
+                TimeUnit.MINUTES, queue, Threads.newThreadFactory("request-processor"));
         return userExecutor;
     }
 
