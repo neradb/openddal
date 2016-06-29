@@ -23,7 +23,7 @@ public class NettyServerTestCase {
                 "-sendBuff","1024",
                 "-recvBuff","1024",
                 "-protocol","mysql",
-                "-configFile","",
+                "-configFile","config/ddal-config.xml",
                 
         };
         ServerLauncher.launch(args);

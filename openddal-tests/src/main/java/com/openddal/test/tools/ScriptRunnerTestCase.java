@@ -22,8 +22,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.sql.Connection;
 
-import org.junit.Test;
-
 import com.openddal.test.BaseTestCase;
 import com.openddal.util.ScriptRunner;
 import com.openddal.util.Utils;
@@ -36,7 +34,6 @@ import junit.framework.Assert;
 public class ScriptRunnerTestCase extends BaseTestCase {
 
 
-    @Test
     public void runCreateScript() throws Exception {
         Connection conn = getConnection();
         runOn(conn);
@@ -60,5 +57,10 @@ public class ScriptRunnerTestCase extends BaseTestCase {
     public void runOnH2() throws Exception {
         Connection conn = getH2Connection();
         runOn(conn);
+    }
+    
+    public static void main(String[] args) throws Exception {
+        ScriptRunnerTestCase case1 = new ScriptRunnerTestCase();
+        case1.runCreateScript();
     }
 }

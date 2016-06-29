@@ -19,7 +19,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 
 import com.openddal.command.expression.ParameterInterface;
-import com.openddal.engine.SysProperties;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
@@ -76,13 +75,11 @@ public class Trace {
 
     private final TraceWriter traceWriter;
     private final String module;
-    private final String lineSeparator;
     private int traceLevel = TraceSystem.PARENT;
 
     Trace(TraceWriter traceWriter, String module) {
         this.traceWriter = traceWriter;
         this.module = module;
-        this.lineSeparator = SysProperties.LINE_SEPARATOR;
     }
 
     /**
@@ -226,7 +223,7 @@ public class Trace {
             return;
         }
         StringBuilder buff = new StringBuilder(sql.length() + params.length() + 20);
-        buff.append(lineSeparator).append("/*SQL");
+        buff.append("/*SQL");
         boolean space = false;
         if (params.length() > 0) {
             // This looks like a bug, but it is intentional:
@@ -240,7 +237,7 @@ public class Trace {
         }
         if (count > 0) {
             space = true;
-            buff.append(" #:").append(count);
+            buff.append(" r:").append(count);
         }
         if (time > 0) {
             space = true;
@@ -301,8 +298,7 @@ public class Trace {
      */
     public void infoCode(String java) {
         if (isEnabled(TraceSystem.INFO)) {
-            traceWriter.write(TraceSystem.INFO, module, lineSeparator +
-                    "/**/" + java, null);
+            traceWriter.write(TraceSystem.INFO, module, java, null);
         }
     }
 
@@ -313,8 +309,7 @@ public class Trace {
      */
     void debugCode(String java) {
         if (isEnabled(TraceSystem.DEBUG)) {
-            traceWriter.write(TraceSystem.DEBUG, module, lineSeparator +
-                    "/**/" + java, null);
+            traceWriter.write(TraceSystem.DEBUG, module, java, null);
         }
     }
 

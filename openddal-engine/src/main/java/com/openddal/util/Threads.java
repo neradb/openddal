@@ -81,7 +81,7 @@ public class Threads {
 
         @Override
         public Thread newThread(Runnable r) {
-            String name = prefix + "_" + index.getAndIncrement();
+            String name = prefix + "-" + index.getAndIncrement();
             Thread t = new Thread(group, r, name);
             t.setDaemon(daemon);
             if (t.getPriority() != Thread.NORM_PRIORITY) {

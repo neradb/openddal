@@ -329,7 +329,7 @@ public class Database {
         Session session = new Session(this, user, ++nextSessionId);
         userSessions.add(session);
         if (trace.isDebugEnabled()) {
-            trace.debug("create session #{0}", session.getId(), "engine");
+            trace.debug("create session id[{0}]", session.getId(), "engine");
         }
         return session;
     }
