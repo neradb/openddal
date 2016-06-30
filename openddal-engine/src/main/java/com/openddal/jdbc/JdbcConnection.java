@@ -586,9 +586,6 @@ public class JdbcConnection extends TraceObject implements Connection {
                 debugCode("setAutoCommit(" + autoCommit + ");");
             }
             checkClosed();
-            if (autoCommit && !session.getAutoCommit()) {
-                commit();
-            }
             session.setAutoCommit(autoCommit);
         } catch (Exception e) {
             throw logAndConvert(e);

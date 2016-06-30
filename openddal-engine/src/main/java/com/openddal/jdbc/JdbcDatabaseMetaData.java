@@ -86,14 +86,12 @@ public class JdbcDatabaseMetaData extends TraceObject implements
     /**
      * Gets the database product name.
      *
-     * @return the product name ("H2")
+     * @return the product name ("OpenDDAL")
      */
     @Override
     public String getDatabaseProductName() {
         debugCodeCall("getDatabaseProductName");
-        // This value must stay like that, see
-        // http://opensource.atlassian.com/projects/hibernate/browse/HHH-2682
-        return "H2";
+        return "OpenDDAL";
     }
 
     /**
@@ -115,7 +113,7 @@ public class JdbcDatabaseMetaData extends TraceObject implements
     @Override
     public String getDriverName() {
         debugCodeCall("getDriverName");
-        return "H2 JDBC Driver";
+        return "OpenDDAL JDBC Driver";
     }
 
     /**

@@ -54,10 +54,12 @@ import com.openddal.message.DbException;
 import com.openddal.test.utils.ProxyCodeGenerator;
 import com.openddal.test.utils.ResultVerifier;
 import com.openddal.util.FilePath;
+import com.openddal.util.JdbcUtils;
 import com.openddal.util.MurmurHash;
 
-public abstract class BaseTestCase {
+import junit.framework.TestCase;
 
+public abstract class BaseTestCase extends TestCase {
 
     /**
      * The base directory.
@@ -92,16 +94,16 @@ public abstract class BaseTestCase {
     public BaseTestCase() {
         BasicDataSource ds = newDataSource();
         this.dataSource = ds;
-    
+
     }
 
     private BasicDataSource newDataSource() {
         BasicDataSource ds = new BasicDataSource();
         ds.setDriverClassName("com.openddal.jdbc.JdbcDriver");
         ds.setUrl("jdbc:openddal:config/ddal-config.xml;");
-        ds.setDefaultAutoCommit(false);
         ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         ds.setTestOnBorrow(true);
+        ds.setValidationQuery("select 1 from dual");
         return ds;
     }
 
@@ -397,42 +399,6 @@ public abstract class BaseTestCase {
     }
 
     /**
-     * Called if the test reached a point that was not expected.
-     *
-     * @throws AssertionError always throws an AssertionError
-     */
-    public void fail() {
-        fail("Failure");
-    }
-
-    /**
-     * Called if the test reached a point that was not expected.
-     *
-     * @param string the error message
-     * @throws AssertionError always throws an AssertionError
-     */
-    protected void fail(String string) {
-        lastPrint = 0;
-        if (string.length() > 100) {
-            // avoid long strings with special characters, because they are slow
-            // to display in Eclipse
-            char[] data = string.toCharArray();
-            for (int i = 0; i < data.length; i++) {
-                char c = data[i];
-                if (c >= 128 || c < 32) {
-                    data[i] = (char) ('a' + (c & 15));
-                    string = null;
-                }
-            }
-            if (string == null) {
-                string = new String(data);
-            }
-        }
-        println(string);
-        throw new AssertionError(string);
-    }
-
-    /**
      * Print a message to system out.
      *
      * @param s the message
@@ -454,33 +420,6 @@ public abstract class BaseTestCase {
     protected void printTime(String s) {
         SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
         println(dateFormat.format(new java.util.Date()) + " " + s);
-    }
-
-    /**
-     * Check if two values are equal, and if not throw an exception.
-     *
-     * @param message the message to print in case of error
-     * @param expected the expected value
-     * @param actual the actual value
-     * @throws AssertionError if the values are not equal
-     */
-    public void assertEquals(String message, int expected, int actual) {
-        if (expected != actual) {
-            fail("Expected: " + expected + " actual: " + actual + " message: " + message);
-        }
-    }
-
-    /**
-     * Check if two values are equal, and if not throw an exception.
-     *
-     * @param expected the expected value
-     * @param actual the actual value
-     * @throws AssertionError if the values are not equal
-     */
-    public void assertEquals(int expected, int actual) {
-        if (expected != actual) {
-            fail("Expected: " + expected + " actual: " + actual);
-        }
     }
 
     /**
@@ -599,53 +538,6 @@ public abstract class BaseTestCase {
     }
 
     /**
-     * Check if two values are equal, and if not throw an exception.
-     *
-     * @param message the message to use if the check fails
-     * @param expected the expected value
-     * @param actual the actual value
-     * @throws AssertionError if the values are not equal
-     */
-    protected void assertEquals(String message, String expected, String actual) {
-        if (expected == null && actual == null) {
-            return;
-        } else if (expected == null || actual == null) {
-            fail("Expected: " + expected + " Actual: " + actual + " " + message);
-        } else if (!expected.equals(actual)) {
-            int al = expected.length();
-            int bl = actual.length();
-            for (int i = 0; i < expected.length(); i++) {
-                String s = expected.substring(0, i);
-                if (!actual.startsWith(s)) {
-                    expected = expected.substring(0, i) + "<*>" + expected.substring(i);
-                    if (al > 20) {
-                        expected = "@" + i + " " + expected;
-                    }
-                    break;
-                }
-            }
-            if (al > 4000) {
-                expected = expected.substring(0, 4000);
-            }
-            if (bl > 4000) {
-                actual = actual.substring(0, 4000);
-            }
-            fail("Expected: " + expected + " (" + al + ") actual: " + actual + " (" + bl + ") " + message);
-        }
-    }
-
-    /**
-     * Check if two values are equal, and if not throw an exception.
-     *
-     * @param expected the expected value
-     * @param actual the actual value
-     * @throws AssertionError if the values are not equal
-     */
-    protected void assertEquals(String expected, String actual) {
-        assertEquals("", expected, actual);
-    }
-
-    /**
      * Check if two result sets are equal, and if not throw an exception.
      *
      * @param message the message to use if the check fails
@@ -715,19 +607,6 @@ public abstract class BaseTestCase {
      * @param actual the actual value
      * @throws AssertionError if the values are not equal
      */
-    protected void assertEquals(long expected, long actual) {
-        if (expected != actual) {
-            fail("Expected: " + expected + " actual: " + actual);
-        }
-    }
-
-    /**
-     * Check if two values are equal, and if not throw an exception.
-     *
-     * @param expected the expected value
-     * @param actual the actual value
-     * @throws AssertionError if the values are not equal
-     */
     protected void assertEquals(double expected, double actual) {
         if (expected != actual) {
             if (Double.isNaN(expected) && Double.isNaN(actual)) {
@@ -752,77 +631,6 @@ public abstract class BaseTestCase {
             } else {
                 fail("Expected: " + expected + " actual: " + actual);
             }
-        }
-    }
-
-    /**
-     * Check if two values are equal, and if not throw an exception.
-     *
-     * @param expected the expected value
-     * @param actual the actual value
-     * @throws AssertionError if the values are not equal
-     */
-    protected void assertEquals(boolean expected, boolean actual) {
-        if (expected != actual) {
-            fail("Boolean expected: " + expected + " actual: " + actual);
-        }
-    }
-
-    /**
-     * Check that the passed boolean is true.
-     *
-     * @param condition the condition
-     * @throws AssertionError if the condition is false
-     */
-    public void assertTrue(boolean condition) {
-        assertTrue("Expected: true got: false", condition);
-    }
-
-    /**
-     * Check that the passed object is null.
-     *
-     * @param obj the object
-     * @throws AssertionError if the condition is false
-     */
-    public void assertNull(Object obj) {
-        if (obj != null) {
-            fail("Expected: null got: " + obj);
-        }
-    }
-
-    /**
-     * Check that the passed boolean is true.
-     *
-     * @param message the message to print if the condition is false
-     * @param condition the condition
-     * @throws AssertionError if the condition is false
-     */
-    protected void assertTrue(String message, boolean condition) {
-        if (!condition) {
-            fail(message);
-        }
-    }
-
-    /**
-     * Check that the passed boolean is false.
-     *
-     * @param value the condition
-     * @throws AssertionError if the condition is true
-     */
-    protected void assertFalse(boolean value) {
-        assertFalse("Expected: false got: true", value);
-    }
-
-    /**
-     * Check that the passed boolean is false.
-     *
-     * @param message the message to print if the condition is false
-     * @param value the condition
-     * @throws AssertionError if the condition is true
-     */
-    protected void assertFalse(String message, boolean value) {
-        if (value) {
-            fail(message);
         }
     }
 
@@ -1341,7 +1149,7 @@ public abstract class BaseTestCase {
             throw new RuntimeException(e);
         }
     }
-    
+
     public static void printResultSet(ResultSet rs) {
         try {
             if (rs != null) {
@@ -1371,6 +1179,22 @@ public abstract class BaseTestCase {
 
     protected String getTestName() {
         return getClass().getSimpleName();
+    }
+
+
+    public void dropTable(String name) throws SQLException {
+        Connection connection = getConnection();
+        Statement stm = connection.createStatement();
+
+        try {
+            stm.executeUpdate(
+                    "drop table " + name);
+        } catch (SQLException sqle) {
+            // assume the table didn't exist
+        } finally {
+            JdbcUtils.closeSilently(connection);
+            JdbcUtils.closeSilently(stm);
+        }
     }
 
     public Connection getH2Connection() {

@@ -157,5 +157,27 @@ public class IndexType {
     public boolean isScan() {
         return scan;
     }
+    
+    public String getSQL() {
+        StringBuilder buff = new StringBuilder();
+        if (primaryKey) {
+            buff.append("PRIMARY KEY");
+            if (hash) {
+                buff.append(" HASH");
+            }
+        } else {
+            if (unique) {
+                buff.append("UNIQUE ");
+            }
+            if (hash) {
+                buff.append("HASH ");
+            }
+            if (spatial) {
+                buff.append("SPATIAL ");
+            }
+            buff.append("INDEX");
+        }
+        return buff.toString();
+    }
 
 }
