@@ -17,6 +17,7 @@ package com.openddal.server;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketAddress;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
@@ -38,9 +39,24 @@ public class ProtocolTransport {
     public ProtocolTransport(Channel channel, ByteBuf in) {
         this.channel = channel;
         this.in = in;
-        out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
-        input = new ByteBufInputStream(in);
-        output = new ByteBufOutputStream(out);
+        this.out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
+        this.input = new ByteBufInputStream(in);
+        this.output = new ByteBufOutputStream(out);
+    }
+    
+    public SocketAddress getRemoteAddress() {
+        SocketAddress socketAddress = channel.remoteAddress();
+        return socketAddress;
+    }
+
+    public SocketAddress getLocalAddress() {
+        SocketAddress socketAddress = channel.localAddress();
+        return socketAddress;
+    }
+    
+    public Session getSession() {
+        Session session = channel.attr(Session.CHANNEL_SESSION_KEY).get();
+        return session;
     }
     
     public boolean isOpen() {

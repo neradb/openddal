@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.server.processor.ProtocolProcessException;
+import com.openddal.server.processor.ProtocolProcessor;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -38,28 +39,15 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 public class ProtocolHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(ProtocolHandler.class);
 
-    private final Authenticator authenticator;
     private final ProcessorFactory processorFactory;
-    private final RequestFactory requestFactory;
-    private final ResponseFactory responseFactory;
     private final ThreadPoolExecutor userExecutor;
 
-    public ProtocolHandler(Authenticator authenticator, 
-            ProcessorFactory processorFactory,
-            RequestFactory requestFactory, 
-            ResponseFactory responseFactory, 
+    public ProtocolHandler(ProcessorFactory processorFactory,
             ThreadPoolExecutor executor) {
-        this.authenticator = authenticator;
         this.processorFactory = processorFactory;
-        this.requestFactory = requestFactory;
-        this.responseFactory = responseFactory;
         this.userExecutor = executor;
     }
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        authenticator.onConnected(ctx.channel());
-    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -67,7 +55,7 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         Session session = channel.attr(Session.CHANNEL_SESSION_KEY).get();
         if(session == null) {
-            authenticator.authorize(channel, buf);
+            throw new IllegalStateException("Not login");
         } else {
             ProtocolTransport transport = new ProtocolTransport(channel, buf);
             userExecutor.execute(new ProcessorTask(ctx, transport));
@@ -89,17 +77,18 @@ public class ProtocolHandler extends ChannelInboundHandlerAdapter {
 
         @Override
         public void run() {
-            Request request = requestFactory.createRequest(transport);
-            Response response = responseFactory.createResponse(transport);
             try {
-                processorFactory.getProcessor(transport).process(request, response);
+                ProtocolProcessor processor = processorFactory.getProcessor(transport);
+                processor.process(transport);
             } catch (ProtocolProcessException e) {
                 logger.error("process exception happen when call processor", e);
-                response.sendError(e.getErrorCode(), e.getErrorMessage());
+                //TODO sendError to client
+                //response.sendError(e.getErrorCode(), e.getErrorMessage());
             } catch (Throwable e) {
                 logger.error("User exception happen when call processor", e);
                 ProtocolProcessException convert = ProtocolProcessException.convert(e);
-                response.sendError(convert.getErrorCode(), convert.getErrorMessage());
+                //TODO sendError to client
+                //response.sendError(convert.getErrorCode(), convert.getErrorMessage());
             } finally {
                 ctx.writeAndFlush(transport.out);
                 transport.in.release();

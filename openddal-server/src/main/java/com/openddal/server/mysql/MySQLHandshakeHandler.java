@@ -25,8 +25,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.openddal.engine.Constants;
+import com.openddal.engine.SysProperties;
 import com.openddal.jdbc.JdbcDriver;
-import com.openddal.server.Authenticator;
+import com.openddal.server.HandshakeHandler;
+import com.openddal.server.ProtocolTransport;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.Handshake;
@@ -35,22 +37,22 @@ import com.openddal.server.mysql.proto.OK;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class MySQLAuthenticator implements Authenticator {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLAuthenticator.class);
+public class MySQLHandshakeHandler extends HandshakeHandler {
     
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLHandshakeHandler.class);
     private final AtomicLong connIdGenerator = new AtomicLong(0);
     private final AttributeKey<MySQLSession> TMP_SESSION_KEY = AttributeKey.valueOf("_AUTHTMP_SESSION_KEY");
 
     @Override
-    public void onConnected(Channel channel) {
-        ByteBuf out = channel.alloc().buffer();
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        ByteBuf out = ctx.alloc().buffer();
         Handshake handshake = new Handshake();
         handshake.protocolVersion = MySQLProtocolServer.PROTOCOL_VERSION;
         handshake.serverVersion = MySQLProtocolServer.SERVER_VERSION;
@@ -74,32 +76,24 @@ public class MySQLAuthenticator implements Authenticator {
         // handshake = Handshake.loadFromPacket(packet);
         MySQLSession temp = new MySQLSession();
         temp.setHandshake(handshake);
-        channel.attr(TMP_SESSION_KEY).set(temp);
+        ctx.attr(TMP_SESSION_KEY).set(temp);
         out.writeBytes(handshake.toPacket());
-        channel.writeAndFlush(out);
+        ctx.writeAndFlush(out);
+    
     }
 
+
+
+
     @Override
-    public void authorize(Channel channel, ByteBuf buf) {
-        MySQLSession session = channel.attr(TMP_SESSION_KEY).getAndRemove();
-        HandshakeResponse authReply = null;
-        try {
-            byte[] packet = new byte[buf.readableBytes()];
-            buf.readBytes(packet);
-            authReply = HandshakeResponse.loadFromPacket(packet);
-            Connection connect = connectEngine(authReply);
-            session.setHandshakeResponse(authReply);
-            session.setEngineConnection(connect);
-            session.bind(channel);
-            success(channel);
-        } catch (Exception e) {
-            String msg = authReply == null ? e.getMessage()
-                    : "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
-            LOGGER.error("Authorize failed. " + msg, e);
-            error(channel, MySQLErrorCode.ER_DBACCESS_DENIED_ERROR, msg);
-        } finally {
-            buf.release();
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        ProtocolTransport transport = new ProtocolTransport(ctx.channel(), (ByteBuf) msg);
+        if(transport.getSession() == null) {
+            userExecutor.execute(new AuthTask(ctx, transport));
+        } else {
+            ctx.fireChannelRead(msg);
         }
+    
     }
 
     /**
@@ -111,7 +105,8 @@ public class MySQLAuthenticator implements Authenticator {
         Properties prop = new Properties();
         prop.setProperty("user", authReply.username);
         prop.setProperty("password", authReply.authResponse);
-        Connection connect = JdbcDriver.load().connect(Constants.START_URL, prop);
+        String url = Constants.START_URL + SysProperties.ENGINE_CONFIG_LOCATION;
+        Connection connect = JdbcDriver.load().connect(url, prop);
         return connect;
     }
 
@@ -146,6 +141,42 @@ public class MySQLAuthenticator implements Authenticator {
         err.errorMessage = msg;
         out.writeBytes(err.toPacket());
         channel.writeAndFlush(out);
+    }
+    
+    /**
+     * Execute the processor in user threads.
+     */
+    class AuthTask implements Runnable {
+        private ChannelHandlerContext ctx;
+        private ProtocolTransport transport;
+
+        AuthTask(ChannelHandlerContext ctx, ProtocolTransport transport) {
+            this.ctx = ctx;
+            this.transport = transport;
+        }
+
+        @Override
+        public void run() {
+            MySQLSession session = ctx.attr(TMP_SESSION_KEY).getAndRemove();
+            HandshakeResponse authReply = null;
+            try {
+                byte[] packet = new byte[transport.in.readableBytes()];
+                transport.in.readBytes(packet);
+                authReply = HandshakeResponse.loadFromPacket(packet);
+                Connection connect = connectEngine(authReply);
+                session.setHandshakeResponse(authReply);
+                session.setEngineConnection(connect);
+                session.bind(ctx.channel());
+                success(ctx.channel());
+            } catch (Exception e) {
+                String errMsg = authReply == null ? e.getMessage()
+                        : "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
+                LOGGER.error("Authorize failed. " + errMsg, e);
+                error(ctx.channel(), MySQLErrorCode.ER_DBACCESS_DENIED_ERROR, errMsg);
+            } finally {
+                transport.in.release();
+            }        
+        }
     }
 
 }

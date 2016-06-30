@@ -3,10 +3,10 @@ package com.openddal.server.mysql;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openddal.server.Request;
-import com.openddal.server.Response;
+import com.openddal.server.ProtocolTransport;
 import com.openddal.server.mysql.parser.ServerParse;
 import com.openddal.server.mysql.proto.Com_Query;
+import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
@@ -15,18 +15,14 @@ import com.openddal.server.processor.ProtocolProcessException;
 
 import io.netty.buffer.ByteBuf;
 
-/**
- * 
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
- *
- */
 public class MySQLProtocolProcessor extends AbstractProtocolProcessor {
+    
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLProtocolProcessor.class);
 
     @Override
-    protected void doProcess(Request request, Response response) throws ProtocolProcessException {
+    protected void doProcess(ProtocolTransport transport) throws ProtocolProcessException {
         
-        ByteBuf buffer = request.getInputBuffer();
+        ByteBuf buffer = transport.in;
         byte[] packet = new byte[buffer.readableBytes()];
         buffer.readBytes(packet);
         //long sequenceId = Packet.getSequenceId(packet);
@@ -44,7 +40,7 @@ public class MySQLProtocolProcessor extends AbstractProtocolProcessor {
             sendOk();
             break;
         case Flags.COM_QUIT:
-            request.getSession().close();
+            getSession().close();
             break;
         case Flags.COM_PROCESS_KILL:
         case Flags.COM_STMT_PREPARE:
@@ -221,8 +217,14 @@ public class MySQLProtocolProcessor extends AbstractProtocolProcessor {
     
     
     private void sendOk() {
-        ByteBuf out = getResponse().getOutputBuffer();
         OK ok = new OK();
-        out.writeBytes(ok.toPacket());
+        getProtocolTransport().out.writeBytes(ok.toPacket());
+    }
+
+    public void sendError(int errno, String msg) {
+        ERR err = new ERR();
+        err.errorCode = errno;
+        err.errorMessage = msg;
+        getProtocolTransport().out.writeBytes(err.toPacket());
     }
 }

@@ -3,8 +3,7 @@ package com.openddal.server.processor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openddal.server.Request;
-import com.openddal.server.Response;
+import com.openddal.server.ProtocolTransport;
 import com.openddal.server.Session;
 
 /**
@@ -15,42 +14,37 @@ import com.openddal.server.Session;
 public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
 
     private static final Logger accessLogger = LoggerFactory.getLogger("AccessLogger");
-    private static ThreadLocal<Request> requestHolder = new ThreadLocal<Request>();
-    private static ThreadLocal<Response> responseHolder = new ThreadLocal<Response>();
+    private static ThreadLocal<ProtocolTransport> transportHolder = new ThreadLocal<ProtocolTransport>();
     private static ThreadLocal<Session> sessionHolder = new ThreadLocal<Session>();
-
     @Override
-    public final boolean process(Request request, Response response) throws ProtocolProcessException {
+    public final boolean process(ProtocolTransport transport) throws ProtocolProcessException {
         long costTime, start = System.currentTimeMillis();
         ProtocolProcessException e = null;
         try {
-            requestHolder.set(request);
-            responseHolder.set(response);
-            sessionHolder.set(request.getSession());
-            accessStart(start);
-            doProcess(request, response);
+            transportHolder.set(transport);
+            sessionHolder.set(transport.getSession());
+            accessStart(transport, start);
+            doProcess(transport);
         } catch (Exception ex) {
             e = ProtocolProcessException.convert(ex);
             throw e;
         } finally {
             costTime = System.currentTimeMillis() - start;
-            accessEndLog(costTime, e);
-            requestHolder.remove();
-            responseHolder.remove();
+            accessEndLog(transport, costTime, e);
             sessionHolder.remove();
+            transportHolder.remove();
         }
         return e == null;
        
     }
 
-    private void accessStart(long processTime) {
+    private void accessStart(ProtocolTransport transport, long processTime) {
         if (accessLogger.isInfoEnabled()) {
-            Request request = getRequest();
             Session session = getSession();
             StringBuilder logMsg = new StringBuilder(256)
                     .append("request-start:{")
-                    .append("remote: ").append(request.getRemoteAddress()).append(", ")
-                    .append("local ").append(request.getLocalAddress()).append(", ")
+                    .append("remote: ").append(transport.getRemoteAddress()).append(", ")
+                    .append("local ").append(transport.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")
                     .append("processTime:").append(processTime).append("")
                     .append("}");
@@ -59,14 +53,13 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
         }
     }
 
-    private void accessEndLog(long costTime, ProtocolProcessException e) {
+    private void accessEndLog(ProtocolTransport transport, long costTime, ProtocolProcessException e) {
         if (accessLogger.isInfoEnabled()) {
-            Request request = getRequest();
             Session session = getSession();
             StringBuilder logMsg = new StringBuilder(256)
                     .append("request-end:{")
-                    .append("remote: ").append(request.getRemoteAddress()).append(", ")
-                    .append("local ").append(request.getLocalAddress()).append(", ")
+                    .append("remote: ").append(transport.getRemoteAddress()).append(", ")
+                    .append("local ").append(transport.getLocalAddress()).append(", ")
                     .append("sessionId:").append(session.getSessionId()).append(", ")
                     .append("costTime:").append(costTime).append("ms, ")
                     .append("status:").append(e == null ? "success" : "failure, ");
@@ -80,19 +73,16 @@ public abstract class AbstractProtocolProcessor implements ProtocolProcessor {
         }
     }
     
-    protected final Request getRequest() {
-        return requestHolder.get();
-    }
-    
-    protected final Response getResponse() {
-        return responseHolder.get();
-    }
     
     protected final Session getSession() {
         return sessionHolder.get();
     }
     
+    protected final ProtocolTransport getProtocolTransport() {
+        return transportHolder.get();
+    }
+    
 
-    protected abstract void doProcess(Request request, Response response) throws ProtocolProcessException;
+    protected abstract void doProcess(ProtocolTransport transport) throws ProtocolProcessException;
 
 }

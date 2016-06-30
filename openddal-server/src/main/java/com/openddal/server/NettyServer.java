@@ -131,12 +131,10 @@ public abstract class NettyServer {
         bossGroup = new NioEventLoopGroup(args.bossThreads, new DefaultThreadFactory("NettyBossGroup", true));
         workerGroup = new NioEventLoopGroup(args.workerThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
         userExecutor = createUserThreadExecutor();
-        Authenticator authenticator = createAuthenticator();
         ProcessorFactory processorFactory = createProcessorFactory();
-        RequestFactory requestFactory = createRequestFactory();
-        ResponseFactory responseFactory = createResponseFactory();
-        final ProtocolHandler protocolHandler = new ProtocolHandler(authenticator, processorFactory, requestFactory,
-                responseFactory, userExecutor);
+        
+        final HandshakeHandler handshakeHandler = newHandshakeHandler();
+        final ProtocolHandler protocolHandler = new ProtocolHandler(processorFactory, userExecutor);
 
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
@@ -160,12 +158,13 @@ public abstract class NettyServer {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast(createProtocolDecoder(),
-                        /* createProtocolEncoder(), */ protocolHandler);
+                        /* createProtocolEncoder(), */ handshakeHandler, protocolHandler);
             }
         });
 
         return b;
     }
+
 
     public ThreadPoolExecutor createUserThreadExecutor() {
         TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
@@ -176,20 +175,21 @@ public abstract class NettyServer {
                 TimeUnit.MINUTES, queue, Threads.newThreadFactory("request-processor"));
         return userExecutor;
     }
+    
+    private HandshakeHandler newHandshakeHandler() {
+        HandshakeHandler handshakeHandler = createHandshakeHandler();
+        handshakeHandler.setUserExecutor(userExecutor);
+        return handshakeHandler;
+    }
+
 
     protected abstract String getServerName();
 
     protected abstract ChannelHandler createProtocolDecoder();
 
-    protected abstract ChannelHandler createProtocolEncoder();
-
-    protected abstract Authenticator createAuthenticator();
+    protected abstract HandshakeHandler createHandshakeHandler();
 
     protected abstract ProcessorFactory createProcessorFactory();
-
-    protected abstract RequestFactory createRequestFactory();
-
-    protected abstract ResponseFactory createResponseFactory();
 
     class ShutdownThread extends Thread {
         @Override

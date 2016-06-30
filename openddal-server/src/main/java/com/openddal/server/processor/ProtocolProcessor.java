@@ -15,8 +15,7 @@
  */
 package com.openddal.server.processor;
 
-import com.openddal.server.Request;
-import com.openddal.server.Response;
+import com.openddal.server.ProtocolTransport;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -24,6 +23,6 @@ import com.openddal.server.Response;
  */
 public interface ProtocolProcessor {
 
-    boolean process(Request request, Response response) throws ProtocolProcessException;
-
+    boolean process(ProtocolTransport transport) throws ProtocolProcessException;
+    
 }
