@@ -27,16 +27,19 @@ import org.slf4j.LoggerFactory;
 import com.openddal.engine.Constants;
 import com.openddal.engine.SysProperties;
 import com.openddal.jdbc.JdbcDriver;
-import com.openddal.server.HandshakeHandler;
+import com.openddal.server.ProtocolHandler;
 import com.openddal.server.ProtocolTransport;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.mysql.proto.OK;
+import com.openddal.server.util.CharsetUtil;
+import com.openddal.server.util.ErrorCode;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
 
@@ -44,7 +47,8 @@ import io.netty.util.AttributeKey;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class MySQLHandshakeHandler extends HandshakeHandler {
+@Sharable
+public class MySQLHandshakeHandler extends ProtocolHandler {
     
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLHandshakeHandler.class);
     private final AtomicLong connIdGenerator = new AtomicLong(0);
@@ -59,7 +63,7 @@ public class MySQLHandshakeHandler extends HandshakeHandler {
         handshake.connectionId = connIdGenerator.incrementAndGet();
         handshake.challenge1 = getRandomString(8);
         handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
-        handshake.characterSet = MySQLCharsets.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
+        handshake.characterSet = CharsetUtil.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
         handshake.challenge2 = getRandomString(12);
         handshake.authPluginDataLength = 21;
@@ -133,16 +137,6 @@ public class MySQLHandshakeHandler extends HandshakeHandler {
         channel.writeAndFlush(out);
     }
     
-
-    private static void error(Channel channel, int errno, String msg) {
-        ByteBuf out = channel.alloc().buffer();
-        ERR err = new ERR();
-        err.errorCode = errno;
-        err.errorMessage = msg;
-        out.writeBytes(err.toPacket());
-        channel.writeAndFlush(out);
-    }
-    
     /**
      * Execute the processor in user threads.
      */
@@ -172,11 +166,22 @@ public class MySQLHandshakeHandler extends HandshakeHandler {
                 String errMsg = authReply == null ? e.getMessage()
                         : "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
                 LOGGER.error("Authorize failed. " + errMsg, e);
-                error(ctx.channel(), MySQLErrorCode.ER_DBACCESS_DENIED_ERROR, errMsg);
+                handleThrowable(ErrorCode.ER_DBACCESS_DENIED_ERROR, errMsg);
             } finally {
+                ctx.writeAndFlush(transport.out);
                 transport.in.release();
             }        
         }
+        
+        public void handleThrowable(int errno, String msg) {
+            transport.out.clear();
+            ERR err = new ERR();
+            err.errorCode = errno;
+            err.errorMessage = msg;
+            transport.out.writeBytes(err.toPacket());
+        } 
     }
+
+
 
 }

@@ -13,16 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.processor;
-
-import com.openddal.server.ProtocolTransport;
+package com.openddal.server;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public interface ProtocolProcessor {
+public interface ProcessorFactory {
 
-    boolean process(ProtocolTransport transport) throws ProtocolProcessException;
+    public ProtocolProcessor getProcessor(ProtocolTransport trans);
     
 }

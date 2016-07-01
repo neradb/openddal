@@ -21,6 +21,7 @@ import java.util.Map;
 import com.openddal.server.Session;
 import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
+import com.openddal.server.util.CharsetUtil;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 
@@ -67,12 +68,11 @@ public class MySQLSession implements Session {
         return handshakeResponse.username;
     }
 
-
     /**
      * @return the charset
      */
     public String getCharset() {
-        return MySQLCharsets.getCharset((int)handshakeResponse.characterSet);
+        return CharsetUtil.getCharset((int) handshakeResponse.characterSet);
     }
 
     /**
@@ -81,7 +81,6 @@ public class MySQLSession implements Session {
     public String getSchema() {
         return handshakeResponse.schema;
     }
-
 
     /**
      * @return the engineConnection
@@ -97,7 +96,6 @@ public class MySQLSession implements Session {
     public void setEngineConnection(Connection engineConnection) {
         this.engineConnection = engineConnection;
     }
-    
 
     /**
      * @param handshake the handshake to set
@@ -125,11 +123,16 @@ public class MySQLSession implements Session {
     public void close() {
         JdbcUtils.closeSilently(getEngineConnection());
         attachments.clear();
-        if(channel != null && channel.isOpen()) {
+        if (channel != null && channel.isOpen()) {
             channel.attr(Session.CHANNEL_SESSION_KEY).remove();
             channel.close();
         }
     }
 
+    @Override
+    public boolean setCharset(String charset) {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
 }

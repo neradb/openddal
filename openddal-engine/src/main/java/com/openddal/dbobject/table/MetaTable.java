@@ -92,7 +92,6 @@ public class MetaTable extends Table {
 
     private final int type;
     private final int indexColumn;
-    //private final MetaIndex metaIndex;
 
     /**
      * Create a new metadata table.
@@ -114,8 +113,16 @@ public class MetaTable extends Table {
                     "TABLE_CATALOG",
                     "TABLE_SCHEMA",
                     "TABLE_NAME",
-                    "TABLE_TYPE"
+                    "TABLE_TYPE",
                     // extensions
+                    "STORAGE_TYPE",
+                    "SQL",
+                    "REMARKS",
+                    "LAST_MODIFICATION BIGINT",
+                    "ID INT",
+                    "TYPE_NAME",
+                    "TABLE_CLASS",
+                    "ROW_COUNT_ESTIMATE BIGINT"
             );
             indexColumnName = "TABLE_NAME";
             break;
@@ -157,12 +164,22 @@ public class MetaTable extends Table {
                     "TABLE_NAME",
                     "NON_UNIQUE BIT",
                     "INDEX_NAME",
+                    "ORDINAL_POSITION SMALLINT",
                     "COLUMN_NAME",
+                    "CARDINALITY INT",
                     "PRIMARY_KEY BIT",
                     "INDEX_TYPE_NAME",
+                    "IS_GENERATED BIT",
+                    "INDEX_TYPE SMALLINT",
                     "ASC_OR_DESC",
+                    "PAGES INT",
+                    "FILTER_CONDITION",
+                    "REMARKS",
+                    "SQL",
                     "ID INT",
-                    "SORT_TYPE"
+                    "SORT_TYPE INT",
+                    "CONSTRAINT_NAME",
+                    "INDEX_CLASS"
             );
             indexColumnName = "TABLE_NAME";
             break;
@@ -197,6 +214,16 @@ public class MetaTable extends Table {
             setObjectName("SETTINGS");
             cols = createColumns("NAME", "VALUE");
             break;
+        case HELP:
+            setObjectName("HELP");
+            cols = createColumns(
+                    "ID INT",
+                    "SECTION",
+                    "TOPIC",
+                    "SYNTAX",
+                    "TEXT"
+            );
+            break;
         case SEQUENCES:
             setObjectName("SEQUENCES");
             cols = createColumns(
@@ -223,6 +250,66 @@ public class MetaTable extends Table {
                     "ID INT"
             );
             break;
+        case ROLES:
+            setObjectName("ROLES");
+            cols = createColumns(
+                    "NAME",
+                    "REMARKS",
+                    "ID INT"
+            );
+            break;
+        case RIGHTS:
+            setObjectName("RIGHTS");
+            cols = createColumns(
+                    "GRANTEE",
+                    "GRANTEETYPE",
+                    "GRANTEDROLE",
+                    "RIGHTS",
+                    "TABLE_SCHEMA",
+                    "TABLE_NAME",
+                    "ID INT"
+            );
+            indexColumnName = "TABLE_NAME";
+            break;
+        case FUNCTION_ALIASES:
+            setObjectName("FUNCTION_ALIASES");
+            cols = createColumns(
+                    "ALIAS_CATALOG",
+                    "ALIAS_SCHEMA",
+                    "ALIAS_NAME",
+                    "JAVA_CLASS",
+                    "JAVA_METHOD",
+                    "DATA_TYPE INT",
+                    "TYPE_NAME",
+                    "COLUMN_COUNT INT",
+                    "RETURNS_RESULT SMALLINT",
+                    "REMARKS",
+                    "ID INT",
+                    "SOURCE"
+            );
+            break;
+        case FUNCTION_COLUMNS:
+            setObjectName("FUNCTION_COLUMNS");
+            cols = createColumns(
+                    "ALIAS_CATALOG",
+                    "ALIAS_SCHEMA",
+                    "ALIAS_NAME",
+                    "JAVA_CLASS",
+                    "JAVA_METHOD",
+                    "COLUMN_COUNT INT",
+                    "POS INT",
+                    "COLUMN_NAME",
+                    "DATA_TYPE INT",
+                    "TYPE_NAME",
+                    "PRECISION INT",
+                    "SCALE SMALLINT",
+                    "RADIX SMALLINT",
+                    "NULLABLE SMALLINT",
+                    "COLUMN_TYPE SMALLINT",
+                    "REMARKS",
+                    "COLUMN_DEFAULT"
+            );
+            break;
         case SCHEMATA:
             setObjectName("SCHEMATA");
             cols = createColumns(
@@ -234,6 +321,40 @@ public class MetaTable extends Table {
                     "IS_DEFAULT BIT",
                     "REMARKS",
                     "ID INT"
+            );
+            break;
+        case TABLE_PRIVILEGES:
+            setObjectName("TABLE_PRIVILEGES");
+            cols = createColumns(
+                    "GRANTOR",
+                    "GRANTEE",
+                    "TABLE_CATALOG",
+                    "TABLE_SCHEMA",
+                    "TABLE_NAME",
+                    "PRIVILEGE_TYPE",
+                    "IS_GRANTABLE"
+            );
+            indexColumnName = "TABLE_NAME";
+            break;
+        case COLUMN_PRIVILEGES:
+            setObjectName("COLUMN_PRIVILEGES");
+            cols = createColumns(
+                    "GRANTOR",
+                    "GRANTEE",
+                    "TABLE_CATALOG",
+                    "TABLE_SCHEMA",
+                    "TABLE_NAME",
+                    "COLUMN_NAME",
+                    "PRIVILEGE_TYPE",
+                    "IS_GRANTABLE"
+            );
+            indexColumnName = "TABLE_NAME";
+            break;
+        case COLLATIONS:
+            setObjectName("COLLATIONS");
+            cols = createColumns(
+                    "NAME",
+                    "KEY"
             );
             break;
         case VIEWS:
@@ -251,6 +372,102 @@ public class MetaTable extends Table {
             );
             indexColumnName = "TABLE_NAME";
             break;
+        case IN_DOUBT:
+            setObjectName("IN_DOUBT");
+            cols = createColumns(
+                    "TRANSACTION",
+                    "STATE"
+            );
+            break;
+        case CROSS_REFERENCES:
+            setObjectName("CROSS_REFERENCES");
+            cols = createColumns(
+                    "PKTABLE_CATALOG",
+                    "PKTABLE_SCHEMA",
+                    "PKTABLE_NAME",
+                    "PKCOLUMN_NAME",
+                    "FKTABLE_CATALOG",
+                    "FKTABLE_SCHEMA",
+                    "FKTABLE_NAME",
+                    "FKCOLUMN_NAME",
+                    "ORDINAL_POSITION SMALLINT",
+                    "UPDATE_RULE SMALLINT",
+                    "DELETE_RULE SMALLINT",
+                    "FK_NAME",
+                    "PK_NAME",
+                    "DEFERRABILITY SMALLINT"
+            );
+            indexColumnName = "PKTABLE_NAME";
+            break;
+        case CONSTRAINTS:
+            setObjectName("CONSTRAINTS");
+            cols = createColumns(
+                    "CONSTRAINT_CATALOG",
+                    "CONSTRAINT_SCHEMA",
+                    "CONSTRAINT_NAME",
+                    "CONSTRAINT_TYPE",
+                    "TABLE_CATALOG",
+                    "TABLE_SCHEMA",
+                    "TABLE_NAME",
+                    "UNIQUE_INDEX_NAME",
+                    "CHECK_EXPRESSION",
+                    "COLUMN_LIST",
+                    "REMARKS",
+                    "SQL",
+                    "ID INT"
+            );
+            indexColumnName = "TABLE_NAME";
+            break;
+        case CONSTANTS:
+            setObjectName("CONSTANTS");
+            cols = createColumns(
+                    "CONSTANT_CATALOG",
+                    "CONSTANT_SCHEMA",
+                    "CONSTANT_NAME",
+                    "DATA_TYPE INT",
+                    "REMARKS",
+                    "SQL",
+                    "ID INT"
+            );
+            break;
+        case DOMAINS:
+            setObjectName("DOMAINS");
+            cols = createColumns(
+                    "DOMAIN_CATALOG",
+                    "DOMAIN_SCHEMA",
+                    "DOMAIN_NAME",
+                    "COLUMN_DEFAULT",
+                    "IS_NULLABLE",
+                    "DATA_TYPE INT",
+                    "PRECISION INT",
+                    "SCALE INT",
+                    "TYPE_NAME",
+                    "SELECTIVITY INT",
+                    "CHECK_CONSTRAINT",
+                    "REMARKS",
+                    "SQL",
+                    "ID INT"
+            );
+            break;
+        case TRIGGERS:
+            setObjectName("TRIGGERS");
+            cols = createColumns(
+                    "TRIGGER_CATALOG",
+                    "TRIGGER_SCHEMA",
+                    "TRIGGER_NAME",
+                    "TRIGGER_TYPE",
+                    "TABLE_CATALOG",
+                    "TABLE_SCHEMA",
+                    "TABLE_NAME",
+                    "BEFORE BIT",
+                    "JAVA_CLASS",
+                    "QUEUE_SIZE INT",
+                    "NO_WAIT BIT",
+                    "REMARKS",
+                    "SQL",
+                    "ID INT"
+            );
+            break;
         case SESSIONS: {
             setObjectName("SESSIONS");
             cols = createColumns(
@@ -260,6 +477,16 @@ public class MetaTable extends Table {
                     "STATEMENT",
                     "STATEMENT_START",
                     "CONTAINS_UNCOMMITTED"
+            );
+            break;
+        }
+        case LOCKS: {
+            setObjectName("LOCKS");
+            cols = createColumns(
+                    "TABLE_SCHEMA",
+                    "TABLE_NAME",
+                    "SESSION_ID INT",
+                    "LOCK_TYPE"
             );
             break;
         }
@@ -293,14 +520,11 @@ public class MetaTable extends Table {
             throw DbException.throwInternalError("type="+type);
         }
         setColumns(cols);
-        
+
         if (indexColumnName == null) {
             indexColumn = -1;
-            //metaIndex = null;
         } else {
             indexColumn = getColumn(indexColumnName).getColumnId();
-            IndexColumn.wrap(
-                    new Column[] { cols[indexColumn] });
         }
     }
 

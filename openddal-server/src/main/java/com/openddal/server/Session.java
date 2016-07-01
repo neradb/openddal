@@ -39,9 +39,13 @@ public interface Session {
     String getSchema();
 
     String getCharset();
+    
+    boolean setCharset(String charset);
 
     Connection getEngineConnection();
     
     void close();
+
+
 
 }

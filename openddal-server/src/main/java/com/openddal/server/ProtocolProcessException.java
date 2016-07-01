@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server.processor;
+package com.openddal.server;
 
 import com.openddal.jdbc.JdbcSQLException;
 import com.openddal.message.DbException;
-import com.openddal.server.mysql.MySQLErrorCode;
+import com.openddal.server.util.ErrorCode;
 
 /**
  * 
@@ -27,7 +27,6 @@ import com.openddal.server.mysql.MySQLErrorCode;
 public class ProtocolProcessException extends Exception {
 
     private static final long serialVersionUID = 1L;
-    
     
     public static ProtocolProcessException convert(Throwable e) {
         if (e instanceof ProtocolProcessException) {
@@ -39,9 +38,9 @@ public class ProtocolProcessException extends Exception {
             JdbcSQLException sqle = (JdbcSQLException) e;
             return new ProtocolProcessException(sqle.getErrorCode(),sqle.getMessage(),e);
         } else if (e instanceof OutOfMemoryError) {
-            return new ProtocolProcessException(MySQLErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
+            return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
         } else {
-            return new ProtocolProcessException(MySQLErrorCode.ER_UNKNOWN_ERROR,"ERR_GENERAL_EXCEPION",e);
+            return new ProtocolProcessException(ErrorCode.ER_UNKNOWN_ERROR,"ERR_GENERAL_EXCEPION",e);
         }
     }
     

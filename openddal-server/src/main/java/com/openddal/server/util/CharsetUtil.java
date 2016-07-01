@@ -1,30 +1,17 @@
-/*
- * Copyright 2014-2016 the original author or authors
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an “AS IS” BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-package com.openddal.server.mysql;
+package com.openddal.server.util;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class MySQLCharsets {
-    private static final String[] INDEX_TO_CHARSET = new String[99];
+/**
+ * @author xianmao.hexm 2010-8-3 下午06:12:53
+ */
+public class CharsetUtil {
+
+    private static final String[]             INDEX_TO_CHARSET = new String[255];
     private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<String, Integer>();
     static {
         // index --> charset
-        // http://dev.mysql.com/doc/internals/en/character-set.html#packet-Protocol::CharacterSet
-        // SELECT id, collation_name FROM information_schema.collations ORDER BY id;
         INDEX_TO_CHARSET[1] = "big5";
         INDEX_TO_CHARSET[2] = "czech";
         INDEX_TO_CHARSET[3] = "dec8";
@@ -68,8 +55,8 @@ public class MySQLCharsets {
         INDEX_TO_CHARSET[42] = "latvian1";
         INDEX_TO_CHARSET[43] = "maccebin";
         INDEX_TO_CHARSET[44] = "macceciai";
-        INDEX_TO_CHARSET[45] = "maccecias";
-        INDEX_TO_CHARSET[46] = "maccecsas";
+        INDEX_TO_CHARSET[45] = "utf8mb4";
+        INDEX_TO_CHARSET[46] = "utf8mb4";
         INDEX_TO_CHARSET[47] = "latin1bin";
         INDEX_TO_CHARSET[48] = "latin1cias";
         INDEX_TO_CHARSET[49] = "latin1csas";
@@ -116,9 +103,45 @@ public class MySQLCharsets {
         INDEX_TO_CHARSET[96] = "cp932";
         INDEX_TO_CHARSET[97] = "eucjpms";
         INDEX_TO_CHARSET[98] = "eucjpms";
+        // 其他编码
+        INDEX_TO_CHARSET[99] = "cp1250";
+        INDEX_TO_CHARSET[100] = "latin1";
+        for (int i = 101; i <= 124; i++) {
+            INDEX_TO_CHARSET[i] = "utf16";
+        }
+        for (int i = 125; i <= 127; i++) {
+            INDEX_TO_CHARSET[i] = "latin1";
+        }
+        for (int i = 128; i <= 151; i++) {
+            INDEX_TO_CHARSET[i] = "ucs2";
+        }
+        for (int i = 152; i <= 158; i++) {
+            INDEX_TO_CHARSET[i] = "latin1";
+        }
+        INDEX_TO_CHARSET[159] = "ucs2";
+        for (int i = 160; i <= 183; i++) {
+            INDEX_TO_CHARSET[i] = "utf32";
+        }
+        for (int i = 184; i <= 191; i++) {
+            INDEX_TO_CHARSET[i] = "latin1";
+        }
+        for (int i = 192; i <= 215; i++) {
+            INDEX_TO_CHARSET[i] = "utf8";
+        }
+        for (int i = 216; i <= 222; i++) {
+            INDEX_TO_CHARSET[i] = "latin1";
+        }
+        INDEX_TO_CHARSET[223] = "utf8";
+        for (int i = 224; i <= 247; i++) {
+            INDEX_TO_CHARSET[i] = "utf8mb4";
+        }
+        for (int i = 248; i <= 253; i++) {
+            INDEX_TO_CHARSET[i] = "latin1";
+        }
+        INDEX_TO_CHARSET[254] = "utf8";
 
         // charset --> index
-        for (int i = 0; i < INDEX_TO_CHARSET.length; i++) {
+        for (int i = 0; i < 99; i++) {
             String charset = INDEX_TO_CHARSET[i];
             if (charset != null && CHARSET_TO_INDEX.get(charset) == null) {
                 CHARSET_TO_INDEX.put(charset, i);
@@ -127,6 +150,7 @@ public class MySQLCharsets {
         CHARSET_TO_INDEX.put("iso-8859-1", 14);
         CHARSET_TO_INDEX.put("iso_8859_1", 14);
         CHARSET_TO_INDEX.put("utf-8", 33);
+        CHARSET_TO_INDEX.put("utf8mb4", 45);
     }
 
     public static final String getCharset(int index) {
@@ -142,4 +166,22 @@ public class MySQLCharsets {
         }
     }
 
+    public static String getJavaCharset(String charset) {
+        if (endsWith(charset, "utf8mb4", true)) {
+            return "utf-8";
+        }
+
+        return charset;
+    }
+    
+    public static boolean endsWith(String str, String suffix, boolean ignoreCase) {
+        if (str == null || suffix == null) {
+            return (str == null && suffix == null);
+        }
+        if (suffix.length() > str.length()) {
+            return false;
+        }
+        int strOffset = str.length() - suffix.length();
+        return str.regionMatches(ignoreCase, strOffset, suffix, 0, suffix.length());
+    }
 }

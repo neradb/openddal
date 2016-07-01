@@ -1,10 +1,9 @@
 package com.openddal.server.mysql;
 
 import com.openddal.engine.Constants;
-import com.openddal.server.HandshakeHandler;
 import com.openddal.server.NettyServer;
+import com.openddal.server.ProtocolHandler;
 import com.openddal.server.ServerArgs;
-import com.openddal.server.processor.ProcessorFactory;
 
 import io.netty.channel.ChannelHandler;
 
@@ -28,23 +27,24 @@ public class MySQLProtocolServer extends NettyServer {
         super(args);
     }
 
-    @Override
-    protected ChannelHandler createProtocolDecoder() {
-        return new MySQLProtocolDecoder();
-    }
-
-    @Override
-    protected ProcessorFactory createProcessorFactory() {
-        return new MySQLProcessorFactory();
-    }
-
-    @Override
-    protected HandshakeHandler createHandshakeHandler() {
-        return new MySQLHandshakeHandler();
-    }
 
     @Override
     protected String getServerName() {
         return SERVER_NAME;
+    }
+
+    @Override
+    protected ChannelHandler createProtocolDecoder() {
+        return new MySQLProtocolDecoder();
+    }
+    
+    @Override
+    protected ProtocolHandler createProtocolHandler() {
+        return new MySQLProtocolHandler();
+    }
+    
+    @Override
+    protected ProtocolHandler createHandshakeHandler() {
+        return new MySQLHandshakeHandler();
     }
 }

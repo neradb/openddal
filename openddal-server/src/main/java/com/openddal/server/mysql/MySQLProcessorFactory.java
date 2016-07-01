@@ -1,8 +1,8 @@
 package com.openddal.server.mysql;
 
+import com.openddal.server.ProcessorFactory;
+import com.openddal.server.ProtocolProcessor;
 import com.openddal.server.ProtocolTransport;
-import com.openddal.server.processor.ProcessorFactory;
-import com.openddal.server.processor.ProtocolProcessor;
 
 public class MySQLProcessorFactory implements ProcessorFactory {
     

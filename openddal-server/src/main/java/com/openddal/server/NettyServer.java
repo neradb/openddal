@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import com.openddal.engine.Engine;
 import com.openddal.engine.SysProperties;
-import com.openddal.server.processor.ProcessorFactory;
 import com.openddal.util.ExtendableThreadPoolExecutor;
 import com.openddal.util.ExtendableThreadPoolExecutor.TaskQueue;
 import com.openddal.util.StringUtils;
@@ -131,10 +130,9 @@ public abstract class NettyServer {
         bossGroup = new NioEventLoopGroup(args.bossThreads, new DefaultThreadFactory("NettyBossGroup", true));
         workerGroup = new NioEventLoopGroup(args.workerThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
         userExecutor = createUserThreadExecutor();
-        ProcessorFactory processorFactory = createProcessorFactory();
         
-        final HandshakeHandler handshakeHandler = newHandshakeHandler();
-        final ProtocolHandler protocolHandler = new ProtocolHandler(processorFactory, userExecutor);
+        final ProtocolHandler handshakeHandler = newHandshakeHandler(userExecutor);
+        final ProtocolHandler protocolHandler = newProtocolHandler(userExecutor);
 
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
@@ -176,10 +174,16 @@ public abstract class NettyServer {
         return userExecutor;
     }
     
-    private HandshakeHandler newHandshakeHandler() {
-        HandshakeHandler handshakeHandler = createHandshakeHandler();
+    private ProtocolHandler newHandshakeHandler(ThreadPoolExecutor userExecutor) {
+        ProtocolHandler handshakeHandler = createHandshakeHandler();
         handshakeHandler.setUserExecutor(userExecutor);
         return handshakeHandler;
+    }
+    
+    private ProtocolHandler newProtocolHandler(ThreadPoolExecutor userExecutor) {
+        ProtocolHandler protocolHandler = createProtocolHandler();
+        protocolHandler.setUserExecutor(userExecutor);
+        return protocolHandler;
     }
 
 
@@ -187,9 +191,9 @@ public abstract class NettyServer {
 
     protected abstract ChannelHandler createProtocolDecoder();
 
-    protected abstract HandshakeHandler createHandshakeHandler();
-
-    protected abstract ProcessorFactory createProcessorFactory();
+    protected abstract ProtocolHandler createHandshakeHandler();
+    
+    protected abstract ProtocolHandler createProtocolHandler();
 
     class ShutdownThread extends Thread {
         @Override
