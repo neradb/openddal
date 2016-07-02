@@ -91,7 +91,7 @@ public class MySQLProtocolHandler extends ProtocolHandler {
             ProtocolProcessException convert = ProtocolProcessException.convert(e);
             ERR err = new ERR();
             err.errorCode = convert.getErrorCode();
-            err.errorMessage = convert.getErrorMessage();
+            err.errorMessage = convert.getMessage();
             transport.out.writeBytes(err.toPacket());
         }
 

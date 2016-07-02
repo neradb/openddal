@@ -116,7 +116,7 @@ public abstract class Packet {
         // Assume we have the start of a result set already
         
         byte[] packet = buffer.get((buffer.size()-1));
-        long colCount = ColCount.loadFromPacket(packet).colCount;
+        long colCount = ColCountPacket.loadFromPacket(packet).colCount;
         
         // Read the columns and the EOF field
         for (int i = 0; i < (colCount+1); i++) {

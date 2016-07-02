@@ -2,14 +2,14 @@ package com.openddal.server.mysql.proto;
 
 import java.util.ArrayList;
 
-public class Row extends Packet {
+public class RowPacket extends Packet {
     public int type = Flags.ROW_TYPE_TEXT;
     public int colType = Flags.MYSQL_TYPE_VAR_STRING;
     public ArrayList<Object> data = new ArrayList<Object>();
     
-    public Row () {}
+    public RowPacket () {}
     
-    public Row (String data1) {
+    public RowPacket (String data1) {
         this.addData(data1);
     }
     
@@ -17,27 +17,27 @@ public class Row extends Packet {
         this.data.add(data);
     }
     
-    public Row (String data1, Integer data2) {
+    public RowPacket (String data1, Integer data2) {
         this.addData(data1);
         this.addData(data2);
     }
     
-    public Row (String data1, long data2) {
+    public RowPacket (String data1, long data2) {
         this.addData(data1);
         this.addData(data2);
     }
     
-    public Row (String data1, float data2) {
+    public RowPacket (String data1, float data2) {
         this.addData(data1);
         this.addData(data2);
     }
     
-    public Row (String data1, boolean data2) {
+    public RowPacket (String data1, boolean data2) {
         this.addData(data1);
         this.addData(data2);
     }
     
-    public Row (String data1, String data2) {
+    public RowPacket (String data1, String data2) {
         this.addData(data1);
         this.addData(data2);
     }
@@ -84,8 +84,8 @@ public class Row extends Packet {
         return payload;
     }
     
-    public static Row loadFromPacket(byte[] packet) {
-        Row obj = new Row();
+    public static RowPacket loadFromPacket(byte[] packet) {
+        RowPacket obj = new RowPacket();
         Proto proto = new Proto(packet, 3);
         
         obj.sequenceId = proto.get_fixed_int(1);

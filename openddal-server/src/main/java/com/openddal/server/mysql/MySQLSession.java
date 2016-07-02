@@ -38,6 +38,8 @@ public class MySQLSession implements Session {
     private HandshakeResponse handshakeResponse;
     private Connection engineConnection;
     private Map<String, Object> attachments = New.hashMap();
+    private String charset;
+    private int charsetIndex;
 
     /**
      * @return the sessionId
@@ -72,7 +74,7 @@ public class MySQLSession implements Session {
      * @return the charset
      */
     public String getCharset() {
-        return CharsetUtil.getCharset((int) handshakeResponse.characterSet);
+        return this.charset;
     }
 
     /**
@@ -109,6 +111,7 @@ public class MySQLSession implements Session {
      */
     public void setHandshakeResponse(HandshakeResponse handshakeResponse) {
         this.handshakeResponse = handshakeResponse;
+
     }
 
     public void bind(Channel channel) {
@@ -129,10 +132,31 @@ public class MySQLSession implements Session {
         }
     }
 
-    @Override
-    public boolean setCharset(String charset) {
-        // TODO Auto-generated method stub
-        return false;
+    public boolean setCharsetIndex(int ci) {
+        String charset = CharsetUtil.getCharset(ci);
+        if (charset != null) {
+            return setCharset(charset);
+        } else {
+            return false;
+        }
     }
 
+    public boolean setCharset(String charset) {
+        if (charset != null) {
+            charset = charset.replace("'", "");
+        }
+        int ci = CharsetUtil.getIndex(charset);
+        if (ci > 0) {
+            this.charset = charset.equalsIgnoreCase("utf8mb4") ? "utf8" : charset;
+            this.charsetIndex = ci;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int getCharsetIndex() {
+        return this.charsetIndex;
+    }
 }

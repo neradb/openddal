@@ -49,28 +49,16 @@ public class ProtocolProcessException extends Exception {
     }
 
     protected int errorCode;
-    protected String errorMessage;
     
 
     public ProtocolProcessException(int errorCode, String message) {
         super(message);
+        this.errorCode = errorCode;
     }
 
     public ProtocolProcessException(int errorCode, String message, Throwable cause) {
-        super(cause);
-    }
-
-    @Override
-    public String getMessage() {
-        return errorCode + ":" + errorMessage;
-    }
-
-    public String getErrorMessage() {
-        return errorMessage;
-    }
-
-    public void setErrorMessage(String retMessage) {
-        this.errorMessage = retMessage;
+        super(message, cause);
+        this.errorCode = errorCode;
     }
 
     public int getErrorCode() {

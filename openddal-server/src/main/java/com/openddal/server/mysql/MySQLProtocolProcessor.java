@@ -1,6 +1,10 @@
 package com.openddal.server.mysql;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,25 +18,35 @@ import com.openddal.server.mysql.parser.ServerParseSelect;
 import com.openddal.server.mysql.parser.ServerParseSet;
 import com.openddal.server.mysql.parser.ServerParseShow;
 import com.openddal.server.mysql.parser.ServerParseStart;
+import com.openddal.server.mysql.proto.ColumnPacket;
 import com.openddal.server.mysql.proto.Com_Query;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
+import com.openddal.server.mysql.proto.ResultSetPacket;
+import com.openddal.server.mysql.proto.RowPacket;
 import com.openddal.server.mysql.respo.CharacterSet;
+import com.openddal.server.mysql.respo.SelectVariables;
+import com.openddal.server.mysql.respo.ShowVariables;
 import com.openddal.server.util.ErrorCode;
+import com.openddal.server.util.MysqlDefs;
+import com.openddal.server.util.ResultSetUtil;
+import com.openddal.server.util.StringUtil;
+import com.openddal.util.JdbcUtils;
 import com.openddal.util.StringUtils;
 
 import io.netty.buffer.ByteBuf;
 
 public class MySQLProtocolProcessor implements ProtocolProcessor {
-    
+
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLProtocolProcessor.class);
     private static final Logger accessLogger = LoggerFactory.getLogger("AccessLogger");
-    
+
     private static ThreadLocal<ProtocolTransport> transportHolder = new ThreadLocal<ProtocolTransport>();
     private static ThreadLocal<Session> sessionHolder = new ThreadLocal<Session>();
     private static ThreadLocal<Connection> connHolder = new ThreadLocal<Connection>();
+
     @Override
     public final boolean process(ProtocolTransport transport) throws ProtocolProcessException {
         ProtocolProcessException e = null;
@@ -50,33 +64,29 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
             connHolder.remove();
         }
         return e == null;
-       
+
     }
-    
-    
+
     public final Session getSession() {
         return sessionHolder.get();
     }
+
     public final Connection getConnection() {
         return connHolder.get();
     }
-    
+
     public final ProtocolTransport getProtocolTransport() {
         return transportHolder.get();
     }
-    
-
-
-
 
     protected void doProcess(ProtocolTransport transport) throws Exception {
-        
+
         ByteBuf buffer = transport.in;
         byte[] packet = new byte[buffer.readableBytes()];
         buffer.readBytes(packet);
         long sequenceId = Packet.getSequenceId(packet);
         byte type = Packet.getType(packet);
-        
+
         switch (type) {
         case Flags.COM_INIT_DB:
             sendOk();
@@ -125,8 +135,7 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
             throw new ProtocolProcessException(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
     }
-    
-    
+
     public void query(String sql) throws Exception {
         if (StringUtils.isNullOrEmpty(sql)) {
             sendError(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
@@ -135,201 +144,191 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(new StringBuilder().append(this).append(" ").append(sql).toString());
         }
-        
+
         int rs = ServerParse.parse(sql);
         switch (rs & 0xff) {
-            case ServerParse.SET:
-                processSet(sql, rs >>> 8);
-                break;
-            case ServerParse.SHOW:
-                processShow(sql, rs >>> 8);
-                break;
-            case ServerParse.SELECT:
-                processSelect(sql, rs >>> 8);
-                break;
-            case ServerParse.START:
-                processStart(sql, rs >>> 8);
-                break;
-            case ServerParse.BEGIN:
-                processBegin(sql, rs >>> 8);
-                break;
-            case ServerParse.LOAD:
-                processSavepoint(sql, rs >>> 8);
-                break;
-            case ServerParse.SAVEPOINT:
-                processSavepoint(sql, rs >>> 8);
-                break;
-            case ServerParse.USE:
-                processUse(sql, rs >>> 8);
-                break;
-            case ServerParse.COMMIT:
-                processCommit(sql, rs >>> 8);
-                break;
-            case ServerParse.ROLLBACK:
-                processRollback(sql, rs >>> 8);
-                break;
-            default:
-                execute(sql, rs);
+        case ServerParse.SET:
+            processSet(sql, rs >>> 8);
+            break;
+        case ServerParse.SHOW:
+            processShow(sql, rs >>> 8);
+            break;
+        case ServerParse.SELECT:
+            processSelect(sql, rs >>> 8);
+            break;
+        case ServerParse.START:
+            processStart(sql, rs >>> 8);
+            break;
+        case ServerParse.BEGIN:
+            processBegin(sql, rs >>> 8);
+            break;
+        case ServerParse.LOAD:
+            processSavepoint(sql, rs >>> 8);
+            break;
+        case ServerParse.SAVEPOINT:
+            processSavepoint(sql, rs >>> 8);
+            break;
+        case ServerParse.USE:
+            processUse(sql, rs >>> 8);
+            break;
+        case ServerParse.COMMIT:
+            processCommit(sql, rs >>> 8);
+            break;
+        case ServerParse.ROLLBACK:
+            processRollback(sql, rs >>> 8);
+            break;
+        default:
+            execute(sql, rs);
         }
     }
-    
-    
+
     private void processCommit(String sql, int i) {
         // TODO Auto-generated method stub
-        
-    }
 
+    }
 
     private void processRollback(String sql, int i) {
         // TODO Auto-generated method stub
-        
-    }
 
+    }
 
     private void processUse(String sql, int i) {
         // TODO Auto-generated method stub
-        
-    }
 
+    }
 
     private void processBegin(String sql, int i) {
         // TODO Auto-generated method stub
-        
-    }
 
+    }
 
     private void processSavepoint(String sql, int i) {
         // TODO Auto-generated method stub
-        
+
     }
 
-
-    private void processStart(String sql, int offset) {
+    private void processStart(String sql, int offset) throws Exception {
         switch (ServerParseStart.parse(sql, offset)) {
-            case ServerParseStart.TRANSACTION:
-                unsupported("");
-                break;
-            default:
-                execute(sql, ServerParse.START);
+        case ServerParseStart.TRANSACTION:
+            unsupported("");
+            break;
+        default:
+            execute(sql, ServerParse.START);
         }
-    
-    }
 
+    }
 
     public void processSet(String stmt, int offset) throws Exception {
         Connection c = getConnection();
         int rs = ServerParseSet.parse(stmt, offset);
         switch (rs & 0xff) {
-            case ServerParseSet.AUTOCOMMIT_ON:
-                if (!c.getAutoCommit()) {
-                    c.setAutoCommit(true);
-                }
-                sendOk();
-                break;
-            case ServerParseSet.AUTOCOMMIT_OFF: {
-                if (c.getAutoCommit()) {
-                    c.setAutoCommit(false);
-                }
-                sendOk();
-                break;
+        case ServerParseSet.AUTOCOMMIT_ON:
+            if (!c.getAutoCommit()) {
+                c.setAutoCommit(true);
             }
-            case ServerParseSet.TX_READ_UNCOMMITTED: {
-                c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-                sendOk();
-                break;
+            sendOk();
+            break;
+        case ServerParseSet.AUTOCOMMIT_OFF: {
+            if (c.getAutoCommit()) {
+                c.setAutoCommit(false);
             }
-            case ServerParseSet.TX_READ_COMMITTED: {
-                c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            sendOk();
+            break;
+        }
+        case ServerParseSet.TX_READ_UNCOMMITTED: {
+            c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+            sendOk();
+            break;
+        }
+        case ServerParseSet.TX_READ_COMMITTED: {
+            c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            sendOk();
+            break;
+        }
+        case ServerParseSet.TX_REPEATED_READ: {
+            c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+            sendOk();
+            break;
+        }
+        case ServerParseSet.TX_SERIALIZABLE: {
+            c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            sendOk();
+            break;
+        }
+        case ServerParseSet.NAMES:
+            String charset = stmt.substring(rs >>> 8).trim();
+            if (getSession().setCharset(charset)) {
                 sendOk();
-                break;
+            } else {
+                sendError(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charset + "'");
             }
-            case ServerParseSet.TX_REPEATED_READ: {
-                c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
-                sendOk();
-                break;
-            }
-            case ServerParseSet.TX_SERIALIZABLE: {
-                c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                sendOk();
-                break;
-            }
-            case ServerParseSet.NAMES:
-                String charset = stmt.substring(rs >>> 8).trim();
-                if (getSession().setCharset(charset)) {
-                    sendOk();
-                } else {
-                    sendError(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset '" + charset + "'");
-                }
-                break;
-            case ServerParseSet.CHARACTER_SET_CLIENT:
-            case ServerParseSet.CHARACTER_SET_CONNECTION:
-            case ServerParseSet.CHARACTER_SET_RESULTS:
-                CharacterSet.response(stmt, this, rs);
-                break;
-            case ServerParseSet.SQL_MODE:
-            case ServerParseSet.AT_VAR:
-                execute(stmt, ServerParse.SET);
-                break;
-            default:
-                StringBuilder s = new StringBuilder();
-                LOGGER.warn(s.append(stmt).append(" is not executed").toString());
-                sendOk();
+            break;
+        case ServerParseSet.CHARACTER_SET_CLIENT:
+        case ServerParseSet.CHARACTER_SET_CONNECTION:
+        case ServerParseSet.CHARACTER_SET_RESULTS:
+            CharacterSet.response(stmt, this, rs);
+            break;
+        case ServerParseSet.SQL_MODE:
+        case ServerParseSet.AT_VAR:
+            execute(stmt, ServerParse.SET);
+            break;
+        default:
+            StringBuilder s = new StringBuilder();
+            LOGGER.warn(s.append(stmt).append(" is not executed").toString());
+            sendOk();
         }
     }
 
-
-    public static void processShow(String stmt, int offset) {
+    public void processShow(String stmt, int offset) throws Exception {
         switch (ServerParseShow.parse(stmt, offset)) {
-            case ServerParseShow.DATABASES:
-                //ShowDatabases.response(c);
-                break;
+        case ServerParseShow.DATABASES:
+            // ShowDatabases.response(c);
+            break;
 
-            case ServerParseShow.CONNECTION:
-                //ShowConnection.execute(c);
-                break;
-            //            case ServerParseShow.DATASOURCES:
-            //                // ShowDataSources.response(c);
-            //                // break;
-            //            case ServerParseShow.COBAR_STATUS:
-            //                // ShowCobarStatus.response(c);
-            //                // break;
-            case ServerParseShow.SLOW:
-                //ShowSQLSlow.execute(c);
-                break;
-            case ServerParseShow.PHYSICAL_SLOW:
-                //ShowPhysicalSQLSlow.execute(c);
-                break;
-            default:
-                execute(stmt, ServerParse.SHOW);
+        case ServerParseShow.CONNECTION:
+            // ShowConnection.execute(c);
+            break;
+        case ServerParseShow.SLOW:
+            // ShowSQLSlow.execute(c);
+            break;
+        case ServerParseShow.PHYSICAL_SLOW:
+            // ShowPhysicalSQLSlow.execute(c);
+            break;
+        case ServerParseShow.VARIABLES:
+            sendResultSet(ShowVariables.getResultSet());
+            break;
+        default:
+            execute(stmt, ServerParse.SHOW);
         }
     }
-    
-    
-    
-    public static void processSelect(String stmt, int offs) {
-        int offset = offs;
+
+    public void processSelect(String stmt, int offs) throws Exception {
         switch (ServerParseSelect.parse(stmt, offs)) {
-            case ServerParseSelect.VERSION_COMMENT:
-                //SelectVersionComment.response(c);
-                break;
-            case ServerParseSelect.DATABASE:
-                //SelectDatabase.response(c);
-                break;
-            case ServerParseSelect.USER:
-                //SelectUser.response(c);
-                break;
-            case ServerParseSelect.VERSION:
-                //SelectVersion.response(c);
-                break;
-            case ServerParseSelect.LAST_INSERT_ID:
-                break;
-            case ServerParseSelect.IDENTITY:
-                break;
-            default:
-                execute(stmt, ServerParse.SELECT);
+        case ServerParseSelect.VERSION_COMMENT:
+            // SelectVersionComment.response(c);
+            break;
+        case ServerParseSelect.DATABASE:
+            // SelectDatabase.response(c);
+            break;
+        case ServerParseSelect.USER:
+            // SelectUser.response(c);
+            break;
+        case ServerParseSelect.VERSION:
+            // SelectVersion.response(c);
+            break;
+        case ServerParseSelect.LAST_INSERT_ID:
+            break;
+        case ServerParseSelect.IDENTITY:
+            break;
+        case ServerParseSelect.SELECT_VARIABLES:
+            ResultSet rs = SelectVariables.getResultSet(stmt);
+            sendResultSet(rs);
+            break;
+        default:
+            execute(stmt, ServerParse.SELECT);
         }
     }
-    
+
     public void processKill(String stmt, int offset) {
         String id = stmt.substring(offset).trim();
         if (StringUtils.isNullOrEmpty(id)) {
@@ -347,15 +346,31 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
         }
     }
 
+    private void execute(String sql, int type) throws Exception {
+        Connection conn = getSession().getEngineConnection();
+        Statement stmt = null;
+        ResultSet rs = null;
+        switch (type) {
+        case ServerParse.SELECT:
+            try {
+                stmt = conn.createStatement();
+                rs = stmt.executeQuery(sql);
+                sendResultSet(rs);
+            } finally {
+                JdbcUtils.closeSilently(stmt);
+                JdbcUtils.closeSilently(rs);
+            }
+            break;
 
-    private static void execute(String stmt, int offset) {
-        
+        default:
+            break;
+        }
     }
-    
+
     private void unsupported(String msg) {
         sendError(ErrorCode.ER_UNKNOWN_COM_ERROR, msg);
     }
-    
+
     public void sendOk() {
         OK ok = new OK();
         getProtocolTransport().out.writeBytes(ok.toPacket());
@@ -367,5 +382,48 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
         err.errorMessage = msg;
         getProtocolTransport().out.writeBytes(err.toPacket());
     }
-    
+
+    /**
+     * @see https://dev.mysql.com/doc/internals/en/com-query-response.html
+     * 
+     * @param rs
+     * @throws Exception
+     */
+    public void sendResultSet(ResultSet rs) throws Exception {
+        int charsetIndex = getSession().getCharsetIndex();
+        ResultSetMetaData metaData = rs.getMetaData();
+        int colunmCount = metaData.getColumnCount();
+
+        ResultSetPacket resultset = new ResultSetPacket();
+        ResultSetPacket.characterSet = charsetIndex;
+
+        for (int i = 0; i < colunmCount; i++) {
+            int j = i + 1;
+            ColumnPacket columnPacket = new ColumnPacket();
+            columnPacket.org_name = StringUtil.emptyIfNull(metaData.getColumnName(j));
+            columnPacket.name = StringUtil.emptyIfNull(metaData.getColumnLabel(j));
+            columnPacket.org_table = StringUtil.emptyIfNull(metaData.getTableName(j));
+            columnPacket.table = StringUtil.emptyIfNull(metaData.getTableName(j));
+            columnPacket.schema = StringUtil.emptyIfNull(metaData.getSchemaName(j));
+            columnPacket.flags = ResultSetUtil.toFlag(metaData, j);
+            columnPacket.columnLength = metaData.getColumnDisplaySize(j);
+            columnPacket.decimals = metaData.getScale(j);
+            int javaType = MysqlDefs.javaTypeDetect(metaData.getColumnType(j), (int) columnPacket.decimals);
+            columnPacket.type = (byte) (MysqlDefs.javaTypeMysql(javaType) & 0xff);
+            resultset.addColumn(columnPacket);
+        }
+
+        while (rs.next()) {
+            RowPacket rowPacket = new RowPacket();
+            for (int i = 0; i < colunmCount; i++) {
+                int j = i + 1;
+                rowPacket.data.add(rs.getString(j));
+            }
+        }
+        ArrayList<byte[]> packets = resultset.toPackets();
+        for (byte[] bs : packets) {
+            getProtocolTransport().out.writeBytes(bs);
+        }
+    }
+
 }

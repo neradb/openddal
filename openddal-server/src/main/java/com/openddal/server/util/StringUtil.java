@@ -721,6 +721,10 @@ public final class StringUtil {
         }
     }
 
+    public static String emptyIfNull(String src) {
+        return src == null ? "" : src;
+    }
+
     public static void main(String[] args) {
         Pair<Integer, Integer> pair = sequenceSlicing("20");
         System.out.println(pair);

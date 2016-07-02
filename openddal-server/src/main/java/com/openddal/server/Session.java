@@ -40,12 +40,13 @@ public interface Session {
 
     String getCharset();
     
+    int getCharsetIndex();
+
     boolean setCharset(String charset);
 
     Connection getEngineConnection();
     
     void close();
-
 
 
 }

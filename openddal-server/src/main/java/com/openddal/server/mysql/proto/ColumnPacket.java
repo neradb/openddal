@@ -2,7 +2,7 @@ package com.openddal.server.mysql.proto;
 
 import java.util.ArrayList;
 
-public class Column extends Packet {
+public class ColumnPacket extends Packet {
     public String catalog = "def";
     public String schema = "";
     public String table = "";
@@ -15,11 +15,11 @@ public class Column extends Packet {
     public long flags = 0;
     public long decimals = 31;
     
-    public Column() {}
+    public ColumnPacket() {}
     
-    public Column(String name) {
+    public ColumnPacket(String name) {
         // Set this up by default. Allow overrides if needed
-        this.characterSet = ResultSet.characterSet;
+        this.characterSet = ResultSetPacket.characterSet;
         this.name = name;
     }
     
@@ -43,8 +43,8 @@ public class Column extends Packet {
         return payload;
     }
     
-    public static Column loadFromPacket(byte[] packet) {
-        Column obj = new Column();
+    public static ColumnPacket loadFromPacket(byte[] packet) {
+        ColumnPacket obj = new ColumnPacket();
         Proto proto = new Proto(packet, 3);
         
         obj.sequenceId = proto.get_fixed_int(1);

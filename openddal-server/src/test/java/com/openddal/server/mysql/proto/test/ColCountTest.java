@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.openddal.server.mysql.proto.ColCount;
+import com.openddal.server.mysql.proto.ColCountPacket;
 
 public class ColCountTest {
     @Test
@@ -14,7 +14,7 @@ public class ColCountTest {
             (byte)0x01, (byte)0x00, (byte)0x00, (byte)0x01, (byte)0x05
         };
 
-        ColCount colcount = ColCount.loadFromPacket(packet);
+        ColCountPacket colcount = ColCountPacket.loadFromPacket(packet);
 
         assertArrayEquals(packet, colcount.toPacket());
         assertEquals(colcount.colCount, 5);
