@@ -78,7 +78,7 @@ public class MySQLProtocolHandler extends ProtocolHandler {
                 ProtocolProcessor processor = processorFactory.getProcessor(transport);
                 processor.process(transport);
             } catch (Throwable e) {
-                logger.error("User exception happen when call processor", e);
+                logger.error("an exception happen when process request", e);
                 handleThrowable(e);
             } finally {
                 ctx.writeAndFlush(transport.out);

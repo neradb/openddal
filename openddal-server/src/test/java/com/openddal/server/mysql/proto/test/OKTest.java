@@ -24,4 +24,17 @@ public class OKTest {
         assertEquals(ok.hasStatusFlag(Flags.SERVER_STATUS_IN_TRANS_READONLY), false);
         assertEquals(ok.warnings, 0);
     }
+
+    @Test
+    public void test2() {
+        byte[] packet = new byte[] { 7, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0 };
+
+        OK ok = OK.loadFromPacket(packet);
+        assertArrayEquals(packet, ok.toPacket());
+        assertEquals(ok.affectedRows, 0);
+        assertEquals(ok.lastInsertId, 0);
+        assertEquals(ok.hasStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT), true);
+        assertEquals(ok.hasStatusFlag(Flags.SERVER_STATUS_IN_TRANS_READONLY), false);
+        assertEquals(ok.warnings, 0);
+    }
 }

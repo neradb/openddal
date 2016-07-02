@@ -29,6 +29,7 @@ import com.openddal.engine.SysProperties;
 import com.openddal.jdbc.JdbcDriver;
 import com.openddal.server.ProtocolHandler;
 import com.openddal.server.ProtocolTransport;
+import com.openddal.server.Session;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.Handshake;
@@ -36,6 +37,7 @@ import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.util.CharsetUtil;
 import com.openddal.server.util.ErrorCode;
+import com.openddal.util.JdbcUtils;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -77,7 +79,6 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         handshake.removeCapabilityFlag(Flags.CLIENT_RESERVED);
         handshake.removeCapabilityFlag(Flags.CLIENT_REMEMBER_OPTIONS);
 
-        // handshake = Handshake.loadFromPacket(packet);
         MySQLSession temp = new MySQLSession();
         temp.setHandshake(handshake);
         ctx.attr(TMP_SESSION_KEY).set(temp);
@@ -98,6 +99,14 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
             ctx.fireChannelRead(msg);
         }
     
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        Session session = ctx.channel().attr(Session.CHANNEL_SESSION_KEY).get();
+        if (session != null) {
+            JdbcUtils.closeSilently(session.getEngineConnection());
+        }
     }
 
     /**

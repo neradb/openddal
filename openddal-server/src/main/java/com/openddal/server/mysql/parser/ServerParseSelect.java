@@ -15,7 +15,7 @@ public final class ServerParseSelect {
     public static final int LAST_INSERT_ID = 4;
     public static final int IDENTITY = 5;
     public static final int VERSION = 6;
-    public static final int SELECT_VARIABLES = 7;
+    public static final int SELECT_SESSION_VARIABLES = 7;
 
     private static final char[] _VERSION_COMMENT = "VERSION_COMMENT".toCharArray();
     private static final char[] _IDENTITY = "IDENTITY".toCharArray();
@@ -434,8 +434,8 @@ public final class ServerParseSelect {
 
     private static int sessionVarCheck(String stmt, int offset) {
         String s = stmt.substring(offset).toLowerCase();
-        if (s.startsWith("session.") && stmt.contains("@@session.")) {
-            return SELECT_VARIABLES;
+        if (s.startsWith("session.")) {
+            return SELECT_SESSION_VARIABLES;
         } else {
             return OTHER;
         }

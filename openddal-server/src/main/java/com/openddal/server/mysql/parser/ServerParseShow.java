@@ -15,36 +15,38 @@ public final class ServerParseShow {
     public static final int SLOW          = 5;
     public static final int PHYSICAL_SLOW = 6;
     public static final int CONNECTION    = 7;
-    public static final int VARIABLES     = 19;
+    public static final int VARIABLES     = 8;
+    public static final int SESSION_VARIABLES = 9;
 
 
     public static int parse(String stmt, int offset) {
         int i = offset;
         for (; i < stmt.length(); i++) {
             switch (stmt.charAt(i)) {
-                case ' ':
-                    continue;
-                case '/':
-                case '#':
-                    i = ParseUtil.comment(stmt, i);
-                    continue;
-                case 'C':
-                case 'c':
-                    return connectionCheck(stmt, i);
-                case 'V':
-                case 'v':
-                    return showVCheck(stmt, i);
-                case 'D':
-                case 'd':
-                    return dataCheck(stmt, i);
-                case 'S':
-                case 's':
-                    return slowCheck(stmt, i);
-                case 'p':
-                case 'P':
-                    return physicalCheck(stmt, i);
-                default:
-                    return OTHER;
+            case ' ':
+                continue;
+            case '/':
+            case '#':
+                i = ParseUtil.comment(stmt, i);
+                continue;
+            case 'C':
+            case 'c':
+                return connectionCheck(stmt, i);
+            case 'V':
+            case 'v':
+                return showVCheck(stmt, i);
+            case 'D':
+            case 'd':
+                return dataCheck(stmt, i);
+            case 'S':
+            case 's':
+                int slowCheck = slowCheck(stmt, i);
+                return slowCheck == OTHER ? showSVCheck(stmt, i) : slowCheck;
+            case 'p':
+            case 'P':
+                return physicalCheck(stmt, i);
+            default:
+                return OTHER;
             }
         }
         return OTHER;
@@ -228,7 +230,7 @@ public final class ServerParseShow {
         return OTHER;
     }
     
- // SHOW VARIABLES
+    // SHOW VARIABLES
     static int showVCheck(String stmt, int offset) {
         if (stmt.length() > offset + "ARIABLES".length()) {
             char c1 = stmt.charAt(++offset);
@@ -249,6 +251,15 @@ public final class ServerParseShow {
             }
         }
         return OTHER;
+    }
+
+    static int showSVCheck(String stmt, int offset) {
+        String s = stmt.substring(offset).toLowerCase();
+        if (s.startsWith("session variables")) {
+            return SESSION_VARIABLES;
+        } else {
+            return OTHER;
+        }
     }
 
 }

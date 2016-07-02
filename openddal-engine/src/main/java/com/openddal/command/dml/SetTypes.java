@@ -32,69 +32,70 @@ public class SetTypes {
     /**
      * The type of a SET MODE statement.
      */
-    public static final int MODE = 3;
+    public static final int MODE = 2;
 
     /**
      * The type of a SET COLLATION statement.
      */
-    public static final int COLLATION = 12;
+    public static final int COLLATION = 3;
 
     /**
      * The type of a SET MAX_MEMORY_ROWS statement.
      */
-    public static final int MAX_MEMORY_ROWS = 16;
+    public static final int MAX_MEMORY_ROWS = 4;
 
     /**
      * The type of a SET ALLOW_LITERALS statement.
      */
-    public static final int ALLOW_LITERALS = 24;
+    public static final int ALLOW_LITERALS = 5;
 
     /**
      * The type of a SET SCHEMA statement.
      */
-    public static final int SCHEMA = 26;
+    public static final int SCHEMA = 6;
 
     /**
      * The type of a SET SCHEMA_SEARCH_PATH statement.
      */
-    public static final int SCHEMA_SEARCH_PATH = 28;
+    public static final int SCHEMA_SEARCH_PATH = 7;
 
     /**
      * The type of a SET MAX_OPERATION_MEMORY statement.
      */
-    public static final int MAX_OPERATION_MEMORY = 32;
+    public static final int MAX_OPERATION_MEMORY = 8;
 
     /**
      * The type of a SET QUERY_TIMEOUT statement.
      */
-    public static final int QUERY_TIMEOUT = 36;
+    public static final int QUERY_TIMEOUT = 9;
 
     /**
      * The type of a SET BINARY_COLLATION statement.
      */
-    public static final int BINARY_COLLATION = 38;
+    public static final int BINARY_COLLATION = 10;
 
     /**
      * The type of a SET \@VARIABLE statement.
      */
-    public static final int VARIABLE = 35;
+    public static final int VARIABLE = 11;
 
     /**
      * The type of a SET QUERY_STATISTICS_ACTIVE statement.
      */
-    public static final int QUERY_STATISTICS = 41;
+    public static final int QUERY_STATISTICS = 12;
 
     /**
      * The type of a SET QUERY_STATISTICS_MAX_ENTRIES statement.
      */
-    public static final int QUERY_STATISTICS_MAX_ENTRIES = 42;
+    public static final int QUERY_STATISTICS_MAX_ENTRIES = 13;
 
-    private static final ArrayList<String> TYPES = New.arrayList();
+    private static final ArrayList<String> TYPES = New.arrayList(QUERY_STATISTICS_MAX_ENTRIES);
 
     static {
         ArrayList<String> list = TYPES;
         list.add(null);
         list.add(IGNORECASE, "IGNORECASE");
+        list.add(MODE, "IGNORECASE");
         list.add(COLLATION, "COLLATION");
         list.add(MAX_MEMORY_ROWS, "MAX_MEMORY_ROWS");
         list.add(ALLOW_LITERALS, "ALLOW_LITERALS");
@@ -103,6 +104,7 @@ public class SetTypes {
         list.add(MAX_OPERATION_MEMORY, "MAX_OPERATION_MEMORY");
         list.add(QUERY_TIMEOUT, "QUERY_TIMEOUT");
         list.add(BINARY_COLLATION, "BINARY_COLLATION");
+        list.add(VARIABLE, "BINARY_COLLATION");
         list.add(QUERY_STATISTICS, "QUERY_STATISTICS");
         list.add(QUERY_STATISTICS_MAX_ENTRIES, "QUERY_STATISTICS_MAX_ENTRIES");
 

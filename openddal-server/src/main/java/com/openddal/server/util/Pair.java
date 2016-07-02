@@ -15,11 +15,6 @@
  */
 package com.openddal.server.util;
 
-/**
- * (created at 2010-7-21)
- * 
- * @author mycat
- */
 public final class Pair<K, V> {
 
     private final K key;

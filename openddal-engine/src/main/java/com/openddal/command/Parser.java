@@ -2345,7 +2345,7 @@ public class Parser {
         Function function = Function.getFunction(database, name);
         if (function == null) {
             //return readJavaFunction(null, name);
-            throw getSyntaxError();
+            throw DbException.get(ErrorCode.FUNCTION_NOT_FOUND_1, name);
         }
         switch (function.getFunctionType()) {
             case Function.CAST: {

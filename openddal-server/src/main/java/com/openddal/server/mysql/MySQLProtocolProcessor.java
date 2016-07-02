@@ -10,9 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.openddal.server.ProtocolProcessException;
-import com.openddal.server.ProtocolProcessor;
 import com.openddal.server.ProtocolTransport;
-import com.openddal.server.Session;
+import com.openddal.server.TraceableProcessor;
 import com.openddal.server.mysql.parser.ServerParse;
 import com.openddal.server.mysql.parser.ServerParseSelect;
 import com.openddal.server.mysql.parser.ServerParseSet;
@@ -29,6 +28,7 @@ import com.openddal.server.mysql.proto.RowPacket;
 import com.openddal.server.mysql.respo.CharacterSet;
 import com.openddal.server.mysql.respo.SelectVariables;
 import com.openddal.server.mysql.respo.ShowVariables;
+import com.openddal.server.mysql.respo.ShowVersion;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.MysqlDefs;
 import com.openddal.server.util.ResultSetUtil;
@@ -38,53 +38,15 @@ import com.openddal.util.StringUtils;
 
 import io.netty.buffer.ByteBuf;
 
-public class MySQLProtocolProcessor implements ProtocolProcessor {
+public class MySQLProtocolProcessor extends TraceableProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLProtocolProcessor.class);
-    private static final Logger accessLogger = LoggerFactory.getLogger("AccessLogger");
-
-    private static ThreadLocal<ProtocolTransport> transportHolder = new ThreadLocal<ProtocolTransport>();
-    private static ThreadLocal<Session> sessionHolder = new ThreadLocal<Session>();
-    private static ThreadLocal<Connection> connHolder = new ThreadLocal<Connection>();
-
-    @Override
-    public final boolean process(ProtocolTransport transport) throws ProtocolProcessException {
-        ProtocolProcessException e = null;
-        try {
-            transportHolder.set(transport);
-            sessionHolder.set(transport.getSession());
-            connHolder.set(transport.getSession().getEngineConnection());
-            doProcess(transport);
-        } catch (Exception ex) {
-            e = ProtocolProcessException.convert(ex);
-            throw e;
-        } finally {
-            sessionHolder.remove();
-            transportHolder.remove();
-            connHolder.remove();
-        }
-        return e == null;
-
-    }
-
-    public final Session getSession() {
-        return sessionHolder.get();
-    }
-
-    public final Connection getConnection() {
-        return connHolder.get();
-    }
-
-    public final ProtocolTransport getProtocolTransport() {
-        return transportHolder.get();
-    }
 
     protected void doProcess(ProtocolTransport transport) throws Exception {
 
         ByteBuf buffer = transport.in;
         byte[] packet = new byte[buffer.readableBytes()];
         buffer.readBytes(packet);
-        long sequenceId = Packet.getSequenceId(packet);
         byte type = Packet.getType(packet);
 
         switch (type) {
@@ -93,12 +55,15 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
             break;
         case Flags.COM_QUERY:
             String query = Com_Query.loadFromPacket(packet).query;
+            getTrace().protocol("COM_QUERY").sql(query);
             query(query);
             break;
         case Flags.COM_PING:
+            getTrace().protocol("COM_PING");
             sendOk();
             break;
         case Flags.COM_QUIT:
+            getTrace().protocol("COM_QUIT");
             getSession().close();
             break;
         case Flags.COM_PROCESS_KILL:
@@ -138,11 +103,7 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
 
     public void query(String sql) throws Exception {
         if (StringUtils.isNullOrEmpty(sql)) {
-            sendError(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
-            return;
-        }
-        if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(new StringBuilder().append(this).append(" ").append(sql).toString());
+            throw throwError(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
         }
 
         int rs = ServerParse.parse(sql);
@@ -210,7 +171,7 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
     private void processStart(String sql, int offset) throws Exception {
         switch (ServerParseStart.parse(sql, offset)) {
         case ServerParseStart.TRANSACTION:
-            unsupported("");
+            unsupported("Start TRANSACTION");
             break;
         default:
             execute(sql, ServerParse.START);
@@ -268,7 +229,6 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
         case ServerParseSet.CHARACTER_SET_RESULTS:
             CharacterSet.response(stmt, this, rs);
             break;
-        case ServerParseSet.SQL_MODE:
         case ServerParseSet.AT_VAR:
             execute(stmt, ServerParse.SET);
             break;
@@ -297,6 +257,9 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
         case ServerParseShow.VARIABLES:
             sendResultSet(ShowVariables.getResultSet());
             break;
+        case ServerParseShow.SESSION_VARIABLES:
+            sendResultSet(SelectVariables.getResultSet(stmt));
+            break;
         default:
             execute(stmt, ServerParse.SHOW);
         }
@@ -314,15 +277,16 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
             // SelectUser.response(c);
             break;
         case ServerParseSelect.VERSION:
-            // SelectVersion.response(c);
+            sendResultSet(ShowVersion.getResultSet());
             break;
         case ServerParseSelect.LAST_INSERT_ID:
+            execute("SELECT LAST_INSERT_ID()", ServerParse.SELECT);
             break;
         case ServerParseSelect.IDENTITY:
+            execute("SELECT SCOPE_IDENTITY()", ServerParse.SELECT);
             break;
-        case ServerParseSelect.SELECT_VARIABLES:
-            ResultSet rs = SelectVariables.getResultSet(stmt);
-            sendResultSet(rs);
+        case ServerParseSelect.SELECT_SESSION_VARIABLES:
+            sendResultSet(SelectVariables.getResultSet(stmt));
             break;
         default:
             execute(stmt, ServerParse.SELECT);
@@ -361,9 +325,19 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
                 JdbcUtils.closeSilently(rs);
             }
             break;
+        case ServerParse.SET:
+            try {
+                stmt = conn.createStatement();
+                stmt.execute(sql);
+                sendOk();
+            } finally {
+                JdbcUtils.closeSilently(stmt);
+                JdbcUtils.closeSilently(rs);
+            }
+            break;
 
         default:
-            break;
+            unsupported(sql + " unsupported.");
         }
     }
 
@@ -373,6 +347,8 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
 
     public void sendOk() {
         OK ok = new OK();
+        ok.sequenceId = 1;
+        ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
         getProtocolTransport().out.writeBytes(ok.toPacket());
     }
 
@@ -381,6 +357,10 @@ public class MySQLProtocolProcessor implements ProtocolProcessor {
         err.errorCode = errno;
         err.errorMessage = msg;
         getProtocolTransport().out.writeBytes(err.toPacket());
+    }
+
+    public Exception throwError(int errno, String msg) {
+        return new ProtocolProcessException(errno, msg);
     }
 
     /**
