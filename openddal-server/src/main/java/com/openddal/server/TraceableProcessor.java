@@ -79,12 +79,13 @@ public abstract class TraceableProcessor implements ProtocolProcessor {
     private void accessEndLog() {
         if (accessLogger.isInfoEnabled()) {
             TraceableData data = getTrace().end();
-            ProtocolTransport pt = getProtocolTransport();
+            Session s = getSession();
             StringBuilder logMsg = new StringBuilder(256).append(data.protocol).append(" ").append(data.sql).append(" ")
-                    .append(pt.getRemoteAddress()).append(" ").append(pt.getLocalAddress()).append(" ")
+                    .append(s.getAttachment("remoteAddress")).append(" ").append(s.getAttachment("localAddress"))
+                    .append(" ")
                     .append(data.costTime()).append(" ms");
             if (data.errorMsg != null) {
-                logMsg.append(" Error:").append(data.errorCode).append(":").append(data.errorMsg);
+                logMsg.append(" ").append(data.errorCode).append(":").append(data.errorMsg);
             }
             accessLogger.info(logMsg.toString());
         }

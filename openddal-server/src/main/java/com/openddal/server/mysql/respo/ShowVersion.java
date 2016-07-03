@@ -16,4 +16,11 @@ public final class ShowVersion {
         result.addRow(MySQLProtocolServer.SERVER_VERSION);
         return result;
     }
+
+    public static ResultSet getCommentResultSet() {
+        SimpleResultSet result = new SimpleResultSet();
+        result.addColumn("@@VERSION_COMMENT", Types.VARCHAR, Integer.MAX_VALUE, 0);
+        result.addRow("OpenDDAL MySQL Protocol Server");
+        return result;
+    }
 }

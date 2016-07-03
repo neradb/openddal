@@ -268,13 +268,16 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
     public void processSelect(String stmt, int offs) throws Exception {
         switch (ServerParseSelect.parse(stmt, offs)) {
         case ServerParseSelect.VERSION_COMMENT:
-            // SelectVersionComment.response(c);
+            sendResultSet(ShowVersion.getCommentResultSet());
             break;
         case ServerParseSelect.DATABASE:
-            // SelectDatabase.response(c);
+            execute("SELECT SCHEMA()", ServerParse.SELECT);
+            break;
+        case ServerParseSelect.CONNECTION_ID:
+            execute("SELECT SESSION_ID()", ServerParse.SELECT);
             break;
         case ServerParseSelect.USER:
-            // SelectUser.response(c);
+            execute("SELECT USER()", ServerParse.SELECT);
             break;
         case ServerParseSelect.VERSION:
             sendResultSet(ShowVersion.getResultSet());

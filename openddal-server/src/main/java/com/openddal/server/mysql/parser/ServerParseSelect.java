@@ -16,11 +16,13 @@ public final class ServerParseSelect {
     public static final int IDENTITY = 5;
     public static final int VERSION = 6;
     public static final int SELECT_SESSION_VARIABLES = 7;
+    public static final int CONNECTION_ID = 8;
 
     private static final char[] _VERSION_COMMENT = "VERSION_COMMENT".toCharArray();
     private static final char[] _IDENTITY = "IDENTITY".toCharArray();
     private static final char[] _LAST_INSERT_ID = "LAST_INSERT_ID".toCharArray();
     private static final char[] _DATABASE = "DATABASE()".toCharArray();
+    private static final char[] _CONNECTION_ID = "CONNECTION_ID()".toCharArray();
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -34,6 +36,9 @@ public final class ServerParseSelect {
                 continue;
             case '@':
                 return select2Check(stmt, i);
+            case 'C':
+            case 'c':
+                return connectionIdCheck(stmt, i);
             case 'D':
             case 'd':
                 return databaseCheck(stmt, i);
@@ -394,6 +399,21 @@ public final class ServerParseSelect {
                 return OTHER;
             } else {
                 return DATABASE;
+            }
+        }
+        return OTHER;
+    }
+
+    /**
+     * SELECT CONNECTION_ID()()
+     */
+    static int connectionIdCheck(String stmt, int offset) {
+        int length = offset + _CONNECTION_ID.length;
+        if (stmt.length() >= length && ParseUtil.compare(stmt, offset, _CONNECTION_ID)) {
+            if (stmt.length() > length && stmt.charAt(length) != ' ') {
+                return OTHER;
+            } else {
+                return CONNECTION_ID;
             }
         }
         return OTHER;
