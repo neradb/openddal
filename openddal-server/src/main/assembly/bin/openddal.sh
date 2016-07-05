@@ -8,20 +8,24 @@ PRG="$0"
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." >/dev/null; pwd`
 
+CLASSPATH="$CLASSPATH:$BASEDIR/conf":
+for jar in "$BASEDIR/lib/*.jar"; do
+  CLASSPATH=$CLASSPATH:$jar
+done
+
 STATUS_FILE=${PRGDIR}/status
 PID_FILE=${PRGDIR}/PID
 
 LOGDIR=${BASEDIR}/logs
-APP_LISTEN_PORT=1080
+APP_LISTEN_PORT=6100
 JMX_PORT=8060
-SERVER_API=osp
 START_TIME=60
-RESTFUL_PORT=-1
-TARGET_VERSION=1.7
+CONFIG_FILE=/config/engine.xml
+TARGET_VERSION=1.6
 
 USAGE()
 {
-  echo "usage: $0 start|stop|restart|status|info [-p|--port port] [-j|--jmx-port port] [-l|--log-dir dir] [-s|--server-api name] [-t|--start-timeout time] [-r|--restful-port port] [-e|--environment environment] [additional jvm args, e.g. -Dosp.loglevel=111 -Xmx2048m]"
+  echo "usage: $0 start|stop|restart|status|info [-p|--port port] [-j|--jmx-port port] [-l|--log-dir dir] [-t|--start-timeout time] [-f|--config-file path] [-e|--environment environment] [additional jvm args, e.g. -Dosp.loglevel=111 -Xmx2048m]"
 }
 
 if [ $# -lt 1 ]; then
@@ -36,11 +40,10 @@ shift
 while true; do
   case "$1" in
     -p|--port) APP_LISTEN_PORT="$2" ; shift 2;;
-    -j|--jmx-port) JMX_PORT="$2" ; shift 2 ;;
+    -j|--jmx-port) CONFIG_FILE="$2" ; shift 2 ;;
     -l|--log-dir) LOGDIR="$2" ; shift 2 ;;
-    -s|--server-api) SERVER_API="$2" ; shift 2 ;;
     -t|--start-timeout) START_TIME="$2" ; shift 2 ;;
-    -r|--restful-port) RESTFUL_PORT="$2" ; shift 2 ;;
+    -f|--config-file) CONFIG_FILE="$2" ; shift 2 ;;
     -e|--environment) RUN_ENVIRONMENT="$2" ; shift 2 ;;
     *) break ;;
   esac
@@ -51,7 +54,7 @@ ADDITIONAL_OPTS=$*;
 if [[ "$RUN_ENVIRONMENT" = "dev" ]]; then
   ENVIRONMENT_MEM="-Xms512m -Xmx512m -Xss256K -XX:MaxDirectMemorySize=1024m"
 else
-  ENVIRONMENT_MEM="-Xms4096m -Xmx4096m -XX:MaxDirectMemorySize=4096m"
+  ENVIRONMENT_MEM="-Xms2048m -Xmx2048m -XX:MaxDirectMemorySize=4096m"
 fi
 
 if [ -d /dev/shm/ ]; then
@@ -69,17 +72,15 @@ OTHER_OPTS="-Dstart.check.outfile=${STATUS_FILE}"
 
 JAVA_VERSION=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
 
-#if [[ "$JAVA_VERSION" < "1.7" ]]; then
+#if [[ "$JAVA_VERSION" < "1.6" ]]; then
 #    echo "Error: Unsupported the java version $JAVA_VERSION , please use the version $TARGET_VERSION and above."
 #    exit -1;
 #fi
 
 if [[ "$JAVA_VERSION" < "1.8" ]]; then
   MEM_OPTS="$MEM_OPTS -XX:PermSize=256m -XX:MaxPermSize=512m -XX:ReservedCodeCacheSize=300M -Djava.security.egd=file:/dev/./urandom"
-  JAVA_OPTS="$JAVA_OPTS -javaagent:${BASEDIR}/mercurylib/aspectjweaver-1.7.3.jar"
 else         
   MEM_OPTS="$MEM_OPTS -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m -XX:ReservedCodeCacheSize=480M"
-  JAVA_OPTS="$JAVA_OPTS -javaagent:${BASEDIR}/mercurylib/aspectjweaver-1.8.6.jar"
 fi
 
 
@@ -169,8 +170,6 @@ START()
     fi
   fi  
 
-  echo "VIP_CFGCENTER_ZK_CONNECTION: ${VIP_CFGCENTER_ZK_CONNECTION}"
-  echo "VIP_CFGCENTER_PARTITION: ${VIP_CFGCENTER_PARTITION}"
   
   if [ "${RESTFUL_PORT}" = "-1" ]; then
 	LISTEN_STATUS="port is ${APP_LISTEN_PORT}, JMX port is ${JMX_PORT}"
