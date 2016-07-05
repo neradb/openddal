@@ -17,6 +17,7 @@ public final class ServerParseShow {
     public static final int CONNECTION    = 7;
     public static final int VARIABLES     = 8;
     public static final int SESSION_VARIABLES = 9;
+    public static final int SESSION_STATUS = 10;
 
 
     public static int parse(String stmt, int offset) {
@@ -38,6 +39,9 @@ public final class ServerParseShow {
             case 'D':
             case 'd':
                 return dataCheck(stmt, i);
+            case 'G':
+            case 'g':
+                return showGVCheck(stmt, i);
             case 'S':
             case 's':
                 int slowCheck = slowCheck(stmt, i);
@@ -252,11 +256,20 @@ public final class ServerParseShow {
         }
         return OTHER;
     }
-
+    // SHOW GLOBLE VARIABLES
+    static int showGVCheck(String stmt, int offset) {
+        if (stmt.length() > offset + "GLOBLE ".length()) {
+            return showVCheck(stmt, offset + "GLOBLE ".length());
+        }
+        return OTHER;
+    }
+    // SHOW SESSION VARIABLES
     static int showSVCheck(String stmt, int offset) {
         String s = stmt.substring(offset).toLowerCase();
         if (s.startsWith("session variables")) {
             return SESSION_VARIABLES;
+        } if (s.startsWith("session status")) {
+            return SESSION_STATUS;
         } else {
             return OTHER;
         }

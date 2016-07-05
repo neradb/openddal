@@ -60,12 +60,13 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         ByteBuf out = ctx.alloc().buffer();
         Handshake handshake = new Handshake();
-        handshake.protocolVersion = MySQLProtocolServer.PROTOCOL_VERSION;
-        handshake.serverVersion = MySQLProtocolServer.SERVER_VERSION;
+        handshake.sequenceId = 0;
+        handshake.protocolVersion = MySQLServer.PROTOCOL_VERSION;
+        handshake.serverVersion = MySQLServer.SERVER_VERSION;
         handshake.connectionId = connIdGenerator.incrementAndGet();
         handshake.challenge1 = getRandomString(8);
         handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
-        handshake.characterSet = CharsetUtil.getIndex(MySQLProtocolServer.DEFAULT_CHARSET);
+        handshake.characterSet = CharsetUtil.getIndex(MySQLServer.DEFAULT_CHARSET);
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
         handshake.challenge2 = getRandomString(12);
         handshake.authPluginDataLength = 21;

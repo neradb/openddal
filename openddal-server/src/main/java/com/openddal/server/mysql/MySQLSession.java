@@ -40,11 +40,13 @@ public class MySQLSession implements Session {
     private Map<String, Object> attachments = New.hashMap();
     private String charset;
     private int charsetIndex;
+    public String username;
+    public String schema;
 
     /**
      * @return the sessionId
      */
-    public long getSessionId() {
+    public long getConnectionId() {
         return handshake.connectionId;
     }
 
@@ -104,6 +106,7 @@ public class MySQLSession implements Session {
      */
     public void setHandshake(Handshake handshake) {
         this.handshake = handshake;
+        setCharsetIndex((int)handshake.characterSet);
     }
 
     /**
@@ -111,6 +114,9 @@ public class MySQLSession implements Session {
      */
     public void setHandshakeResponse(HandshakeResponse handshakeResponse) {
         this.handshakeResponse = handshakeResponse;
+        this.username = handshakeResponse.username;
+        this.schema = handshakeResponse.schema;
+        this.setCharsetIndex((int)handshakeResponse.characterSet);
 
     }
 
@@ -131,7 +137,7 @@ public class MySQLSession implements Session {
             channel.close();
         }
     }
-
+    
     public boolean setCharsetIndex(int ci) {
         String charset = CharsetUtil.getCharset(ci);
         if (charset != null) {

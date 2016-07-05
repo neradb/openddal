@@ -32,7 +32,7 @@ public interface Session {
 
     <T> T getAttachment(String key);
 
-    long getSessionId();
+    long getConnectionId();
 
     String getUser();
 
@@ -43,10 +43,13 @@ public interface Session {
     int getCharsetIndex();
 
     boolean setCharset(String charset);
+    
+    boolean setCharsetIndex(int parseInt);
 
     Connection getEngineConnection();
     
     void close();
+
 
 
 }

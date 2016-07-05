@@ -15,7 +15,7 @@
  */
 package com.openddal.server;
 
-import com.openddal.server.mysql.MySQLProtocolServer;
+import com.openddal.server.mysql.MySQLServer;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -125,7 +125,7 @@ public class ServerLauncher {
             if(serverArgs.port == -1) {
                 serverArgs.port = NettyServer.DEFAULT_LISTEN_PORT;
             }
-            NettyServer server = new MySQLProtocolServer(serverArgs);
+            NettyServer server = new MySQLServer(serverArgs);
             server.init();
             server.listen();
             runingServer = server;

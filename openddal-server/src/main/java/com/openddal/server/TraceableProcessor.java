@@ -80,12 +80,12 @@ public abstract class TraceableProcessor implements ProtocolProcessor {
         if (accessLogger.isInfoEnabled()) {
             TraceableData data = getTrace().end();
             Session s = getSession();
-            StringBuilder logMsg = new StringBuilder(256).append(data.protocol).append(" ").append(data.sql).append(" ")
+            StringBuilder logMsg = new StringBuilder(256).append(data.protocol).append(" ").append(data.sql)
+                    .append(" conId:").append(getSession().getConnectionId()).append(" ")
                     .append(s.getAttachment("remoteAddress")).append(" ").append(s.getAttachment("localAddress"))
-                    .append(" ")
-                    .append(data.costTime()).append(" ms");
+                    .append(" ").append(data.costTime()).append(" ms");
             if (data.errorMsg != null) {
-                logMsg.append(" ").append(data.errorCode).append(":").append(data.errorMsg);
+                logMsg.append(" ErrorCode: ").append(data.errorCode).append(". ").append(data.errorMsg);
             }
             accessLogger.info(logMsg.toString());
         }

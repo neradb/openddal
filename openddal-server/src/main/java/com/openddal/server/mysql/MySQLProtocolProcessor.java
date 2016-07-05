@@ -1,8 +1,10 @@
 package com.openddal.server.mysql;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
@@ -29,6 +31,7 @@ import com.openddal.server.mysql.respo.CharacterSet;
 import com.openddal.server.mysql.respo.SelectVariables;
 import com.openddal.server.mysql.respo.ShowVariables;
 import com.openddal.server.mysql.respo.ShowVersion;
+import com.openddal.server.mysql.respo.TxResultSet;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.MysqlDefs;
 import com.openddal.server.util.ResultSetUtil;
@@ -47,6 +50,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         ByteBuf buffer = transport.in;
         byte[] packet = new byte[buffer.readableBytes()];
         buffer.readBytes(packet);
+        setSequenceId(Packet.getSequenceId(packet));
         byte type = Packet.getType(packet);
 
         switch (type) {
@@ -65,6 +69,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         case Flags.COM_QUIT:
             getTrace().protocol("COM_QUIT");
             getSession().close();
+            getProtocolTransport().close();
             break;
         case Flags.COM_PROCESS_KILL:
         case Flags.COM_STMT_PREPARE:
@@ -103,7 +108,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
 
     public void query(String sql) throws Exception {
         if (StringUtils.isNullOrEmpty(sql)) {
-            throw throwError(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
+            throw error(ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
         }
 
         int rs = ServerParse.parse(sql);
@@ -143,28 +148,31 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         }
     }
 
-    private void processCommit(String sql, int i) {
-        // TODO Auto-generated method stub
+    private void processCommit(String sql, int i) throws Exception {
+        try {
+            getConnection().commit();
+            sendOk();
+        } catch (SQLException e) {
+            throw error(ErrorCode.ERR_HANDLE_DATA, e);
+        }
 
     }
 
-    private void processRollback(String sql, int i) {
-        // TODO Auto-generated method stub
-
+    private void processRollback(String sql, int i) throws Exception {
+        getConnection().rollback();
+        sendOk();
     }
 
-    private void processUse(String sql, int i) {
-        // TODO Auto-generated method stub
-
+    private void processUse(String sql, int i) throws Exception {
+        unsupported(sql);
     }
 
-    private void processBegin(String sql, int i) {
-        // TODO Auto-generated method stub
-
+    private void processBegin(String sql, int i) throws Exception {
+        unsupported(sql);
     }
 
-    private void processSavepoint(String sql, int i) {
-        // TODO Auto-generated method stub
+    private void processSavepoint(String sql, int i) throws Exception {
+        unsupported(sql);
 
     }
 
@@ -240,28 +248,35 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
     }
 
     public void processShow(String stmt, int offset) throws Exception {
-        switch (ServerParseShow.parse(stmt, offset)) {
-        case ServerParseShow.DATABASES:
-            // ShowDatabases.response(c);
-            break;
-
-        case ServerParseShow.CONNECTION:
-            // ShowConnection.execute(c);
-            break;
-        case ServerParseShow.SLOW:
-            // ShowSQLSlow.execute(c);
-            break;
-        case ServerParseShow.PHYSICAL_SLOW:
-            // ShowPhysicalSQLSlow.execute(c);
-            break;
-        case ServerParseShow.VARIABLES:
-            sendResultSet(ShowVariables.getResultSet());
-            break;
-        case ServerParseShow.SESSION_VARIABLES:
-            sendResultSet(SelectVariables.getResultSet(stmt));
-            break;
-        default:
-            execute(stmt, ServerParse.SHOW);
+        ResultSet rs = null;
+        try {
+            switch (ServerParseShow.parse(stmt, offset)) {
+            case ServerParseShow.DATABASES:
+                DatabaseMetaData metaData = getConnection().getMetaData();
+                rs = metaData.getSchemas();
+                sendResultSet(rs);
+                break;
+            case ServerParseShow.CONNECTION:
+                unsupported("CONNECTION");
+                break;
+            case ServerParseShow.SLOW:
+                unsupported("SLOW");
+                break;
+            case ServerParseShow.PHYSICAL_SLOW:
+                unsupported("PHYSICAL_SLOW");
+                break;
+            case ServerParseShow.VARIABLES:
+                sendResultSet(ShowVariables.getResultSet());
+                break;
+            case ServerParseShow.SESSION_STATUS:
+            case ServerParseShow.SESSION_VARIABLES:
+                sendResultSet(ShowVariables.getShowResultSet(stmt));
+                break;
+            default:
+                execute(stmt, ServerParse.SHOW);
+            }
+        } finally {
+            JdbcUtils.closeSilently(rs);
         }
     }
 
@@ -278,6 +293,12 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             break;
         case ServerParseSelect.USER:
             execute("SELECT USER()", ServerParse.SELECT);
+            break;
+        case ServerParseSelect.SESSION_TX_READ_ONLY:
+            sendResultSet(TxResultSet.getReadonlyResultSet(getConnection().isReadOnly()));
+            break;
+        case ServerParseSelect.SESSION_ISOLATION:
+            sendResultSet(TxResultSet.getIsolationResultSet(getConnection().getTransactionIsolation()));
             break;
         case ServerParseSelect.VERSION:
             sendResultSet(ShowVersion.getResultSet());
@@ -296,20 +317,18 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         }
     }
 
-    public void processKill(String stmt, int offset) {
+    public void processKill(String stmt, int offset) throws Exception {
         String id = stmt.substring(offset).trim();
         if (StringUtils.isNullOrEmpty(id)) {
             sendError(ErrorCode.ER_NO_SUCH_THREAD, "NULL connection id");
         } else {
-            // get value
-            long value = 0;
             try {
-                value = Long.parseLong(id);
+                //long value = Long.parseLong(id);
+                execute("SELECT CANCEL_SESSION()", ServerParse.SELECT);
             } catch (NumberFormatException e) {
-                sendError(ErrorCode.ER_NO_SUCH_THREAD, "Invalid connection id:" + id);
-                return;
+                throw error(ErrorCode.ER_NO_SUCH_THREAD, "Invalid connection id:" + id);
             }
-            sendError(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
+            throw error(ErrorCode.ER_NO_SUCH_THREAD, "Unknown connection id:" + id);
         }
     }
 
@@ -340,30 +359,48 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             break;
 
         default:
-            unsupported(sql + " unsupported.");
+            unsupported(sql);
         }
     }
 
-    private void unsupported(String msg) {
-        sendError(ErrorCode.ER_UNKNOWN_COM_ERROR, msg);
+    private long getNextSequenceId() {
+        Long seq = getSession().getAttachment("sequenceId");
+        if (seq == null) {
+            seq = 0L;
+        }
+        return ++seq;
+    }
+
+    private void setSequenceId(long sequenceId) {
+        getSession().setAttachment("sequenceId", sequenceId);
+    }
+
+    private void unsupported(String msg) throws Exception {
+        throw error(ErrorCode.ER_UNKNOWN_COM_ERROR, 
+                msg + " unsupported");
+    }
+    
+    private Exception error(int errno, Throwable e) {
+        return new ProtocolProcessException(errno, e);
+    }
+    
+    private Exception error(int errno, String msg) {
+        return new ProtocolProcessException(errno, msg);
     }
 
     public void sendOk() {
         OK ok = new OK();
-        ok.sequenceId = 1;
+        ok.sequenceId = getNextSequenceId();
         ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
         getProtocolTransport().out.writeBytes(ok.toPacket());
     }
 
     public void sendError(int errno, String msg) {
         ERR err = new ERR();
+        err.sequenceId = getNextSequenceId();
         err.errorCode = errno;
         err.errorMessage = msg;
         getProtocolTransport().out.writeBytes(err.toPacket());
-    }
-
-    public Exception throwError(int errno, String msg) {
-        return new ProtocolProcessException(errno, msg);
     }
 
     /**
@@ -373,12 +410,12 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
      * @throws Exception
      */
     public void sendResultSet(ResultSet rs) throws Exception {
-        int charsetIndex = getSession().getCharsetIndex();
         ResultSetMetaData metaData = rs.getMetaData();
         int colunmCount = metaData.getColumnCount();
 
         ResultSetPacket resultset = new ResultSetPacket();
-        ResultSetPacket.characterSet = charsetIndex;
+        resultset.sequenceId = getNextSequenceId();
+        ResultSetPacket.characterSet = getSession().getCharsetIndex();
 
         for (int i = 0; i < colunmCount; i++) {
             int j = i + 1;
@@ -400,12 +437,14 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             RowPacket rowPacket = new RowPacket();
             for (int i = 0; i < colunmCount; i++) {
                 int j = i + 1;
-                rowPacket.data.add(rs.getString(j));
+                rowPacket.data.add(StringUtil.emptyIfNull(rs.getString(j)));
             }
+            resultset.addRow(rowPacket);
         }
+        ByteBuf out = getProtocolTransport().out;
         ArrayList<byte[]> packets = resultset.toPackets();
         for (byte[] bs : packets) {
-            getProtocolTransport().out.writeBytes(bs);
+            out.writeBytes(bs);
         }
     }
 

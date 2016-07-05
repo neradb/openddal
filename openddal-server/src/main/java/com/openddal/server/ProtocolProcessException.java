@@ -27,39 +27,45 @@ import com.openddal.server.util.ErrorCode;
 public class ProtocolProcessException extends Exception {
 
     private static final long serialVersionUID = 1L;
-    
+
     public static ProtocolProcessException convert(Throwable e) {
         if (e instanceof ProtocolProcessException) {
             return (ProtocolProcessException) e;
         } else if (e instanceof DbException) {
-             DbException dbe = (DbException) e;
-            return new ProtocolProcessException(dbe.getErrorCode(),dbe.getMessage(),e);
+            DbException dbe = (DbException) e;
+            return new ProtocolProcessException(dbe.getErrorCode(), dbe.getMessage(), e);
         } else if (e instanceof JdbcSQLException) {
             JdbcSQLException sqle = (JdbcSQLException) e;
-            return new ProtocolProcessException(sqle.getErrorCode(),sqle.getMessage(),e);
+            return new ProtocolProcessException(sqle.getErrorCode(), sqle.getMessage(), e);
         } else if (e instanceof OutOfMemoryError) {
-            return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY,"ER_OUTOFMEMORY",e);
+            return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY, "ER_OUTOFMEMORY", e);
         } else {
-            return new ProtocolProcessException(ErrorCode.ER_UNKNOWN_ERROR,"ERR_GENERAL_EXCEPION",e);
+            return new ProtocolProcessException(ErrorCode.ER_UNKNOWN_ERROR, "ERR_GENERAL_EXCEPION", e);
         }
     }
-    
+
     public static ProtocolProcessException get(int errorCode, String message) {
         return new ProtocolProcessException(errorCode, message);
     }
 
     protected int errorCode;
-    
 
     public ProtocolProcessException(int errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
     }
-
+    
     public ProtocolProcessException(int errorCode, String message, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
     }
+
+
+    public ProtocolProcessException(int errorCode, Throwable cause) {
+        super(cause);
+        this.errorCode = errorCode;
+    }
+
 
     public int getErrorCode() {
         return errorCode;

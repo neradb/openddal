@@ -17,6 +17,9 @@ public final class ServerParseSelect {
     public static final int VERSION = 6;
     public static final int SELECT_SESSION_VARIABLES = 7;
     public static final int CONNECTION_ID = 8;
+    public static final int SESSION_TX_READ_ONLY = 9;
+    public static final int SESSION_ISOLATION = 10;
+
 
     private static final char[] _VERSION_COMMENT = "VERSION_COMMENT".toCharArray();
     private static final char[] _IDENTITY = "IDENTITY".toCharArray();
@@ -453,12 +456,16 @@ public final class ServerParseSelect {
     }
 
     private static int sessionVarCheck(String stmt, int offset) {
-        String s = stmt.substring(offset).toLowerCase();
-        if (s.startsWith("session.")) {
+        String s = stmt.substring(offset).toLowerCase().trim();
+        if (s.equalsIgnoreCase("session.tx_isolation")) {
+            return SESSION_ISOLATION;
+        } else if (s.equalsIgnoreCase("session.tx_read_only")) {
+            return SESSION_TX_READ_ONLY;
+        } else if (s.startsWith("session.")) {
             return SELECT_SESSION_VARIABLES;
-        } else {
-            return OTHER;
         }
+        return OTHER;
     }
+
 
 }

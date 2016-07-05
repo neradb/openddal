@@ -1,15 +1,16 @@
 package com.openddal.server.mysql.respo;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.openddal.server.mysql.MySQLProtocolProcessor;
 import com.openddal.server.mysql.parser.ServerParseSet;
-import com.openddal.server.util.CharsetUtil;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.StringUtil;
 
+/**
+ * 字符集属性设置
+ */
 public class CharacterSet {
 
     private static final Logger logger = LoggerFactory.getLogger(CharacterSet.class);
@@ -117,9 +118,7 @@ public class CharacterSet {
             c.sendOk();
         } else {
             try {
-                charset = CharsetUtil.getCharset(Integer.parseInt(charset));
-                if (charset != null) {
-                    c.getSession().setCharset(charset);
+                if (c.getSession().setCharsetIndex(Integer.parseInt(charset))) {
                     c.sendOk();
                 } else {
                     c.sendError(ErrorCode.ER_UNKNOWN_CHARACTER_SET, "Unknown charset :" + charset);

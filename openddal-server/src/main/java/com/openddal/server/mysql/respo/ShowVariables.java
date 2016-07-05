@@ -5,6 +5,7 @@ import java.sql.Types;
 import java.util.Map;
 
 import com.openddal.result.SimpleResultSet;
+import com.openddal.server.mysql.MySQLServer;
 import com.openddal.util.New;
 
 /**
@@ -40,7 +41,37 @@ public final class ShowVariables {
         result.addColumn("VARIABLE_NAME", Types.VARCHAR, Integer.MAX_VALUE, 0);
         result.addColumn("VALUE", Types.VARCHAR, Integer.MAX_VALUE, 0);
         for (Map.Entry<String, String> foreach : variables.entrySet()) {
-            result.addRow(foreach.getValue(), foreach.getValue());
+            result.addRow(foreach.getKey(), foreach.getValue());
+        }
+        return result;
+    }
+
+    public static ResultSet getShowResultSet(String sql) {
+        SimpleResultSet result = new SimpleResultSet();
+        result.addColumn("VARIABLE_NAME", Types.VARCHAR, Integer.MAX_VALUE, 0);
+        result.addColumn("VALUE", Types.VARCHAR, Integer.MAX_VALUE, 0);
+        if ("SHOW SESSION VARIABLES LIKE 'lower_case_table_names'".equalsIgnoreCase(sql.trim())) {
+            result.addRow("lower_case_table_names", variables.get("lower_case_table_names"));
+
+        } else if ("SHOW SESSION VARIABLES LIKE 'sql_mode'".equalsIgnoreCase(sql.trim())) {
+            result.addRow("sql_mode", variables.get("sql_mode"));
+
+        } else if ("SHOW SESSION VARIABLES LIKE 'version_comment'".equalsIgnoreCase(sql.trim())) {
+            result.addRow("Ssl_cipher", MySQLServer.VERSION_COMMENT);
+
+        } else if ("SHOW SESSION VARIABLES LIKE 'version'".equalsIgnoreCase(sql.trim())) {
+            result.addRow("version", MySQLServer.SERVER_VERSION);
+
+        } else if ("SHOW SESSION VARIABLES LIKE 'version_compile_os'".equalsIgnoreCase(sql.trim())) {
+            result.addRow("version_compile_os", System.getProperty("os"));
+
+        } else if ("SHOW SESSION STATUS LIKE 'Ssl_cipher'".equalsIgnoreCase(sql.trim())) {
+            result.addRow("Ssl_cipher", "DHE-RSA-AES256-SHA");
+
+        } else {
+            for (Map.Entry<String, String> foreach : variables.entrySet()) {
+                result.addRow(foreach.getKey(), foreach.getValue());
+            }
         }
         return result;
     }

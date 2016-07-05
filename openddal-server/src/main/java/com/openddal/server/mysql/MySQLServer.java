@@ -12,25 +12,25 @@ import io.netty.channel.ChannelHandler;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class MySQLProtocolServer extends NettyServer {
+public class MySQLServer extends NettyServer {
     
 
-    public static final String SERVER_NAME = "openddal-server-for-mysql";
 
     public static final String DEFAULT_CHARSET = "utf8";
     
     public static final byte PROTOCOL_VERSION = 10;
 
-    public static final String SERVER_VERSION = "5.6.27" + SERVER_NAME + "-" + Constants.getFullVersion();
+    public static final String VERSION_COMMENT = "OpenDDAL MySQL Protocol Server";
+    public static final String SERVER_VERSION = "5.7.13" + VERSION_COMMENT + "-" + Constants.getFullVersion();
 
-    public MySQLProtocolServer(ServerArgs args) {
+    public MySQLServer(ServerArgs args) {
         super(args);
     }
 
 
     @Override
     protected String getServerName() {
-        return SERVER_NAME;
+        return VERSION_COMMENT;
     }
 
     @Override

@@ -64,6 +64,7 @@ public class ProtocolTransport {
     }
 
     public void close() {
+        channel.attr(Session.CHANNEL_SESSION_KEY).remove();
         channel.close();
     }
 
