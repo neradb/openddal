@@ -71,15 +71,13 @@ public class Trace {
     /**
      * The trace module name for datasource.
      */
-    public static final String DATASOURCE = "datasource";
+    public static final String REPOSITORY = "repository";
 
     private final TraceWriter traceWriter;
-    private final String module;
     private int traceLevel = TraceSystem.PARENT;
 
-    Trace(TraceWriter traceWriter, String module) {
+    Trace(TraceWriter traceWriter) {
         this.traceWriter = traceWriter;
-        this.module = module;
     }
 
     /**
@@ -156,7 +154,7 @@ public class Trace {
      */
     public void error(Throwable t, String s) {
         if (isEnabled(TraceSystem.ERROR)) {
-            traceWriter.write(TraceSystem.ERROR, module, s, t);
+            traceWriter.write(TraceSystem.ERROR, s, t);
         }
     }
 
@@ -170,7 +168,7 @@ public class Trace {
     public void error(Throwable t, String s, Object... params) {
         if (isEnabled(TraceSystem.ERROR)) {
             s = MessageFormat.format(s, params);
-            traceWriter.write(TraceSystem.ERROR, module, s, t);
+            traceWriter.write(TraceSystem.ERROR, s, t);
         }
     }
 
@@ -181,7 +179,7 @@ public class Trace {
      */
     public void info(String s) {
         if (isEnabled(TraceSystem.INFO)) {
-            traceWriter.write(TraceSystem.INFO, module, s, null);
+            traceWriter.write(TraceSystem.INFO, s, null);
         }
     }
 
@@ -194,7 +192,7 @@ public class Trace {
     public void info(String s, Object... params) {
         if (isEnabled(TraceSystem.INFO)) {
             s = MessageFormat.format(s, params);
-            traceWriter.write(TraceSystem.INFO, module, s, null);
+            traceWriter.write(TraceSystem.INFO, s, null);
         }
     }
 
@@ -206,7 +204,7 @@ public class Trace {
      */
     void info(Throwable t, String s) {
         if (isEnabled(TraceSystem.INFO)) {
-            traceWriter.write(TraceSystem.INFO, module, s, t);
+            traceWriter.write(TraceSystem.INFO, s, t);
         }
     }
 
@@ -251,7 +249,7 @@ public class Trace {
                 append(StringUtils.javaEncode(params)).
                 append(';');
         sql = buff.toString();
-        traceWriter.write(TraceSystem.INFO, module, sql, null);
+        traceWriter.write(TraceSystem.INFO, sql, null);
     }
 
     /**
@@ -263,7 +261,7 @@ public class Trace {
     public void debug(String s, Object... params) {
         if (isEnabled(TraceSystem.DEBUG)) {
             s = MessageFormat.format(s, params);
-            traceWriter.write(TraceSystem.DEBUG, module, s, null);
+            traceWriter.write(TraceSystem.DEBUG, s, null);
         }
     }
 
@@ -274,7 +272,7 @@ public class Trace {
      */
     public void debug(String s) {
         if (isEnabled(TraceSystem.DEBUG)) {
-            traceWriter.write(TraceSystem.DEBUG, module, s, null);
+            traceWriter.write(TraceSystem.DEBUG, s, null);
         }
     }
 
@@ -286,7 +284,7 @@ public class Trace {
      */
     public void debug(Throwable t, String s) {
         if (isEnabled(TraceSystem.DEBUG)) {
-            traceWriter.write(TraceSystem.DEBUG, module, s, t);
+            traceWriter.write(TraceSystem.DEBUG, s, t);
         }
     }
 
@@ -298,7 +296,7 @@ public class Trace {
      */
     public void infoCode(String java) {
         if (isEnabled(TraceSystem.INFO)) {
-            traceWriter.write(TraceSystem.INFO, module, java, null);
+            traceWriter.write(TraceSystem.INFO, java, null);
         }
     }
 
@@ -309,7 +307,7 @@ public class Trace {
      */
     void debugCode(String java) {
         if (isEnabled(TraceSystem.DEBUG)) {
-            traceWriter.write(TraceSystem.DEBUG, module, java, null);
+            traceWriter.write(TraceSystem.DEBUG, java, null);
         }
     }
 

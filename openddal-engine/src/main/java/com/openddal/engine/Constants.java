@@ -114,7 +114,7 @@ public class Constants {
     /**
      * The minor version of this database.
      */
-    public static final int VERSION_MINOR = 4;
+    public static final int VERSION_MINOR = 2;
 
     /**
      * The lock mode that means no locking is used at all.
@@ -541,7 +541,7 @@ public class Constants {
      * @return the version number
      */
     public static Object getVersionStable() {
-        return "1.3." + BUILD_ID_STABLE;
+        return "1.2." + BUILD_ID_STABLE;
     }
 
     /**

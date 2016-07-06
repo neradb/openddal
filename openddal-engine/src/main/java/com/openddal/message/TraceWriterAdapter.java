@@ -18,27 +18,12 @@ package com.openddal.message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * This adapter sends log output to SLF4J. SLF4J supports multiple
- * implementations such as Logback, Log4j, Jakarta Commons Logging (JCL), JDK
- * 1.4 logging, x4juli, and Simple Log. To use SLF4J, you need to add the
- * required jar files to the classpath, and set the trace level to 4 when
- * opening a database:
- * <p>
- * <pre>
- * jdbc:h2:&tilde;/test;TRACE_LEVEL_FILE=4
- * </pre>
- * <p>
- * The logger name is 'openddal-engine'.
- */
 public class TraceWriterAdapter implements TraceWriter {
 
-    private final Logger logger = LoggerFactory.getLogger("ddal-engine");
-    private String name;
+    private final Logger logger;
 
-    @Override
-    public void setName(String name) {
-        this.name = name;
+    public TraceWriterAdapter(String module) {
+        this.logger = LoggerFactory.getLogger("ddal-engine-" + module);
     }
 
     @Override
@@ -56,13 +41,8 @@ public class TraceWriterAdapter implements TraceWriter {
     }
 
     @Override
-    public void write(int level, String module, String s, Throwable t) {
+    public void write(int level, String s, Throwable t) {
         if (isEnabled(level)) {
-            if (name != null) {
-                s = name + ":" + module + " " + s;
-            } else {
-                s = module + " " + s;
-            }
             switch (level) {
                 case TraceSystem.DEBUG:
                     logger.debug(s, t);

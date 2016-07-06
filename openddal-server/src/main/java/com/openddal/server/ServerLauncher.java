@@ -131,6 +131,7 @@ public class ServerLauncher {
             runingServer = server;
             server.waitForClose();
         } catch (Exception e) {
+            e.printStackTrace(System.err);
             System.exit(-1);
         } finally {
             runingServer = null;

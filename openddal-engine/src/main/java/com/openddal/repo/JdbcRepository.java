@@ -84,7 +84,7 @@ public abstract class JdbcRepository implements Repository {
         if (dataSourceProvider == null) {
             throw new IllegalArgumentException();
         }
-        this.trace = database.getTrace(Trace.DATASOURCE);
+        this.trace = database.getTrace(Trace.REPOSITORY);
         for (Shard shardItem : configuration.cluster) {
             List<ShardItem> shardItems = shardItem.getShardItems();
             List<DataSourceMarker> shardDs = New.arrayList(shardItems.size());

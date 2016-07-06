@@ -1,26 +1,23 @@
 #!/bin/bash
 
-ulimit -s 20480
-ulimit -c unlimited
-export PATH=$PATH:/usr/sbin
-
 PRG="$0"
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." >/dev/null; pwd`
 
-CLASSPATH="$CLASSPATH:$BASEDIR/conf":
-for jar in "$BASEDIR/lib/*.jar"; do
+CLASSPATH=$CLASSPATH:$BASEDIR/conf
+for jar in $BASEDIR/lib/*.jar; do
   CLASSPATH=$CLASSPATH:$jar
 done
 
 STATUS_FILE=${PRGDIR}/status
 PID_FILE=${PRGDIR}/PID
 
+SERVICE_NAME=openddal
 LOGDIR=${BASEDIR}/logs
 APP_LISTEN_PORT=6100
-JMX_PORT=8060
+JMX_PORT=8050
 START_TIME=60
-CONFIG_FILE=/config/engine.xml
+CONFIG_FILE=/conf/engine.xml
 TARGET_VERSION=1.6
 
 USAGE()
@@ -40,7 +37,7 @@ shift
 while true; do
   case "$1" in
     -p|--port) APP_LISTEN_PORT="$2" ; shift 2;;
-    -j|--jmx-port) CONFIG_FILE="$2" ; shift 2 ;;
+    -j|--jmx-port) JMX_PORT="$2" ; shift 2 ;;
     -l|--log-dir) LOGDIR="$2" ; shift 2 ;;
     -t|--start-timeout) START_TIME="$2" ; shift 2 ;;
     -f|--config-file) CONFIG_FILE="$2" ; shift 2 ;;
@@ -54,16 +51,16 @@ ADDITIONAL_OPTS=$*;
 if [[ "$RUN_ENVIRONMENT" = "dev" ]]; then
   ENVIRONMENT_MEM="-Xms512m -Xmx512m -Xss256K -XX:MaxDirectMemorySize=1024m"
 else
-  ENVIRONMENT_MEM="-Xms2048m -Xmx2048m -XX:MaxDirectMemorySize=4096m"
+  ENVIRONMENT_MEM="-Xms2048m -Xmx2048m -XX:MaxDirectMemorySize=2048m"
 fi
 
 if [ -d /dev/shm/ ]; then
-	GC_LOG_FILE=/dev/shm/gc-$SERVER_API-$APP_LISTEN_PORT.log
+	GC_LOG_FILE=/dev/shm/gc-$SERVICE_NAME-$APP_LISTEN_PORT.log
 else
-	GC_LOG_FILE=${LOGDIR}/gc-$SERVER_API-$APP_LISTEN_PORT.log
+	GC_LOG_FILE=${LOGDIR}/gc-$SERVICE_NAME-$APP_LISTEN_PORT.log
 fi
 
-JAVA_OPTS="-Dosp.logfile=$LOGDIR/$SERVER_API -XX:+PrintCommandLineFlags -XX:-OmitStackTraceInFastThrow -XX:-UseBiasedLocking -XX:-UseCounterDecay -XX:AutoBoxCacheMax=20000 -Djava.net.preferIPv4Stack=true -Dio.netty.recycler.maxCapacity.default=0 -Dio.netty.leakDetectionLevel=disabled"
+JAVA_OPTS="-Dosp.logfile=$LOGDIR/$SERVICE_NAME -XX:+PrintCommandLineFlags -XX:-OmitStackTraceInFastThrow -XX:-UseBiasedLocking -XX:-UseCounterDecay -XX:AutoBoxCacheMax=20000 -Djava.net.preferIPv4Stack=true -Dio.netty.recycler.maxCapacity.default=0 -Dio.netty.leakDetectionLevel=disabled"
 MEM_OPTS="-server ${ENVIRONMENT_MEM} -XX:NewRatio=1 -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:MaxTenuringThreshold=6 -XX:+ExplicitGCInvokesConcurrent"
 GCLOG_OPTS="-Xloggc:${GC_LOG_FILE} -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCDateStamps -XX:+PrintGCDetails"
 CRASH_OPTS="-XX:ErrorFile=${LOGDIR}/hs_err_%p.log -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${LOGDIR}/"
@@ -87,7 +84,7 @@ fi
 BACKUP_GC_LOG()
 {
  GCLOG_DIR=${LOGDIR}
- BACKUP_FILE="${GCLOG_DIR}/gc-${SERVER_API}-${APP_LISTEN_PORT}_$(date +'%Y%m%d_%H%M%S').log"
+ BACKUP_FILE="${GCLOG_DIR}/gc-${SERVICE_NAME}-${APP_LISTEN_PORT}_$(date +'%Y%m%d_%H%M%S').log"
  
 
  if [ -f ${GC_LOG_FILE} ]; then
@@ -119,12 +116,12 @@ STOP()
 	then
 	if [ -d /proc/$PID ];then
 		LISTEN_STATUS=`cat ${STATUS_FILE}`
-		echo "$SERVER_API stopping, ${LISTEN_STATUS}."
+		echo "$SERVICE_NAME stopping, ${LISTEN_STATUS}."
 		kill $PID
 		sleep 3
 
 		if [ x"$PID" != x ]; then
-		  echo -e "$SERVER_API still running as process:$PID,killing...\c"
+		  echo -e "$SERVICE_NAME still running as process:$PID,killing...\c"
 		fi
 		
 		while  [ -d /proc/$PID ]; do
@@ -133,12 +130,12 @@ STOP()
 		  echo -e ".\c"
 		done
 			
-		echo -e "\n$SERVER_API stop successfully"
+		echo -e "\n$SERVICE_NAME stop successfully"
 	else
-		echo "$SERVER_API is not running."
+		echo "$SERVICE_NAME is not running."
 	fi
   else
-	echo "$SERVER_API is not running."
+	echo "$SERVICE_NAME is not running."
   fi
 }
 
@@ -154,7 +151,7 @@ START()
   if [ "$PID" != "" ]
 	then
 	if [ -d /proc/$PID ];then
-	 echo "$SERVER_API is running, please stop it first!!"
+	 echo "$SERVICE_NAME is running, please stop it first!!"
 	 exit -1
 	fi
   fi
@@ -174,11 +171,11 @@ START()
   if [ "${RESTFUL_PORT}" = "-1" ]; then
 	LISTEN_STATUS="port is ${APP_LISTEN_PORT}, JMX port is ${JMX_PORT}"
   else
-	LISTEN_STATUS="port is ${APP_LISTEN_PORT}, JMX port is ${JMX_PORT}, Restful port is ${RESTFUL_PORT}"
+	LISTEN_STATUS="port is ${APP_LISTEN_PORT}, JMX port is ${JMX_PORT}."
   fi
-  echo "$SERVER_API starting, ${LISTEN_STATUS}."
+  echo "$SERVICE_NAME starting, ${LISTEN_STATUS}."
   
-  nohup java  $JAVA_OPTS $MEM_OPTS $GCLOG_OPTS $JMX_OPTS $CRASH_OPTS $OTHER_OPTS $ADDITIONAL_OPTS  -jar ${BASEDIR}/osp-engine.jar -servicesdir ${BASEDIR}/servicesdir -thirddir ${BASEDIR}/thirddir -port $APP_LISTEN_PORT -restport $RESTFUL_PORT >>$LOGDIR/osp-$SERVER_API.out 2>&1 &
+  nohup java  $JAVA_OPTS $MEM_OPTS $GCLOG_OPTS $JMX_OPTS $CRASH_OPTS $OTHER_OPTS $ADDITIONAL_OPTS -classpath "\"$CLASSPATH\"" com.openddal.server.ServerLauncher -configFile "\"$CONFIG_FILE\"" -port $APP_LISTEN_PORT >>$LOGDIR/$SERVICE_NAME.out 2>&1 &
   PID=$!
   echo $PID > $PID_FILE
   
@@ -194,19 +191,19 @@ START()
       echo -e ".\c"
       CHECK_STATUS=`cat ${STATUS_FILE}`
     else
-      echo -e "\n$SERVER_API start maybe unsuccess, start checking not finished until reach the starting timeout! See ${LOGDIR}/osp-${SERVER_API}.out for more information."
+      echo -e "\n$SERVICE_NAME start maybe unsuccess, start checking not finished until reach the starting timeout! See ${LOGDIR}/${SERVICE_NAME}.out for more information."
       exit -1
     fi
   done
   
   if [ $CHECK_STATUS = "SUCCESS" ]; then
-	echo -e "\n$SERVER_API start successfully, running as process:$PID."
+	echo -e "\n$SERVICE_NAME start successfully, running as process:$PID."
 	echo ${LISTEN_STATUS} > ${STATUS_FILE}
   fi
   
   if [ $CHECK_STATUS = "ERROR" ]; then
 	kill $PID
-	echo -e "\n$SERVER_API start failed ! See ${LOGDIR}/osp-${SERVER_API}.out for more information."		
+	echo -e "\n$SERVICE_NAME start failed ! See ${LOGDIR}/${SERVICE_NAME}.out for more information."		
   fi
   
 }
@@ -221,16 +218,16 @@ STATUS()
 	then
 	if [ -d /proc/$PID ];then
 	  LISTEN_STATUS=`cat ${STATUS_FILE}`
-	  echo "$SERVER_API is running ,${LISTEN_STATUS}."
+	  echo "$SERVICE_NAME is running ,${LISTEN_STATUS}."
 	  exit 0
 	fi
   fi
-  echo "$SERVER_API is not running."
+  echo "$SERVICE_NAME is not running."
 }
 
 INFO()
 {
-	java -jar ${BASEDIR}/osp-engine.jar -action info -jmxPort $JMX_PORT -jmxHost 127.0.0.1
+	java -jar ${BASEDIR}/engine.jar -action info -jmxPort $JMX_PORT -jmxHost 127.0.0.1
 	exit 0;
 }
 

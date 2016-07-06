@@ -15,7 +15,7 @@
  */
 package com.openddal.message;
 
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import com.openddal.util.New;
 
@@ -26,7 +26,7 @@ import com.openddal.util.New;
  * is possible to write after close was called, but that means for each write
  * the file will be opened and closed again (which is slower).
  */
-public class TraceSystem implements TraceWriter {
+public class TraceSystem {
 
     /**
      * The parent trace level should be used.
@@ -54,64 +54,24 @@ public class TraceSystem implements TraceWriter {
      */
     public static final int DEBUG = 3;
 
-
-    private HashMap<String, Trace> traces;
-    private TraceWriter writer = new TraceWriterAdapter();
-
+    private final ConcurrentMap<String, Trace> traces = New.concurrentHashMap();
+    
     /**
-     * Get or create a trace object for this module. Trace modules with names
-     * such as "JDBC[1]" are not cached (modules where the name ends with "]").
-     * All others are cached.
+     * Get or create a trace object for this module id. Trace modules with id
+     * are cached.
      *
-     * @param module the module name
+     * @param moduleId module id
      * @return the trace object
      */
-    public synchronized Trace getTrace(String module) {
-        if (module.endsWith("]")) {
-            return new Trace(writer, module);
-        }
-        if (traces == null) {
-            traces = New.hashMap(16);
-        }
+    public Trace getTrace(String module) {
         Trace t = traces.get(module);
         if (t == null) {
-            t = new Trace(writer, module);
-            traces.put(module, t);
+            Trace newTrace = new Trace(new TraceWriterAdapter(module));
+            t = traces.putIfAbsent(module, newTrace);
+            if (t == null) {
+                t = newTrace;
+            }
         }
         return t;
     }
-    
-    
-    /**
-     * Set the file trace level.
-     *
-     * @param level the new level
-     */
-    public void setAdapterClass(String adapterClass) {
-        try {
-            writer = (TraceWriter) Class.forName(adapterClass).newInstance();
-        } catch (Throwable e) {
-            e = DbException.get(ErrorCode.CLASS_NOT_FOUND_1, e, adapterClass);
-            write(ERROR, Trace.DATABASE, adapterClass, e);
-            return;
-        }
-    
-    }
-
-    @Override
-    public boolean isEnabled(int level) {
-        return writer.isEnabled(level);
-    }
-
-    @Override
-    public void write(int level, String module, String s, Throwable t) {
-        writer.write(level, module, s, t);
-    }
-
-
-    @Override
-    public void setName(String name) {
-        writer.setName(name);
-    }
-
 }

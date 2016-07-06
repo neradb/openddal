@@ -2,8 +2,8 @@
 *.ipr
 *.iws
 target/
+logs/
 /var
-/logs
 /*/var/
 pom.xml.versionsBackup
 test-output/

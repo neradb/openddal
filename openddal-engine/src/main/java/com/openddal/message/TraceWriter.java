@@ -22,14 +22,6 @@ package com.openddal.message;
  * that uses SLF4J (Simple Logging Facade for Java).
  */
 interface TraceWriter {
-
-    /**
-     * Set the name of the database or trace object.
-     *
-     * @param name the new name
-     */
-    void setName(String name);
-
     /**
      * Write a message.
      *
@@ -38,7 +30,7 @@ interface TraceWriter {
      * @param s      the message
      * @param t      the exception (may be null)
      */
-    void write(int level, String module, String s, Throwable t);
+    void write(int level, String s, Throwable t);
 
     /**
      * Check the given trace / log level is enabled.

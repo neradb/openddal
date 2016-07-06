@@ -8,14 +8,10 @@ public class NettyServerTestCase {
     
     @Test
     public void main() {
-        System.setProperty("engine.logfile", "logs/engine");
-        System.setProperty("access.logfile", "logs/access");
-        System.setProperty("server.logfile", "logs/server");
-        System.setProperty("server.stdout", "true");
-        System.setProperty("engine.stdout", "true");
-        System.setProperty("server.flowlog", "true");
-        System.setProperty("engine.flowlog", "true");
-        System.setProperty("server.accesslog", "true");
+        System.setProperty("openddal.logfile", "logs/openddal");
+        System.setProperty("openddal.stdout", "true"); 
+        System.setProperty("openddal.flowlog", "true");
+        System.setProperty("openddal.accesslog", "true");
         String[] args = new String[]{
                 "-port","6100",
                 "-ssl","false",

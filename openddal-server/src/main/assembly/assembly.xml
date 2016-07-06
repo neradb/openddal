@@ -11,6 +11,15 @@
 	<dependencySets>
 		<dependencySet>
 			<outputDirectory>/lib</outputDirectory>
+			<excludes>
+				<exclude>mysql:mysql-connector-java:*</exclude>
+			</excludes>
+		</dependencySet>
+		<dependencySet>
+			<outputDirectory>/lib/drivers</outputDirectory>
+			<includes>
+				<include>mysql:mysql-connector-java:*</include>
+			</includes>
 		</dependencySet>
 	</dependencySets>
 
@@ -30,4 +39,14 @@
 			<fileMode>0755</fileMode>
 		</fileSet>
 	</fileSets>
+	
+	<files>
+		<file>
+			<source>src/main/assembly/bin/openddal.sh</source>
+			<outputDirectory>bin</outputDirectory>
+			<destName>openddal.sh</destName>
+			<fileMode>755</fileMode>
+			<lineEnding>unix</lineEnding>
+		</file>
+	</files>
 </assembly>
