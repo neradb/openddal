@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+
+	<jmxConfigurator/>
+	
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
 		<encoder>
 			<!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
 			<pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n
 			</pattern>
-			<immediateFlush>true</immediateFlush>
-			<charset>UTF-8</charset>
 		</encoder>
 	</appender>
 
@@ -29,14 +30,12 @@
 			<!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
 			<pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n
 			</pattern>
-			<immediateFlush>false</immediateFlush>
-			<charset>UTF-8</charset>
 		</encoder>
 	</appender>
 
 	<appender name="serverAccessFileAppender"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>${openddal.logfile}server_access.log</file>
+		<file>${openddal.logfile}_server_access.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
 			<fileNamePattern>${openddal.logfile}_server_access_%i.log
 			</fileNamePattern>
@@ -51,8 +50,6 @@
 		</triggeringPolicy>
 		<encoder>
 			<pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] - %m%n</pattern>
-			<immediateFlush>false</immediateFlush>
-			<charset>UTF-8</charset>
 		</encoder>
 	</appender>
 
@@ -75,8 +72,6 @@
 			<!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
 			<pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n
 			</pattern>
-			<immediateFlush>false</immediateFlush>
-			<charset>UTF-8</charset>
 		</encoder>
 	</appender>
 
@@ -98,10 +93,7 @@
 
 		<encoder>
 			<!-- 格式化输出：%d表示日期，%t表示线程名，%p 级别, %logger logger name最多36字节 %msg：日志消息，%n是换行符 -->
-			<pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n
-			</pattern>
-			<immediateFlush>false</immediateFlush>
-			<charset>UTF-8</charset>
+			<pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] [%p] [%logger{36}] - %m%n</pattern>
 		</encoder>
 		<filter class="ch.qos.logback.classic.filter.LevelFilter">
 			<level>ERROR</level>
@@ -162,7 +154,7 @@
 		</else>
 	</if>
 
-	<if condition='!property("openddal.sqllog").equals("true")'>
+	<if condition='!property("openddal.sqllog").equals("false")'>
 		<then>
 			<logger name="ddal-engine-jdbc" additivity="false" level="INFO">
 				<appender-ref ref="engineSqlAsyncAppender" />
@@ -174,7 +166,14 @@
 			</logger>
 		</then>
 		<else>
-			<logger name="ddal-engine-jdbc" level="OFF" />
+			<logger name="ddal-engine-jdbc" additivity="false" level="INFO">
+				<appender-ref ref="flowAsyncAppender" />
+				<if condition='property("openddal.stdout").equals("true")'>
+					<then>
+						<appender-ref ref="STDOUT" />
+					</then>
+				</if>
+			</logger>
 		</else>
 	</if>
 
@@ -183,6 +182,7 @@
 		<then>
 			<root level="INFO">
 				<appender-ref ref="flowAsyncAppender" />
+				<appender-ref ref="errorAsyncAppender" />
 				<if condition='property("openddal.stdout").equals("true")'>
 					<then>
 						<appender-ref ref="STDOUT" />

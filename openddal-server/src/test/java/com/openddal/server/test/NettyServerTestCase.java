@@ -11,7 +11,6 @@ public class NettyServerTestCase {
         System.setProperty("openddal.logfile", "logs/openddal");
         System.setProperty("openddal.stdout", "true"); 
         System.setProperty("openddal.flowlog", "true");
-        System.setProperty("openddal.accesslog", "true");
         String[] args = new String[]{
                 "-port","6100",
                 "-ssl","false",

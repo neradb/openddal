@@ -417,11 +417,10 @@ public class Session implements SessionInterface {
         if (trace != null && !closed) {
             return trace;
         }
-        String traceModuleName = Trace.JDBC + "[" + id + "]";
         if (closed) {
-            return new TraceSystem().getTrace(traceModuleName);
+            return new TraceSystem().getTrace(Trace.JDBC);
         }
-        trace = database.getTrace(traceModuleName);
+        trace = database.getTrace(Trace.JDBC);
         return trace;
     }
 

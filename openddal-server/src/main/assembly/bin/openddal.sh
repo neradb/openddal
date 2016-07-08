@@ -3,26 +3,20 @@
 PRG="$0"
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." >/dev/null; pwd`
+PID_FILE=${PRGDIR}/.pid
 
-CLASSPATH=$CLASSPATH:$BASEDIR/conf
-for jar in $BASEDIR/lib/*.jar; do
-  CLASSPATH=$CLASSPATH:$jar
-done
-
-STATUS_FILE=${PRGDIR}/status
-PID_FILE=${PRGDIR}/PID
-
+CLASSPATH=$CLASSPATH:$BASEDIR/lib/*:$BASEDIR/lib/drivers/*:$BASEDIR/conf:
 SERVICE_NAME=openddal
 LOGDIR=${BASEDIR}/logs
 APP_LISTEN_PORT=6100
 JMX_PORT=8050
 START_TIME=60
-CONFIG_FILE=/conf/engine.xml
+CONFIG_FILE=engine.xml
 TARGET_VERSION=1.6
 
 USAGE()
 {
-  echo "usage: $0 start|stop|restart|status|info [-p|--port port] [-j|--jmx-port port] [-l|--log-dir dir] [-t|--start-timeout time] [-f|--config-file path] [-e|--environment environment] [additional jvm args, e.g. -Dosp.loglevel=111 -Xmx2048m]"
+  echo "usage: $0 start|stop|restart|status|info [-p|--port port] [-j|--jmx-port port] [-l|--log-dir dir] [-t|--start-timeout time] [-f|--config-file path] [-e|--environment environment] [additional jvm args, e.g. -Dopenddal.loglevel=111 -Xmx2048m]"
 }
 
 if [ $# -lt 1 ]; then
@@ -55,17 +49,17 @@ else
 fi
 
 if [ -d /dev/shm/ ]; then
-	GC_LOG_FILE=/dev/shm/gc-$SERVICE_NAME-$APP_LISTEN_PORT.log
+  GC_LOG_FILE=/dev/shm/gc-$SERVICE_NAME-$APP_LISTEN_PORT.log
 else
-	GC_LOG_FILE=${LOGDIR}/gc-$SERVICE_NAME-$APP_LISTEN_PORT.log
+  GC_LOG_FILE=${LOGDIR}/gc-$SERVICE_NAME-$APP_LISTEN_PORT.log
 fi
 
-JAVA_OPTS="-Dosp.logfile=$LOGDIR/$SERVICE_NAME -XX:+PrintCommandLineFlags -XX:-OmitStackTraceInFastThrow -XX:-UseBiasedLocking -XX:-UseCounterDecay -XX:AutoBoxCacheMax=20000 -Djava.net.preferIPv4Stack=true -Dio.netty.recycler.maxCapacity.default=0 -Dio.netty.leakDetectionLevel=disabled"
+JAVA_OPTS="-Dopenddal.logfile=$LOGDIR/$SERVICE_NAME -XX:+PrintCommandLineFlags -XX:-OmitStackTraceInFastThrow -XX:-UseBiasedLocking -XX:-UseCounterDecay -XX:AutoBoxCacheMax=20000 -Djava.net.preferIPv4Stack=true -Dio.netty.recycler.maxCapacity.default=0 -Dio.netty.leakDetectionLevel=disabled"
 MEM_OPTS="-server ${ENVIRONMENT_MEM} -XX:NewRatio=1 -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=75 -XX:+UseCMSInitiatingOccupancyOnly -XX:+ParallelRefProcEnabled -XX:+AlwaysPreTouch -XX:MaxTenuringThreshold=6 -XX:+ExplicitGCInvokesConcurrent"
 GCLOG_OPTS="-Xloggc:${GC_LOG_FILE} -XX:+PrintGCApplicationStoppedTime -XX:+PrintGCApplicationConcurrentTime -XX:+PrintGCDateStamps -XX:+PrintGCDetails"
 CRASH_OPTS="-XX:ErrorFile=${LOGDIR}/hs_err_%p.log -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=${LOGDIR}/"
 JMX_OPTS="-Dcom.sun.management.jmxremote.port=${JMX_PORT} -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=127.0.0.1"
-OTHER_OPTS="-Dstart.check.outfile=${STATUS_FILE}"
+OTHER_OPTS=""
 
 JAVA_VERSION=$(java -version 2>&1 | awk -F '"' '/version/ {print $2}')
 
@@ -81,48 +75,25 @@ else
 fi
 
 
-BACKUP_GC_LOG()
-{
- GCLOG_DIR=${LOGDIR}
- BACKUP_FILE="${GCLOG_DIR}/gc-${SERVICE_NAME}-${APP_LISTEN_PORT}_$(date +'%Y%m%d_%H%M%S').log"
- 
-
- if [ -f ${GC_LOG_FILE} ]; then
-  echo "saving gc log ${GC_LOG_FILE} to ${BACKUP_FILE}"
-  mv ${GC_LOG_FILE} ${BACKUP_FILE}
- fi
-}
-
 GET_PID_BY_ALL_PORT()
 {
-  if [ "${RESTFUL_PORT}" = "-1" ]; then
-    echo `lsof -n -P -i :${APP_LISTEN_PORT},${JMX_PORT} | grep LISTEN | awk '{print $2}' | head -n 1`
-  else  
-    echo `lsof -n -P -i :${APP_LISTEN_PORT},${JMX_PORT},${RESTFUL_PORT} | grep LISTEN | awk '{print $2}' | head -n 1`
-  fi
+  echo `lsof -n -P -i :${APP_LISTEN_PORT},${JMX_PORT} | grep LISTEN | awk '{print $2}' | head -n 1`
 }
 
 
 STOP()
 {
-  BACKUP_GC_LOG
   
-  if [ -f $PID_FILE ] ; then
-	PID=`cat $PID_FILE`
+  if [ -f $PID_FILE ]; then
+    PID=`cat $PID_FILE`
   else
     PID=$(GET_PID_BY_ALL_PORT)	
   fi
-  if [ "$PID" != "" ]
-	then
+  if [ "$PID" != "" ]; then
 	if [ -d /proc/$PID ];then
-		LISTEN_STATUS=`cat ${STATUS_FILE}`
-		echo "$SERVICE_NAME stopping, ${LISTEN_STATUS}."
+		echo "$SERVICE_NAME stopping..."
 		kill $PID
-		sleep 3
-
-		if [ x"$PID" != x ]; then
-		  echo -e "$SERVICE_NAME still running as process:$PID,killing...\c"
-		fi
+		sleep 1
 		
 		while  [ -d /proc/$PID ]; do
 		  kill $PID
@@ -130,7 +101,7 @@ STOP()
 		  echo -e ".\c"
 		done
 			
-		echo -e "\n$SERVICE_NAME stop successfully"
+		echo -e "$SERVICE_NAME stop successfully"
 	else
 		echo "$SERVICE_NAME is not running."
 	fi
@@ -142,8 +113,6 @@ STOP()
 
 START()
 {
-  BACKUP_GC_LOG
-  echo "" > ${STATUS_FILE}
 
   if [ -f $PID_FILE ] ; then
 	PID=`cat $PID_FILE`
@@ -166,46 +135,38 @@ START()
       exit -1
     fi
   fi  
-
   
-  if [ "${RESTFUL_PORT}" = "-1" ]; then
-	LISTEN_STATUS="port is ${APP_LISTEN_PORT}, JMX port is ${JMX_PORT}"
-  else
-	LISTEN_STATUS="port is ${APP_LISTEN_PORT}, JMX port is ${JMX_PORT}."
-  fi
+  LISTEN_STATUS="port is ${APP_LISTEN_PORT}, JMX port is ${JMX_PORT}."
+
   echo "$SERVICE_NAME starting, ${LISTEN_STATUS}."
   
-  nohup java  $JAVA_OPTS $MEM_OPTS $GCLOG_OPTS $JMX_OPTS $CRASH_OPTS $OTHER_OPTS $ADDITIONAL_OPTS -classpath "\"$CLASSPATH\"" com.openddal.server.ServerLauncher -configFile "\"$CONFIG_FILE\"" -port $APP_LISTEN_PORT >>$LOGDIR/$SERVICE_NAME.out 2>&1 &
+  nohup java  $JAVA_OPTS $MEM_OPTS $GCLOG_OPTS $JMX_OPTS $CRASH_OPTS $OTHER_OPTS $ADDITIONAL_OPTS -classpath "\"$CLASSPATH\"" com.openddal.server.ServerLauncher -configFile "$CONFIG_FILE" -port $APP_LISTEN_PORT >>$LOGDIR/$SERVICE_NAME.out 2>&1 &
   PID=$!
   echo $PID > $PID_FILE
   
-  sleep 3
+  sleep 1
   
   
-  CHECK_STATUS=`cat ${STATUS_FILE}`
+  CHECK_PID=$(GET_PID_BY_ALL_PORT)
   starttime=0
-  while  [ x"$CHECK_STATUS" == x ]; do
+  while  [ x"$CHECK_PID" == x ]; do
     if [[ "$starttime" -lt ${START_TIME} ]]; then
       sleep 1
       ((starttime++))
       echo -e ".\c"
-      CHECK_STATUS=`cat ${STATUS_FILE}`
+      CHECK_PID=$(GET_PID_BY_ALL_PORT)
     else
       echo -e "\n$SERVICE_NAME start maybe unsuccess, start checking not finished until reach the starting timeout! See ${LOGDIR}/${SERVICE_NAME}.out for more information."
-      exit -1
+      exit -1SEDIR/conf
     fi
   done
   
-  if [ $CHECK_STATUS = "SUCCESS" ]; then
-	echo -e "\n$SERVICE_NAME start successfully, running as process:$PID."
-	echo ${LISTEN_STATUS} > ${STATUS_FILE}
+  if [ "$CHECK_PID" = "$PID" ]; then
+    echo -e "$SERVICE_NAME start successfully, running as process:$PID."
+  else
+    kill $PID
+    echo -e "$SERVICE_NAME start failed ! See ${LOGDIR}/${SERVICE_NAME}.out for more information." 
   fi
-  
-  if [ $CHECK_STATUS = "ERROR" ]; then
-	kill $PID
-	echo -e "\n$SERVICE_NAME start failed ! See ${LOGDIR}/${SERVICE_NAME}.out for more information."		
-  fi
-  
 }
 
 
@@ -217,8 +178,7 @@ STATUS()
   if [ "$PID" != "" ]
 	then
 	if [ -d /proc/$PID ];then
-	  LISTEN_STATUS=`cat ${STATUS_FILE}`
-	  echo "$SERVICE_NAME is running ,${LISTEN_STATUS}."
+	  echo "$SERVICE_NAME is running."
 	  exit 0
 	fi
   fi
