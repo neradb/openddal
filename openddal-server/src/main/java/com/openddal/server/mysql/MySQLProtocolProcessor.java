@@ -7,6 +7,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ import com.openddal.server.mysql.proto.ResultSetPacket;
 import com.openddal.server.mysql.proto.RowPacket;
 import com.openddal.server.mysql.respo.CharacterSet;
 import com.openddal.server.mysql.respo.SelectVariables;
+import com.openddal.server.mysql.respo.ShowDatabases;
 import com.openddal.server.mysql.respo.ShowVariables;
 import com.openddal.server.mysql.respo.ShowVersion;
 import com.openddal.server.mysql.respo.TxResultSet;
@@ -37,6 +39,7 @@ import com.openddal.server.util.MysqlDefs;
 import com.openddal.server.util.ResultSetUtil;
 import com.openddal.server.util.StringUtil;
 import com.openddal.util.JdbcUtils;
+import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 
 import io.netty.buffer.ByteBuf;
@@ -72,34 +75,62 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             getProtocolTransport().close();
             break;
         case Flags.COM_PROCESS_KILL:
+            getTrace().protocol("COM_PROCESS_KILL");
         case Flags.COM_STMT_PREPARE:
+            getTrace().protocol("COM_STMT_PREPARE");
         case Flags.COM_STMT_EXECUTE:
+            getTrace().protocol("COM_STMT_EXECUTE");
         case Flags.COM_STMT_CLOSE:
+            getTrace().protocol("COM_STMT_CLOSE");
             break;
         case Flags.COM_SLEEP:// deprecated
+            getTrace().protocol("COM_SLEEP");
         case Flags.COM_FIELD_LIST:
+            getTrace().protocol("COM_FIELD_LIST");
         case Flags.COM_CREATE_DB:
+            getTrace().protocol("COM_CREATE_DB");
         case Flags.COM_DROP_DB:
+            getTrace().protocol("COM_DROP_DB");
         case Flags.COM_REFRESH:
+            getTrace().protocol("COM_REFRESH");
         case Flags.COM_SHUTDOWN:
+            getTrace().protocol("COM_SHUTDOWN");
         case Flags.COM_STATISTICS:
+            getTrace().protocol("COM_STATISTICS");
         case Flags.COM_PROCESS_INFO: // deprecated
+            getTrace().protocol("COM_PROCESS_INFO");
         case Flags.COM_CONNECT:// deprecated
+            getTrace().protocol("COM_CONNECT");
         case Flags.COM_DEBUG:
+            getTrace().protocol("COM_DEBUG");
         case Flags.COM_TIME:// deprecated
+            getTrace().protocol("COM_TIME");
         case Flags.COM_DELAYED_INSERT:// deprecated
+            getTrace().protocol("COM_DELAYED_INSERT");
         case Flags.COM_CHANGE_USER:
+            getTrace().protocol("COM_CHANGE_USER");
         case Flags.COM_BINLOG_DUMP:
+            getTrace().protocol("COM_BINLOG_DUMP");
         case Flags.COM_TABLE_DUMP:
+            getTrace().protocol("COM_TABLE_DUMP");
         case Flags.COM_CONNECT_OUT:
+            getTrace().protocol("COM_CONNECT_OUT");
         case Flags.COM_REGISTER_SLAVE:
+            getTrace().protocol("COM_REGISTER_SLAVE");
         case Flags.COM_STMT_SEND_LONG_DATA:
+            getTrace().protocol("COM_STMT_SEND_LONG_DATA");
         case Flags.COM_STMT_RESET:
+            getTrace().protocol("COM_STMT_CLOSE");
         case Flags.COM_SET_OPTION:
+            getTrace().protocol("COM_STMT_RESET");
         case Flags.COM_STMT_FETCH:
+            getTrace().protocol("COM_STMT_FETCH");
         case Flags.COM_DAEMON: // deprecated
+            getTrace().protocol("COM_DAEMON");
         case Flags.COM_BINLOG_DUMP_GTID:
+            getTrace().protocol("COM_BINLOG_DUMP_GTID");
         case Flags.COM_END:
+            getTrace().protocol("COM_END");
             throw new ProtocolProcessException(ErrorCode.ER_NOT_SUPPORTED_YET, "Command not supported yet");
         default:
             throw new ProtocolProcessException(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
@@ -148,7 +179,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         }
     }
 
-    private void processCommit(String sql, int i) throws Exception {
+    private void processCommit(String sql, int offset) throws Exception {
         try {
             getConnection().commit();
             sendOk();
@@ -158,20 +189,45 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
 
     }
 
-    private void processRollback(String sql, int i) throws Exception {
+    private void processRollback(String sql, int offset) throws Exception {
         getConnection().rollback();
         sendOk();
     }
 
-    private void processUse(String sql, int i) throws Exception {
+    private void processUse(String sql, int offset) throws Exception {
+        String schema = sql.substring(offset).trim();
+        int length = schema.length();
+        if (length > 0) {
+            if (schema.endsWith(";"))
+                schema = schema.substring(0, schema.length() - 1);
+            schema = StringUtil.replaceChars(schema, "`", null);
+            length = schema.length();
+            if (schema.charAt(0) == '\'' && schema.charAt(length - 1) == '\'') {
+                schema = schema.substring(1, length - 1);
+            }
+        }
+        ResultSet rs = null;
+        List<String> schemas;
+        try {
+            rs = getConnection().getMetaData().getSchemas();
+            schemas = New.arrayList();
+            while (rs.next()) {
+                schemas.add(rs.getString("SCHEMA_NAME"));
+            }
+        } finally {
+            JdbcUtils.closeSilently(rs);
+        }
+        if (schema == null || !schemas.contains(schema)) {
+            throw error(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
+        }
+        sendOk();
+    }
+
+    private void processBegin(String sql, int offset) throws Exception {
         unsupported(sql);
     }
 
-    private void processBegin(String sql, int i) throws Exception {
-        unsupported(sql);
-    }
-
-    private void processSavepoint(String sql, int i) throws Exception {
+    private void processSavepoint(String sql, int offset) throws Exception {
         unsupported(sql);
 
     }
@@ -254,7 +310,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             case ServerParseShow.DATABASES:
                 DatabaseMetaData metaData = getConnection().getMetaData();
                 rs = metaData.getSchemas();
-                sendResultSet(rs);
+                sendResultSet(ShowDatabases.toMySQLResultSet(rs));
                 break;
             case ServerParseShow.CONNECTION:
                 unsupported("CONNECTION");

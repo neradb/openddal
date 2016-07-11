@@ -15,6 +15,7 @@
  */
 package com.openddal.excutor.cursor;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -23,6 +24,7 @@ import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.index.ConditionExtractor;
 import com.openddal.dbobject.table.Column;
+import com.openddal.dbobject.table.MetaTable;
 import com.openddal.dbobject.table.RangeTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
@@ -101,6 +103,11 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
         throw DbException.throwInternalError();
     }
 
+    public Cursor find(MetaTable table) {
+        ArrayList<Row> rows = table.generateRows(session, null, null);
+        return new ListCursor(rows);
+    }
+
     private Cursor find(RangeTable table) {
         long min = table.getMin(session), start = min;
         long max = table.getMax(session), end = max;
@@ -143,6 +150,9 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
         if (table instanceof RangeTable) {
             RangeTable rangeTable = (RangeTable) table;
             this.cursor = find(rangeTable);
+        } else if (table instanceof MetaTable) {
+            MetaTable metaTable = (MetaTable) table;
+            this.cursor = find(metaTable);
         } else if (table instanceof TableMate) {
             TableMate tableMate = (TableMate) table;
             this.cursor = find(tableMate);
