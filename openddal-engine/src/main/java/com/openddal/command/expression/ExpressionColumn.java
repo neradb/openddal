@@ -324,12 +324,12 @@ public class ExpressionColumn extends Expression {
     }
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
-        if (getTableFilter() == filter) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
+        if (!evaluatable) {
             return getSQL();
         }
-        Value value = this.getValue(filter.getSession());
-        container.add(value);
+        Value value = this.getValue(session);
+        parameters.add(value);
         return "?";
     }
 

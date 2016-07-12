@@ -309,17 +309,17 @@ public class ConditionAndOr extends Condition {
 
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         String sql;
         switch (andOrType) {
-            case AND:
-                sql = left.exportParameters(filter, container) + "\n    AND " + right.exportParameters(filter, container);
-                break;
-            case OR:
-                sql = left.exportParameters(filter, container) + "\n    OR " + right.exportParameters(filter, container);
-                break;
-            default:
-                throw DbException.throwInternalError("andOrType=" + andOrType);
+        case AND:
+            sql = left.getPreparedSQL(session, parameters) + " AND " + right.getPreparedSQL(session, parameters);
+            break;
+        case OR:
+            sql = left.getPreparedSQL(session, parameters) + " OR " + right.getPreparedSQL(session, parameters);
+            break;
+        default:
+            throw DbException.throwInternalError("andOrType=" + andOrType);
         }
         return "(" + sql + ")";
     }

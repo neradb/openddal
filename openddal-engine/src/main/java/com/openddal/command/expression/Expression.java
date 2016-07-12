@@ -15,6 +15,11 @@
  */
 package com.openddal.command.expression;
 
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.List;
+
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -25,11 +30,6 @@ import com.openddal.util.StringUtils;
 import com.openddal.value.DataType;
 import com.openddal.value.Value;
 import com.openddal.value.ValueArray;
-
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.util.List;
 
 /**
  * An expression is a operation, a value, or a function in a query.
@@ -363,7 +363,7 @@ public abstract class Expression {
      * @param container parameters container
      * @return the SQL replaced parameter with '?'
      */
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         return getSQL();
     }
 }

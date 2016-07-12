@@ -2474,46 +2474,44 @@ public class Function extends Expression implements FunctionCall {
 
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         StatementBuilder buff = new StatementBuilder(info.name);
         if (info.type == CASE) {
             if (args[0] != null) {
-                buff.append(" ").append(args[0].exportParameters(filter, container));
+                buff.append(" ").append(args[0].getPreparedSQL(session, parameters));
             }
             for (int i = 1, len = args.length - 1; i < len; i += 2) {
-                buff.append(" WHEN ").append(args[i].exportParameters(filter, container));
-                buff.append(" THEN ").append(args[i + 1].exportParameters(filter, container));
+                buff.append(" WHEN ").append(args[i].getPreparedSQL(session, parameters));
+                buff.append(" THEN ").append(args[i + 1].getPreparedSQL(session, parameters));
             }
             if (args.length % 2 == 0) {
-                buff.append(" ELSE ").append(args[args.length - 1].exportParameters(filter, container));
+                buff.append(" ELSE ").append(args[args.length - 1].getPreparedSQL(session, parameters));
             }
             return buff.append(" END").toString();
         }
         buff.append('(');
         switch (info.type) {
-            case CAST: {
-                buff.append(args[0].exportParameters(filter, container)).append(" AS ").
-                        append(new Column(null, dataType, precision,
-                                scale, displaySize).getCreateSQL());
-                break;
+        case CAST: {
+            buff.append(args[0].getPreparedSQL(session, parameters)).append(" AS ")
+                    .append(new Column(null, dataType, precision, scale, displaySize).getCreateSQL());
+            break;
+        }
+        case CONVERT: {
+            buff.append(args[0].getPreparedSQL(session, parameters)).append(',')
+                    .append(new Column(null, dataType, precision, scale, displaySize).getCreateSQL());
+            break;
+        }
+        case EXTRACT: {
+            ValueString v = (ValueString) args[0].getValue(null);
+            buff.append(v.getString()).append(" FROM ").append(args[1].getPreparedSQL(session, parameters));
+            break;
+        }
+        default: {
+            for (Expression e : args) {
+                buff.appendExceptFirst(", ");
+                buff.append(e.getPreparedSQL(session, parameters));
             }
-            case CONVERT: {
-                buff.append(args[0].exportParameters(filter, container)).append(',').
-                        append(new Column(null, dataType, precision,
-                                scale, displaySize).getCreateSQL());
-                break;
-            }
-            case EXTRACT: {
-                ValueString v = (ValueString) args[0].getValue(null);
-                buff.append(v.getString()).append(" FROM ").append(args[1].exportParameters(filter, container));
-                break;
-            }
-            default: {
-                for (Expression e : args) {
-                    buff.appendExceptFirst(", ");
-                    buff.append(e.exportParameters(filter, container));
-                }
-            }
+        }
         }
         return buff.append(')').toString();
     }

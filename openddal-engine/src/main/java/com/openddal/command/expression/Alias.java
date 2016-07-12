@@ -15,13 +15,13 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.command.Parser;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.value.Value;
-
-import java.util.List;
 
 /**
  * A column alias as in SELECT 'Hello' AS NAME ...
@@ -137,8 +137,8 @@ public class Alias extends Expression {
 
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
-        return expr.exportParameters(filter, container) + " AS " + Parser.quoteIdentifier(alias);
+    public String getPreparedSQL(Session session, List<Value> parameters) {
+        return expr.getPreparedSQL(session, parameters) + " AS " + Parser.quoteIdentifier(alias);
     }
 
 }

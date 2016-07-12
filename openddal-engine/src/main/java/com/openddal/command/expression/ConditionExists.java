@@ -15,6 +15,8 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.command.dml.Query;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -28,6 +30,7 @@ import com.openddal.value.ValueBoolean;
  * An 'exists' condition as in WHERE EXISTS(SELECT ...)
  */
 public class ConditionExists extends Condition {
+
 
     private final Query query;
 
@@ -83,4 +86,12 @@ public class ConditionExists extends Condition {
         return query.getCostAsExpression();
     }
 
+    @Override
+    public String getPreparedSQL(Session session, List<Value> parameters) {
+        query.setSession(session);
+        LocalResult result = query.query(1);
+        session.addTemporaryResult(result);
+        boolean r = result.getRowCount() > 0;
+        return ValueBoolean.get(r).getString();
+    }
 }

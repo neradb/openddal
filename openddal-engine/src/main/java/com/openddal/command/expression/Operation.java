@@ -15,15 +15,19 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Mode;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.util.MathUtils;
-import com.openddal.value.*;
-
-import java.util.List;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueInt;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueString;
 
 /**
  * A mathematical expression, or string concatenation.
@@ -411,17 +415,17 @@ public class Operation extends Expression {
 
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         String sql;
         if (opType == NEGATE) {
             // don't remove the space, otherwise it might end up some thing like
             // --1 which is a line remark
-            sql = "- " + left.exportParameters(filter, container);
+            sql = "- " + left.getPreparedSQL(session, parameters);
         } else {
             // don't remove the space, otherwise it might end up some thing like
             // --1 which is a line remark
-            sql = left.exportParameters(filter, container) + " " + getOperationToken() + " "
-                    + right.exportParameters(filter, container);
+            sql = left.getPreparedSQL(session, parameters) + " " + getOperationToken() + " "
+                    + right.getPreparedSQL(session, parameters);
         }
         return "(" + sql + ")";
     }

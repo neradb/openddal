@@ -15,6 +15,9 @@
  */
 package com.openddal.command.expression;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -24,9 +27,6 @@ import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 import com.openddal.value.ValueBoolean;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * An 'in' condition with a list of values, as in WHERE NAME IN(...)
@@ -221,12 +221,12 @@ public class ConditionIn extends Condition {
 
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         StatementBuilder buff = new StatementBuilder("(");
-        buff.append(left.exportParameters(filter, container)).append(" IN(");
+        buff.append(left.getPreparedSQL(session, parameters)).append(" IN(");
         for (Expression e : valueList) {
             buff.appendExceptFirst(", ");
-            buff.append(e.exportParameters(filter, container));
+            buff.append(e.getPreparedSQL(session, parameters));
         }
         return buff.append("))").toString();
     }

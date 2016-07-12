@@ -643,11 +643,11 @@ public class MySQLTranslator implements SQLTranslator {
         sql.append("DELETE FROM ");
         sql.append(identifier(forTable));
         if (condition != null) {
-            condition.exportParameters(tableFilter, params);
+            condition.getPreparedSQL(tableFilter, params);
             sql.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
         }
         if (limitExpr != null) {
-            limitExpr.exportParameters(tableFilter, params);
+            limitExpr.getPreparedSQL(tableFilter, params);
             sql.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
         }
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
@@ -770,11 +770,11 @@ public class MySQLTranslator implements SQLTranslator {
             }
         }
         if (condition != null) {
-            condition.exportParameters(tableFilter, params);
+            condition.getPreparedSQL(tableFilter, params);
             sql.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
         }
         if (limitExpr != null) {
-            limitExpr.exportParameters(tableFilter, params);
+            limitExpr.getPreparedSQL(tableFilter, params);
             sql.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
         }
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);

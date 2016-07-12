@@ -15,6 +15,10 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -22,11 +26,11 @@ import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
-import com.openddal.value.*;
-
-import java.util.List;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
+import com.openddal.value.CompareMode;
+import com.openddal.value.Value;
+import com.openddal.value.ValueBoolean;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueString;
 
 /**
  * Pattern matching comparison expression: WHERE NAME LIKE ?
@@ -432,18 +436,16 @@ public class CompareLike extends Condition {
         return left.getCost() + right.getCost() + 3;
     }
 
-    /* (non-Javadoc)
-     * @see com.suning.snfddal.command.expression.Expression#exportParameters(java.util.List)
-     */
+    
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         String sql;
         if (regexp) {
-            sql = left.exportParameters(filter, container) + " REGEXP " + right.exportParameters(filter, container);
+            sql = left.getPreparedSQL(session, parameters) + " REGEXP " + right.getPreparedSQL(session, parameters);
         } else {
-            sql = left.exportParameters(filter, container) + " LIKE " + right.exportParameters(filter, container);
+            sql = left.getPreparedSQL(session, parameters) + " LIKE " + right.getPreparedSQL(session, parameters);
             if (escape != null) {
-                sql += " ESCAPE " + escape.exportParameters(filter, container);
+                sql += " ESCAPE " + escape.getPreparedSQL(session, parameters);
             }
         }
         return "(" + sql + ")";

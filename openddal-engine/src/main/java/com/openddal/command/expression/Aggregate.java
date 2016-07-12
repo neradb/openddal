@@ -552,11 +552,9 @@ public class Aggregate extends Expression {
         return (on == null) ? 1 : on.getCost() + 1;
     }
 
-    /* (non-Javadoc)
-     * @see com.suning.snfddal.command.expression.Expression#exportParameters(java.util.List)
-     */
+    
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         String text;
         switch (type) {
             case GROUP_CONCAT:
@@ -606,9 +604,10 @@ public class Aggregate extends Expression {
                 throw DbException.throwInternalError("type=" + type);
         }
         if (distinct) {
-            return text + "(DISTINCT " + on.exportParameters(filter, container) + ")";
+            return text + "(DISTINCT " + on.getPreparedSQL(session, parameters) + ")";
         }
-        return text + StringUtils.enclose(on.exportParameters(filter, container));
+        return text + StringUtils.enclose(on.getPreparedSQL(session, parameters));
+    
     }
 
 }

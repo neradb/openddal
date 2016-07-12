@@ -190,8 +190,8 @@ public class Parameter extends Expression implements ParameterInterface {
     }
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
-        container.add(value);
+    public String getPreparedSQL(Session session, List<Value> parameters) {
+        parameters.add(value);
         return "?";
     }
 

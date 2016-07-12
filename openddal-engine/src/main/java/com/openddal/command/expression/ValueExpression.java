@@ -190,11 +190,11 @@ public class ValueExpression extends Expression {
     }
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         if (this == DEFAULT) {
             return "DEFAULT";
         }
-        container.add(value);
+        parameters.add(value);
         return "?";
     }
 }

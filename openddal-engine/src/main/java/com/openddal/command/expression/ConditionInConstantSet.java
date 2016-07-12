@@ -178,12 +178,12 @@ public class ConditionInConstantSet extends Condition {
     }
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         StatementBuilder buff = new StatementBuilder("(");
-        buff.append(left.exportParameters(filter, container)).append(" IN(");
+        buff.append(left.getPreparedSQL(session, parameters)).append(" IN(");
         for (Expression e : valueList) {
             buff.appendExceptFirst(", ");
-            buff.append(e.exportParameters(filter, container));
+            buff.append(e.getPreparedSQL(session, parameters));
         }
         return buff.append("))").toString();
     }

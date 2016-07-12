@@ -15,6 +15,9 @@
  */
 package com.openddal.command.expression;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -26,9 +29,6 @@ import com.openddal.util.New;
 import com.openddal.value.Value;
 import com.openddal.value.ValueBoolean;
 import com.openddal.value.ValueNull;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Example comparison expressions are ID=1, NAME=NAME, NAME IS NULL.
@@ -571,18 +571,18 @@ public class Comparison extends Condition {
 
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         String sql;
         switch (compareType) {
-            case IS_NULL:
-                sql = left.exportParameters(filter, container) + " IS NULL";
-                break;
-            case IS_NOT_NULL:
-                sql = left.exportParameters(filter, container) + " IS NOT NULL";
-                break;
-            default:
-                sql = left.exportParameters(filter, container) + " " + getCompareOperator(compareType) +
-                        " " + right.exportParameters(filter, container);
+        case IS_NULL:
+            sql = left.getPreparedSQL(session, parameters) + " IS NULL";
+            break;
+        case IS_NOT_NULL:
+            sql = left.getPreparedSQL(session, parameters) + " IS NOT NULL";
+            break;
+        default:
+            sql = left.getPreparedSQL(session, parameters) + " " + getCompareOperator(compareType) + " "
+                    + right.getPreparedSQL(session, parameters);
         }
         return "(" + sql + ")";
     }

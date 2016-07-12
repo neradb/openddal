@@ -15,6 +15,8 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.command.dml.Query;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.ColumnResolver;
@@ -30,24 +32,20 @@ import com.openddal.value.Value;
 import com.openddal.value.ValueBoolean;
 import com.openddal.value.ValueNull;
 
-import java.util.List;
-
 /**
  * An 'in' condition with a subquery, as in WHERE ID IN(SELECT ...)
  */
 public class ConditionInSelect extends Condition {
 
     private final Database database;
+    private Expression left;
     private final Query query;
     private final boolean all;
     private final int compareType;
-    private Expression left;
     private int queryLevel;
 
-    private LocalResult cachedResult;
-
     public ConditionInSelect(Database database, Expression left, Query query,
-                             boolean all, int compareType) {
+            boolean all, int compareType) {
         this.database = database;
         this.left = left;
         this.query = query;
@@ -57,7 +55,9 @@ public class ConditionInSelect extends Condition {
 
     @Override
     public Value getValue(Session session) {
-        LocalResult rows = query(session);
+        query.setSession(session);
+        query.setDistinct(true);
+        LocalResult rows = query.query(0);
         try {
             Value l = left.getValue(session);
             if (rows.getRowCount() == 0) {
@@ -77,10 +77,10 @@ public class ConditionInSelect extends Condition {
                 return ValueBoolean.get(false);
             }
             l = l.convertTo(dataType);
-            if (rows.containsDistinct(new Value[]{l})) {
+            if (rows.containsDistinct(new Value[] { l })) {
                 return ValueBoolean.get(true);
             }
-            if (rows.containsDistinct(new Value[]{ValueNull.INSTANCE})) {
+            if (rows.containsDistinct(new Value[] { ValueNull.INSTANCE })) {
                 return ValueNull.INSTANCE;
             }
             return ValueBoolean.get(false);
@@ -128,7 +128,6 @@ public class ConditionInSelect extends Condition {
     public Expression optimize(Session session) {
         left = left.optimize(session);
         query.setRandomAccessResult(true);
-        query.prepare();
         if (query.getColumnCount() != 1) {
             throw DbException.get(ErrorCode.SUBQUERY_IS_NOT_SINGLE_COLUMN);
         }
@@ -148,17 +147,17 @@ public class ConditionInSelect extends Condition {
         buff.append('(').append(left.getSQL()).append(' ');
         if (all) {
             buff.append(Comparison.getCompareOperator(compareType)).
-                    append(" ALL");
+                append(" ALL");
         } else {
             if (compareType == Comparison.EQUAL) {
                 buff.append("IN");
             } else {
                 buff.append(Comparison.getCompareOperator(compareType)).
-                        append(" ANY");
+                    append(" ANY");
             }
         }
-        buff.append("(\n").append(StringUtils.indent(query.explainPlan(), 4, false)).
-                append("))");
+        buff.append("(\n").append(StringUtils.indent(query.getSQL(), 4, false)).
+            append("))");
         return buff.toString();
     }
 
@@ -199,12 +198,11 @@ public class ConditionInSelect extends Condition {
 
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
-        Session session = filter.getSession();
-        LocalResult rows = query(session);
+    public String getPreparedSQL(Session session, List<Value> parameters) {
+        LocalResult rows = query.query(0);
         if (rows.getRowCount() > 0) {
             StatementBuilder buff = new StatementBuilder();
-            buff.append('(').append(left.exportParameters(filter, container)).append(' ');
+            buff.append('(').append(left.getPreparedSQL(session, parameters)).append(' ');
             if (all) {
                 //由于all代表全部，所以<all表示小于子查询中返回全部值中的最小值；
                 //>all表示大于子查询中返回全部值中的最大值。
@@ -225,27 +223,15 @@ public class ConditionInSelect extends Condition {
                 buff.appendExceptFirst(",");
                 buff.append("?");
                 Value r = rows.currentRow()[0];
-                container.add(r);
+                parameters.add(r);
             }
             buff.append("))");
             return buff.toString();
         } else {
-            return "1 = 0";
+            return "false";
         }
 
 
-    }
-
-
-    private LocalResult query(Session session) {
-        if (cachedResult == null) {
-            query.setSession(session);
-            query.setDistinct(true);
-            cachedResult = query.query(0);
-        } else {
-            cachedResult.reset();
-        }
-        return cachedResult;
     }
 
 }

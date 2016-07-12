@@ -102,7 +102,7 @@ public abstract class NettyServer {
             // register shutown hook
             Runtime.getRuntime().addShutdownHook(new ShutdownThread());
         } catch (Exception e) {
-            LOGGER.error("Exception happen when start " + getServerName() + " server", e);
+            LOGGER.error("Exception happen when start " + getServerName(), e);
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             }

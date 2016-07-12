@@ -15,13 +15,13 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
-
-import java.util.List;
 
 /**
  * A NOT condition.
@@ -111,8 +111,8 @@ public class ConditionNot extends Condition {
     }
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
-        return "(NOT " + condition.exportParameters(filter, container) + ")";
+    public String getPreparedSQL(Session session, List<Value> parameters) {
+        return "(NOT " + condition.getPreparedSQL(session, parameters) + ")";
     }
 
 }

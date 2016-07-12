@@ -15,6 +15,8 @@
  */
 package com.openddal.command.expression;
 
+import java.util.List;
+
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.TableFilter;
@@ -22,8 +24,6 @@ import com.openddal.engine.Session;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 import com.openddal.value.ValueArray;
-
-import java.util.List;
 
 /**
  * A list of expressions, as in (ID, NAME).
@@ -149,11 +149,11 @@ public class ExpressionList extends Expression {
     }
 
     @Override
-    public String exportParameters(TableFilter filter, List<Value> container) {
+    public String getPreparedSQL(Session session, List<Value> parameters) {
         StatementBuilder buff = new StatementBuilder("(");
         for (Expression e : list) {
             buff.appendExceptFirst(", ");
-            buff.append(e.exportParameters(filter, container));
+            buff.append(e.getPreparedSQL(session, parameters));
         }
         if (list.length == 1) {
             buff.append(',');
