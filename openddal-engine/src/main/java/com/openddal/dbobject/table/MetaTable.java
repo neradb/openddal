@@ -669,7 +669,11 @@ public class MetaTable extends Table {
                         // REMARKS
                         "",
                         // LAST_MODIFICATION
-                        "",
+                        //"",
+                        // Type BIGINT: optional value should be null
+                        // @author little-pan
+                        // @since 2016-07-13
+                        null,
                         // ID
                         "" + table.getId(),
                         // TYPE_NAME
