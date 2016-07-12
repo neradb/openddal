@@ -186,7 +186,7 @@ public class ExpressionColumn extends Expression {
         }
         Value value = columnResolver.getValue(column);
         if (value == null) {
-            columnResolver.getValue(column);
+            // columnResolver.getValue(column);
             throw DbException.get(ErrorCode.MUST_GROUP_BY_COLUMN_1, getSQL());
         }
         return value;
@@ -325,10 +325,10 @@ public class ExpressionColumn extends Expression {
 
     @Override
     public String getPreparedSQL(Session session, List<Value> parameters) {
-        if (!evaluatable) {
+        Value value = columnResolver == null ? null : columnResolver.getValue(column);
+        if (value == null) {
             return getSQL();
         }
-        Value value = this.getValue(session);
         parameters.add(value);
         return "?";
     }

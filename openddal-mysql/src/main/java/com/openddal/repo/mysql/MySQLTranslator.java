@@ -634,7 +634,6 @@ public class MySQLTranslator implements SQLTranslator {
     public SQLTranslated translate(Delete prepared, ObjectNode node) {
 
         ArrayList<Value> params = New.arrayList();
-        TableFilter tableFilter = prepared.getTableFilter();
         String forTable = node.getCompositeObjectName();
         Expression condition = prepared.getCondition();
         Expression limitExpr = prepared.getLimitExpr();
@@ -643,11 +642,11 @@ public class MySQLTranslator implements SQLTranslator {
         sql.append("DELETE FROM ");
         sql.append(identifier(forTable));
         if (condition != null) {
-            condition.getPreparedSQL(tableFilter, params);
+            condition.getPreparedSQL(prepared.getSession(), params);
             sql.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
         }
         if (limitExpr != null) {
-            limitExpr.getPreparedSQL(tableFilter, params);
+            limitExpr.getPreparedSQL(prepared.getSession(), params);
             sql.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
         }
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
@@ -745,7 +744,6 @@ public class MySQLTranslator implements SQLTranslator {
     @Override
     public SQLTranslated translate(Update prepared, ObjectNode node, Row row) {
         ArrayList<Value> params = New.arrayList();
-        TableFilter tableFilter = prepared.getTableFilter();
         String forTable = node.getCompositeObjectName();
         List<Column> columns = prepared.getColumns();
         Expression condition = prepared.getCondition();
@@ -770,11 +768,11 @@ public class MySQLTranslator implements SQLTranslator {
             }
         }
         if (condition != null) {
-            condition.getPreparedSQL(tableFilter, params);
+            condition.getPreparedSQL(prepared.getSession(), params);
             sql.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
         }
         if (limitExpr != null) {
-            limitExpr.getPreparedSQL(tableFilter, params);
+            limitExpr.getPreparedSQL(prepared.getSession(), params);
             sql.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
         }
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
