@@ -1067,6 +1067,12 @@ public class Parser {
         } else if (readIf("DATABASES") || readIf("SCHEMAS")) {
             // for MySQL compatibility
             buff.append("SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA");
+        } else if (readIf("ENGINES")){
+        	// for MySQL compatibility, but no ENGINES table in INFORMATION_SCHEMA!
+        	// @author little-pan
+        	// @since 2016-07-13
+        	buff.append("ENGINE, SUPPORT, COMMENT, TRANSACTIONS, XA, SAVEPOINTS "
+        			+ "FROM INFORMATION_SCHEMA.ENGINES");
         }
         boolean b = session.getAllowLiterals();
         try {

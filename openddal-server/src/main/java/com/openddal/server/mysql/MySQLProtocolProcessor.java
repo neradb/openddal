@@ -394,6 +394,10 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         ResultSet rs = null;
         switch (type) {
         case ServerParse.SELECT:
+        // "show" as "select" query
+        // @author little-pan
+        // @since 2016-07-13
+        case ServerParse.SHOW:
             try {
                 stmt = conn.createStatement();
                 rs = stmt.executeQuery(sql);
