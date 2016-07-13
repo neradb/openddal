@@ -15,13 +15,16 @@
  */
 package com.openddal.test.jdbc;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+
+import org.junit.Test;
+
 import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.ErrorCode;
 import com.openddal.test.BaseTestCase;
-import org.junit.Test;
 
-import java.sql.Connection;
-import java.sql.SQLException;
+import junit.framework.Assert;
 
 /**
  * Transaction isolation level tests.
@@ -41,21 +44,21 @@ public class TransactionTestCase extends BaseTestCase {
 
     private void testTableLevelLocking() throws SQLException {
         conn1 = getConnection();
-        assertEquals(Connection.TRANSACTION_READ_COMMITTED,
+        Assert.assertEquals(Connection.TRANSACTION_READ_COMMITTED,
                 conn1.getTransactionIsolation());
         conn1.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-        assertEquals(Connection.TRANSACTION_SERIALIZABLE,
+        Assert.assertEquals(Connection.TRANSACTION_SERIALIZABLE,
                 conn1.getTransactionIsolation());
         conn1.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-        assertEquals(Connection.TRANSACTION_READ_UNCOMMITTED,
+        Assert.assertEquals(Connection.TRANSACTION_READ_UNCOMMITTED,
                 conn1.getTransactionIsolation());
         assertSingleValue(conn1.createStatement(), "CALL LOCK_MODE()", 0);
         conn1.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         assertSingleValue(conn1.createStatement(), "CALL LOCK_MODE()", 3);
-        assertEquals(Connection.TRANSACTION_READ_COMMITTED,
+        Assert.assertEquals(Connection.TRANSACTION_READ_COMMITTED,
                 conn1.getTransactionIsolation());
         conn1.createStatement().execute("SET LOCK_MODE 1");
-        assertEquals(Connection.TRANSACTION_SERIALIZABLE,
+        Assert.assertEquals(Connection.TRANSACTION_SERIALIZABLE,
                 conn1.getTransactionIsolation());
         conn1.createStatement().execute("CREATE TABLE TEST(ID INT)");
         conn1.createStatement().execute("INSERT INTO TEST VALUES(1)");

@@ -17,6 +17,9 @@
 //
 package com.openddal.test.jdbc;
 
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -24,6 +27,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Test JDBC3 extensions to <code>DatabaseMetaData</code>.
@@ -35,13 +40,11 @@ public class DatabaseMetaDataJDBC3Test extends BaseTestCase {
     private Connection con;
 
     public void setUp() throws Exception {
-        super.setUp();
         con = getConnection();
     }
 
     public void tearDown() throws Exception {
         con.close();
-        super.tearDown();
     }
 
     /**
@@ -72,10 +75,10 @@ public class DatabaseMetaDataJDBC3Test extends BaseTestCase {
         //
         assertTrue("getDatabaseMajorVersion", dbmd.getDatabaseMajorVersion() >= 0);
         assertTrue("getDatabaseMinorVersion", dbmd.getDatabaseMinorVersion() >= 0);
-        assertEquals("getResultSetHoldability",ResultSet.HOLD_CURSORS_OVER_COMMIT, dbmd.getResultSetHoldability());
-        assertEquals("getSQLStateType",1, dbmd.getSQLStateType());
-        assertEquals("getJDBCMajorVersion", 3, dbmd.getJDBCMajorVersion());
-        assertEquals("getJDBCMinorVersion", 0, dbmd.getJDBCMinorVersion());
+        Assert.assertEquals("getResultSetHoldability",ResultSet.HOLD_CURSORS_OVER_COMMIT, dbmd.getResultSetHoldability());
+        Assert.assertEquals("getSQLStateType",1, dbmd.getSQLStateType());
+        Assert.assertEquals("getJDBCMajorVersion", 3, dbmd.getJDBCMajorVersion());
+        Assert.assertEquals("getJDBCMinorVersion", 0, dbmd.getJDBCMinorVersion());
     }
 
     /**
@@ -135,7 +138,4 @@ public class DatabaseMetaDataJDBC3Test extends BaseTestCase {
         return true;
     }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(DatabaseMetaDataJDBC3Test.class);
-    }
 }

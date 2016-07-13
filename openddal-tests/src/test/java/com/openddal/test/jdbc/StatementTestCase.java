@@ -15,15 +15,26 @@
  */
 package com.openddal.test.jdbc;
 
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Properties;
+
+import org.junit.Test;
+
 import com.openddal.engine.SysProperties;
 import com.openddal.message.ErrorCode;
 import com.openddal.test.BaseTestCase;
 import com.openddal.util.New;
-import org.junit.Test;
 
-import java.sql.*;
-import java.util.HashMap;
-import java.util.Properties;
+import junit.framework.Assert;
 
 
 public class StatementTestCase extends BaseTestCase {
@@ -106,7 +117,7 @@ public class StatementTestCase extends BaseTestCase {
         Savepoint savepointTest = conn.setSavepoint("Joe's");
         assertTrue(savepointTest.toString().endsWith("name=Joe's"));
         stat.execute("DELETE FROM TEST");
-        assertEquals(savepointTest.getSavepointName(), "Joe's");
+        Assert.assertEquals(savepointTest.getSavepointName(), "Joe's");
         assertThrows(ErrorCode.SAVEPOINT_IS_NAMED, savepointTest).
                 getSavepointId();
         conn.rollback(savepointTest);
@@ -114,7 +125,7 @@ public class StatementTestCase extends BaseTestCase {
         ResultSet rs = stat.executeQuery("SELECT NAME FROM TEST");
         rs.next();
         String name = rs.getString(1);
-        assertEquals(name, "Hallo");
+        Assert.assertEquals(name, "Hallo");
         assertFalse(rs.next());
         assertThrows(ErrorCode.SAVEPOINT_IS_INVALID_1, conn).
                 rollback(savepoint2);
@@ -126,10 +137,10 @@ public class StatementTestCase extends BaseTestCase {
 
         Statement stat = conn.createStatement();
 
-        assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT,
+        Assert.assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT,
                 conn.getHoldability());
         conn.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
-        assertEquals(ResultSet.CLOSE_CURSORS_AT_COMMIT,
+        Assert.assertEquals(ResultSet.CLOSE_CURSORS_AT_COMMIT,
                 conn.getHoldability());
 
         assertFalse(stat.isPoolable());
@@ -139,32 +150,32 @@ public class StatementTestCase extends BaseTestCase {
         // ignored
         stat.setCursorName("x");
         // fixed return value
-        assertEquals(stat.getFetchDirection(), ResultSet.FETCH_FORWARD);
+        Assert.assertEquals(stat.getFetchDirection(), ResultSet.FETCH_FORWARD);
         // ignored
         stat.setFetchDirection(ResultSet.FETCH_REVERSE);
         // ignored
         stat.setMaxFieldSize(100);
 
-        assertEquals(SysProperties.SERVER_RESULT_SET_FETCH_SIZE,
+        Assert.assertEquals(SysProperties.SERVER_RESULT_SET_FETCH_SIZE,
                 stat.getFetchSize());
         stat.setFetchSize(10);
-        assertEquals(10, stat.getFetchSize());
+        Assert.assertEquals(10, stat.getFetchSize());
         stat.setFetchSize(0);
-        assertEquals(SysProperties.SERVER_RESULT_SET_FETCH_SIZE,
+        Assert.assertEquals(SysProperties.SERVER_RESULT_SET_FETCH_SIZE,
                 stat.getFetchSize());
-        assertEquals(ResultSet.TYPE_FORWARD_ONLY,
+        Assert.assertEquals(ResultSet.TYPE_FORWARD_ONLY,
                 stat.getResultSetType());
         Statement stat2 = conn.createStatement(
                 ResultSet.TYPE_SCROLL_SENSITIVE,
                 ResultSet.CONCUR_READ_ONLY,
                 ResultSet.HOLD_CURSORS_OVER_COMMIT);
-        assertEquals(ResultSet.TYPE_SCROLL_SENSITIVE,
+        Assert.assertEquals(ResultSet.TYPE_SCROLL_SENSITIVE,
                 stat2.getResultSetType());
-        assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT,
+        Assert.assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT,
                 stat2.getResultSetHoldability());
-        assertEquals(ResultSet.CONCUR_READ_ONLY,
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY,
                 stat2.getResultSetConcurrency());
-        assertEquals(0, stat.getMaxFieldSize());
+        Assert.assertEquals(0, stat.getMaxFieldSize());
         assertTrue(!stat2.isClosed());
         stat2.close();
         assertTrue(stat2.isClosed());
@@ -183,9 +194,9 @@ public class StatementTestCase extends BaseTestCase {
         // this method should not throw an exception - if not supported, this
         // calls are ignored
 
-        assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT,
+        Assert.assertEquals(ResultSet.HOLD_CURSORS_OVER_COMMIT,
                 stat.getResultSetHoldability());
-        assertEquals(ResultSet.CONCUR_READ_ONLY,
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY,
                 stat.getResultSetConcurrency());
 
         stat.cancel();
@@ -198,27 +209,27 @@ public class StatementTestCase extends BaseTestCase {
         trace("executeUpdate");
         count = stat.executeUpdate(
                 "CREATE TABLE TEST(ID INT PRIMARY KEY,VALUE VARCHAR(255))");
-        assertEquals(0, count);
+        Assert.assertEquals(0, count);
         count = stat.executeUpdate(
                 "INSERT INTO TEST VALUES(1,'Hello')");
-        assertEquals(1, count);
+        Assert.assertEquals(1, count);
         count = stat.executeUpdate(
                 "INSERT INTO TEST(VALUE,ID) VALUES('JDBC',2)");
-        assertEquals(1, count);
+        Assert.assertEquals(1, count);
         count = stat.executeUpdate(
                 "UPDATE TEST SET VALUE='LDBC' WHERE ID=2 OR ID=1");
-        assertEquals(2, count);
+        Assert.assertEquals(2, count);
         count = stat.executeUpdate(
                 "UPDATE TEST SET VALUE='\\LDBC\\' WHERE VALUE LIKE 'LDBC' ");
-        assertEquals(2, count);
+        Assert.assertEquals(2, count);
         count = stat.executeUpdate(
                 "UPDATE TEST SET VALUE='LDBC' WHERE VALUE LIKE '\\\\LDBC\\\\'");
         trace("count:" + count);
-        assertEquals(2, count);
+        Assert.assertEquals(2, count);
         count = stat.executeUpdate("DELETE FROM TEST WHERE ID=-1");
-        assertEquals(0, count);
+        Assert.assertEquals(0, count);
         count = stat.executeUpdate("DELETE FROM TEST WHERE ID=2");
-        assertEquals(1, count);
+        Assert.assertEquals(1, count);
 
         assertThrows(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY, stat).
                 executeUpdate("SELECT * FROM TEST");
@@ -292,7 +303,7 @@ public class StatementTestCase extends BaseTestCase {
         ResultSet keys;
         keys = stat.getGeneratedKeys();
         keys.next();
-        assertEquals(1, keys.getInt(1));
+        Assert.assertEquals(1, keys.getInt(1));
         stat.execute("insert into test2(x) values(10), (11), (12)");
         stat.execute("merge into test1(x) key(x) values(5)");
         keys = stat.getGeneratedKeys();
@@ -300,7 +311,7 @@ public class StatementTestCase extends BaseTestCase {
         stat.execute("merge into test1(x) key(x) values(6)");
         keys = stat.getGeneratedKeys();
         keys.next();
-        assertEquals(2, keys.getInt(1));
+        Assert.assertEquals(2, keys.getInt(1));
         stat.execute("drop table test1, test2");
     }
 
@@ -311,43 +322,43 @@ public class StatementTestCase extends BaseTestCase {
         stat.execute("INSERT INTO TEST VALUES(NEXT VALUE FOR SEQ)");
         ResultSet rs = stat.getGeneratedKeys();
         rs.next();
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         assertFalse(rs.next());
         stat.execute("INSERT INTO TEST VALUES(NEXT VALUE FOR SEQ)",
                 Statement.RETURN_GENERATED_KEYS);
         rs = stat.getGeneratedKeys();
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
         assertFalse(rs.next());
         stat.execute("INSERT INTO TEST VALUES(NEXT VALUE FOR SEQ)",
                 new int[]{1});
         rs = stat.getGeneratedKeys();
         rs.next();
-        assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(3, rs.getInt(1));
         assertFalse(rs.next());
         stat.execute("INSERT INTO TEST VALUES(NEXT VALUE FOR SEQ)",
                 new String[]{"ID"});
         rs = stat.getGeneratedKeys();
         rs.next();
-        assertEquals(4, rs.getInt(1));
+        Assert.assertEquals(4, rs.getInt(1));
         assertFalse(rs.next());
         stat.executeUpdate("INSERT INTO TEST VALUES(NEXT VALUE FOR SEQ)",
                 Statement.RETURN_GENERATED_KEYS);
         rs = stat.getGeneratedKeys();
         rs.next();
-        assertEquals(5, rs.getInt(1));
+        Assert.assertEquals(5, rs.getInt(1));
         assertFalse(rs.next());
         stat.executeUpdate("INSERT INTO TEST VALUES(NEXT VALUE FOR SEQ)",
                 new int[]{1});
         rs = stat.getGeneratedKeys();
         rs.next();
-        assertEquals(6, rs.getInt(1));
+        Assert.assertEquals(6, rs.getInt(1));
         assertFalse(rs.next());
         stat.executeUpdate("INSERT INTO TEST VALUES(NEXT VALUE FOR SEQ)",
                 new String[]{"ID"});
         rs = stat.getGeneratedKeys();
         rs.next();
-        assertEquals(7, rs.getInt(1));
+        Assert.assertEquals(7, rs.getInt(1));
         assertFalse(rs.next());
 
         stat.execute("CREATE TABLE TEST2(ID identity primary key)");
@@ -355,7 +366,7 @@ public class StatementTestCase extends BaseTestCase {
         stat.execute("SET @X = IDENTITY()");
         rs = stat.executeQuery("SELECT @X");
         rs.next();
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
 
         stat.execute("DROP TABLE TEST");
         stat.execute("DROP TABLE TEST2");

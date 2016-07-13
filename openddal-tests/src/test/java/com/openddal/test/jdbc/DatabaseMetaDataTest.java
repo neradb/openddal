@@ -17,6 +17,11 @@
 //
 package com.openddal.test.jdbc;
 
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ParameterMetaData;
@@ -31,6 +36,8 @@ import java.util.Properties;
 
 import com.openddal.test.BaseTestCase;
 
+import junit.framework.Assert;
+
 /**
  * Test <code>DatabaseMetaData</code>.
  *
@@ -42,13 +49,11 @@ public class DatabaseMetaDataTest extends BaseTestCase {
     private Connection con;
 
     public void setUp() throws Exception {
-        super.setUp();
         con = getConnection();
     }
 
     public void tearDown() throws Exception {
         con.close();
-        super.tearDown();
     }
    /**
     * Test for bug#575, parameter types aren't available via ParameterMetaData.
@@ -62,9 +67,9 @@ public class DatabaseMetaDataTest extends BaseTestCase {
 
       ParameterMetaData paramMetaData = ps.getParameterMetaData();
 
-      assertEquals( "varchar", paramMetaData.getParameterType( 1 ) );
-      assertEquals( "int"    , paramMetaData.getParameterType( 2 ) );
-      assertEquals( "bit"    , paramMetaData.getParameterType( 3 ) );
+      Assert.assertEquals( "varchar", paramMetaData.getParameterType( 1 ) );
+      Assert.assertEquals( "int"    , paramMetaData.getParameterType( 2 ) );
+      Assert.assertEquals( "bit"    , paramMetaData.getParameterType( 3 ) );
    }
 
     /**
@@ -211,27 +216,27 @@ public class DatabaseMetaDataTest extends BaseTestCase {
      */
     public void testStringOptions() throws Exception {
         DatabaseMetaData dbmd = con.getMetaData();
-        assertEquals("getCatalogSeparator", ".", dbmd.getCatalogSeparator());
-        assertEquals("getCatalogTerm","database", dbmd.getCatalogTerm());
+        Assert.assertEquals("getCatalogSeparator", ".", dbmd.getCatalogSeparator());
+        Assert.assertEquals("getCatalogTerm","database", dbmd.getCatalogTerm());
         assertNotNull("getDatabaseProductName", dbmd.getDatabaseProductName());
         assertNotNull("getDatabaseProductVersion", dbmd.getDatabaseProductVersion());
         assertNotNull("getDriverName", dbmd.getDriverName());
         assertNotNull("getDriverVersion", dbmd.getDriverVersion());
-        assertEquals("getExtraNameCharacters","$#@", dbmd.getExtraNameCharacters());
-        assertEquals("getIdentifierQuoteString","\"", dbmd.getIdentifierQuoteString());
-        assertEquals("getNumericFunctions","abs,acos,asin,atan,atan2,ceiling,cos,cot,degrees,exp,floor,log,log10,mod,pi,power,radians,rand,round,sign,sin,sqrt,tan", dbmd.getNumericFunctions());
-        assertEquals("getProcedureTerm","stored procedure", dbmd.getProcedureTerm());
-        assertEquals("getSchemaTerm","owner", dbmd.getSchemaTerm());
-        assertEquals("getSearchStringEscape","\\", dbmd.getSearchStringEscape());
-        assertEquals("getSQLKeywords","ARITH_OVERFLOW,BREAK,BROWSE,BULK,CHAR_CONVERT,CHECKPOINT,CLUSTERED,COMPUTE,CONFIRM,CONTROLROW,DATA_PGS,DATABASE,DBCC,DISK,DUMMY,DUMP,ENDTRAN,ERRLVL,ERRORDATA,ERROREXIT,EXIT,FILLFACTOR,HOLDLOCK,IDENTITY_INSERT,IF,INDEX,KILL,LINENO,LOAD,MAX_ROWS_PER_PAGE,MIRROR,MIRROREXIT,NOHOLDLOCK,NONCLUSTERED,NUMERIC_TRUNCATION,OFF,OFFSETS,ONCE,ONLINE,OVER,PARTITION,PERM,PERMANENT,PLAN,PRINT,PROC,PROCESSEXIT,RAISERROR,READ,READTEXT,RECONFIGURE,REPLACE,RESERVED_PGS,RETURN,ROLE,ROWCNT,ROWCOUNT,RULE,SAVE,SETUSER,SHARED,SHUTDOWN,SOME,STATISTICS,STRIPE,SYB_IDENTITY,SYB_RESTREE,SYB_TERMINATE,TEMP,TEXTSIZE,TRAN,TRIGGER,TRUNCATE,TSEQUAL,UNPARTITION,USE,USED_PGS,USER_OPTION,WAITFOR,WHILE,WRITETEXT", dbmd.getSQLKeywords());
-        assertEquals("getSystemFunctions","database,ifnull,user,convert", dbmd.getSystemFunctions());
-        assertEquals("getTimeDateFunctions","curdate,curtime,dayname,dayofmonth,dayofweek,dayofyear,hour,minute,month,monthname,now,quarter,timestampadd,timestampdiff,second,week,year", dbmd.getTimeDateFunctions());
+        Assert.assertEquals("getExtraNameCharacters","$#@", dbmd.getExtraNameCharacters());
+        Assert.assertEquals("getIdentifierQuoteString","\"", dbmd.getIdentifierQuoteString());
+        Assert.assertEquals("getNumericFunctions","abs,acos,asin,atan,atan2,ceiling,cos,cot,degrees,exp,floor,log,log10,mod,pi,power,radians,rand,round,sign,sin,sqrt,tan", dbmd.getNumericFunctions());
+        Assert.assertEquals("getProcedureTerm","stored procedure", dbmd.getProcedureTerm());
+        Assert.assertEquals("getSchemaTerm","owner", dbmd.getSchemaTerm());
+        Assert.assertEquals("getSearchStringEscape","\\", dbmd.getSearchStringEscape());
+        Assert.assertEquals("getSQLKeywords","ARITH_OVERFLOW,BREAK,BROWSE,BULK,CHAR_CONVERT,CHECKPOINT,CLUSTERED,COMPUTE,CONFIRM,CONTROLROW,DATA_PGS,DATABASE,DBCC,DISK,DUMMY,DUMP,ENDTRAN,ERRLVL,ERRORDATA,ERROREXIT,EXIT,FILLFACTOR,HOLDLOCK,IDENTITY_INSERT,IF,INDEX,KILL,LINENO,LOAD,MAX_ROWS_PER_PAGE,MIRROR,MIRROREXIT,NOHOLDLOCK,NONCLUSTERED,NUMERIC_TRUNCATION,OFF,OFFSETS,ONCE,ONLINE,OVER,PARTITION,PERM,PERMANENT,PLAN,PRINT,PROC,PROCESSEXIT,RAISERROR,READ,READTEXT,RECONFIGURE,REPLACE,RESERVED_PGS,RETURN,ROLE,ROWCNT,ROWCOUNT,RULE,SAVE,SETUSER,SHARED,SHUTDOWN,SOME,STATISTICS,STRIPE,SYB_IDENTITY,SYB_RESTREE,SYB_TERMINATE,TEMP,TEXTSIZE,TRAN,TRIGGER,TRUNCATE,TSEQUAL,UNPARTITION,USE,USED_PGS,USER_OPTION,WAITFOR,WHILE,WRITETEXT", dbmd.getSQLKeywords());
+        Assert.assertEquals("getSystemFunctions","database,ifnull,user,convert", dbmd.getSystemFunctions());
+        Assert.assertEquals("getTimeDateFunctions","curdate,curtime,dayname,dayofmonth,dayofweek,dayofyear,hour,minute,month,monthname,now,quarter,timestampadd,timestampdiff,second,week,year", dbmd.getTimeDateFunctions());
         assertNotNull("getURL", dbmd.getURL());
         assertNotNull("getUserName", dbmd.getUserName());
         if (dbmd.getDatabaseProductName().startsWith("Microsoft")) {
-            assertEquals("getStringFunctions","ascii,char,concat,difference,insert,lcase,left,length,locate,ltrim,repeat,replace,right,rtrim,soundex,space,substring,ucase", dbmd.getStringFunctions());
+            Assert.assertEquals("getStringFunctions","ascii,char,concat,difference,insert,lcase,left,length,locate,ltrim,repeat,replace,right,rtrim,soundex,space,substring,ucase", dbmd.getStringFunctions());
         } else {
-            assertEquals("getStringFunctions","ascii,char,concat,difference,insert,lcase,length,ltrim,repeat,right,rtrim,soundex,space,substring,ucase", dbmd.getStringFunctions());
+            Assert.assertEquals("getStringFunctions","ascii,char,concat,difference,insert,lcase,length,ltrim,repeat,right,rtrim,soundex,space,substring,ucase", dbmd.getStringFunctions());
         }
     }
 
@@ -242,37 +247,37 @@ public class DatabaseMetaDataTest extends BaseTestCase {
     public void testIntOptions() throws Exception {
         DatabaseMetaData dbmd = con.getMetaData();
         int sysnamelen = (dbmd.getDatabaseProductName().startsWith("Microsoft"))? 128: 30;
-        assertEquals("getDefaultTransactionIsolation",Connection.TRANSACTION_READ_COMMITTED, dbmd.getDefaultTransactionIsolation());
+        Assert.assertEquals("getDefaultTransactionIsolation",Connection.TRANSACTION_READ_COMMITTED, dbmd.getDefaultTransactionIsolation());
         assertTrue("getDriverMajorVersion", dbmd.getDriverMajorVersion() >= 0);
         assertTrue("getDriverMinorVersion", dbmd.getDriverMinorVersion() >=0);
-        assertEquals("getMaxBinaryLiteralLength", 131072, dbmd.getMaxBinaryLiteralLength());
-        assertEquals("getMaxCatalogNameLength",sysnamelen, dbmd.getMaxCatalogNameLength());
-        assertEquals("getMaxCharLiteralLength", 131072, dbmd.getMaxCharLiteralLength());
-        assertEquals("getMaxColumnNameLength",sysnamelen, dbmd.getMaxColumnNameLength());
-        assertEquals("getMaxColumnsInIndex",16, dbmd.getMaxColumnsInIndex());
-        assertEquals("getMaxColumnsInSelect",4096, dbmd.getMaxColumnsInSelect());
-        assertEquals("getMaxConnections",32767, dbmd.getMaxConnections());
-        assertEquals("getMaxCursorNameLength",sysnamelen, dbmd.getMaxCursorNameLength());
-        assertEquals("getMaxProcedureNameLength",sysnamelen, dbmd.getMaxProcedureNameLength());
-        assertEquals("getMaxSchemaNameLength",sysnamelen, dbmd.getMaxSchemaNameLength());
-        assertEquals("getMaxStatementLength",0, dbmd.getMaxStatementLength());
-        assertEquals("getMaxStatements", 0, dbmd.getMaxStatements());
-        assertEquals("getMaxTableNameLength",sysnamelen, dbmd.getMaxTableNameLength());
-        assertEquals("getMaxUserNameLength",sysnamelen, dbmd.getMaxUserNameLength());
+        Assert.assertEquals("getMaxBinaryLiteralLength", 131072, dbmd.getMaxBinaryLiteralLength());
+        Assert.assertEquals("getMaxCatalogNameLength",sysnamelen, dbmd.getMaxCatalogNameLength());
+        Assert.assertEquals("getMaxCharLiteralLength", 131072, dbmd.getMaxCharLiteralLength());
+        Assert.assertEquals("getMaxColumnNameLength",sysnamelen, dbmd.getMaxColumnNameLength());
+        Assert.assertEquals("getMaxColumnsInIndex",16, dbmd.getMaxColumnsInIndex());
+        Assert.assertEquals("getMaxColumnsInSelect",4096, dbmd.getMaxColumnsInSelect());
+        Assert.assertEquals("getMaxConnections",32767, dbmd.getMaxConnections());
+        Assert.assertEquals("getMaxCursorNameLength",sysnamelen, dbmd.getMaxCursorNameLength());
+        Assert.assertEquals("getMaxProcedureNameLength",sysnamelen, dbmd.getMaxProcedureNameLength());
+        Assert.assertEquals("getMaxSchemaNameLength",sysnamelen, dbmd.getMaxSchemaNameLength());
+        Assert.assertEquals("getMaxStatementLength",0, dbmd.getMaxStatementLength());
+        Assert.assertEquals("getMaxStatements", 0, dbmd.getMaxStatements());
+        Assert.assertEquals("getMaxTableNameLength",sysnamelen, dbmd.getMaxTableNameLength());
+        Assert.assertEquals("getMaxUserNameLength",sysnamelen, dbmd.getMaxUserNameLength());
         if (dbmd.getDatabaseProductName().startsWith("Microsoft")) {
-            assertEquals("getMaxColumnsInGroupBy",0, dbmd.getMaxColumnsInGroupBy());
-            assertEquals("getMaxColumnsInOrderBy",0, dbmd.getMaxColumnsInOrderBy());
-            assertEquals("getMaxColumnsInTable",1024, dbmd.getMaxColumnsInTable());
-            assertEquals("getMaxIndexLength", 900, dbmd.getMaxIndexLength());
-            assertEquals("getMaxRowSize",8060, dbmd.getMaxRowSize());
-            assertEquals("getMaxTablesInSelect",256, dbmd.getMaxTablesInSelect());
+            Assert.assertEquals("getMaxColumnsInGroupBy",0, dbmd.getMaxColumnsInGroupBy());
+            Assert.assertEquals("getMaxColumnsInOrderBy",0, dbmd.getMaxColumnsInOrderBy());
+            Assert.assertEquals("getMaxColumnsInTable",1024, dbmd.getMaxColumnsInTable());
+            Assert.assertEquals("getMaxIndexLength", 900, dbmd.getMaxIndexLength());
+            Assert.assertEquals("getMaxRowSize",8060, dbmd.getMaxRowSize());
+            Assert.assertEquals("getMaxTablesInSelect",256, dbmd.getMaxTablesInSelect());
         } else {
-            assertEquals("getMaxColumnsInGroupBy",16, dbmd.getMaxColumnsInGroupBy());
-            assertEquals("getMaxColumnsInOrderBy",16, dbmd.getMaxColumnsInOrderBy());
-            assertEquals("getMaxColumnsInTable", 250, dbmd.getMaxColumnsInTable());
-            assertEquals("getMaxIndexLength", 255, dbmd.getMaxIndexLength());
-            assertEquals("getMaxRowSize",1962, dbmd.getMaxRowSize());
-            assertEquals("getMaxTablesInSelect",16, dbmd.getMaxTablesInSelect());
+            Assert.assertEquals("getMaxColumnsInGroupBy",16, dbmd.getMaxColumnsInGroupBy());
+            Assert.assertEquals("getMaxColumnsInOrderBy",16, dbmd.getMaxColumnsInOrderBy());
+            Assert.assertEquals("getMaxColumnsInTable", 250, dbmd.getMaxColumnsInTable());
+            Assert.assertEquals("getMaxIndexLength", 255, dbmd.getMaxIndexLength());
+            Assert.assertEquals("getMaxRowSize",1962, dbmd.getMaxRowSize());
+            Assert.assertEquals("getMaxTablesInSelect",16, dbmd.getMaxTablesInSelect());
         }
     }
 
@@ -301,7 +306,7 @@ public class DatabaseMetaDataTest extends BaseTestCase {
                                                 "TYPE_NAME", "COLUMN_SIZE", "BUFFER_LENGTH",
                                                 "DECIMAL_DIGITS","PSEUDO_COLUMN"}));
             assertTrue(rs.next());
-            assertEquals("id", rs.getString(2));
+            Assert.assertEquals("id", rs.getString(2));
             //
             rs = dbmd.getCatalogs();
             assertTrue(checkColumnNames(rs, new String[]{"TABLE_CAT"}));
@@ -330,58 +335,58 @@ public class DatabaseMetaDataTest extends BaseTestCase {
                     "SQL_DATA_TYPE","SQL_DATETIME_SUB","CHAR_OCTET_LENGTH","ORDINAL_POSITION",
                     "IS_NULLABLE","SCOPE_CATALOG","SCOPE_SCHEMA","SCOPE_TABLE","SOURCE_DATA_TYPE"}));
             assertTrue(rs.next());
-            assertEquals("id", rs.getString(4));
-            assertEquals(java.sql.Types.INTEGER, rs.getInt(5));
+            Assert.assertEquals("id", rs.getString(4));
+            Assert.assertEquals(java.sql.Types.INTEGER, rs.getInt(5));
             assertTrue(rs.next());
-            assertEquals("data", rs.getString(4));
-            assertEquals(java.sql.Types.VARCHAR, rs.getInt(5));
+            Assert.assertEquals("data", rs.getString(4));
+            Assert.assertEquals(java.sql.Types.VARCHAR, rs.getInt(5));
             //
             rs = dbmd.getCrossReference(null, null, "jTDS_META", null, null, "jTDS_META2");
             assertTrue(checkColumnNames(rs, new String[]{"PKTABLE_CAT", "PKTABLE_SCHEM", "PKTABLE_NAME","PKCOLUMN_NAME",
                     "FKTABLE_CAT", "FKTABLE_SCHEM", "FKTABLE_NAME","FKCOLUMN_NAME",
                     "KEY_SEQ","UPDATE_RULE","DELETE_RULE","FK_NAME","PK_NAME","DEFERRABILITY"}));
             assertTrue(rs.next());
-            assertEquals("id", rs.getString(4));
+            Assert.assertEquals("id", rs.getString(4));
             //
             rs = dbmd.getExportedKeys(null, null, "jTDS_META");
             assertTrue(checkColumnNames(rs, new String[]{"PKTABLE_CAT", "PKTABLE_SCHEM", "PKTABLE_NAME","PKCOLUMN_NAME",
                     "FKTABLE_CAT", "FKTABLE_SCHEM", "FKTABLE_NAME","FKCOLUMN_NAME",
                     "KEY_SEQ","UPDATE_RULE","DELETE_RULE","FK_NAME","PK_NAME","DEFERRABILITY"}));
             assertTrue(rs.next());
-            assertEquals("id", rs.getString(4));
+            Assert.assertEquals("id", rs.getString(4));
             //
             rs = dbmd.getImportedKeys(null, null, "jTDS_META2");
             assertTrue(checkColumnNames(rs, new String[]{"PKTABLE_CAT", "PKTABLE_SCHEM", "PKTABLE_NAME","PKCOLUMN_NAME",
                     "FKTABLE_CAT", "FKTABLE_SCHEM", "FKTABLE_NAME","FKCOLUMN_NAME",
                     "KEY_SEQ","UPDATE_RULE","DELETE_RULE","FK_NAME","PK_NAME","DEFERRABILITY"}));
             assertTrue(rs.next());
-            assertEquals("id", rs.getString(4));
+            Assert.assertEquals("id", rs.getString(4));
             //
             rs = dbmd.getIndexInfo(null, null, "jTDS_META", false, true);
             assertTrue(checkColumnNames(rs, new String[]{"TABLE_CAT","TABLE_SCHEM","TABLE_NAME","NON_UNIQUE",
                       "INDEX_QUALIFIER","INDEX_NAME","TYPE","ORDINAL_POSITION", "COLUMN_NAME",
                       "ASC_OR_DESC","CARDINALITY","PAGES","FILTER_CONDITION"}));
             assertTrue(rs.next());
-            assertEquals("jTDS_META", rs.getString(3));
+            Assert.assertEquals("jTDS_META", rs.getString(3));
             //
             rs = dbmd.getPrimaryKeys(null, null, "jTDS_META");
             assertTrue(checkColumnNames(rs, new String[]{"TABLE_CAT","TABLE_SCHEM","TABLE_NAME","COLUMN_NAME","KEY_SEQ", "PK_NAME"}));
             assertTrue(rs.next());
-            assertEquals("id", rs.getString(4));
+            Assert.assertEquals("id", rs.getString(4));
             //
             rs = dbmd.getProcedureColumns(null, null, "jtds_spmeta", "@p1");
             assertTrue(checkColumnNames(rs, new String[]{"PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
                     "COLUMN_NAME", "COLUMN_TYPE","DATA_TYPE","TYPE_NAME","PRECISION",
                     "LENGTH","SCALE","RADIX","NULLABLE","REMARKS"}));
             assertTrue(rs.next());
-            assertEquals("jtds_spmeta", rs.getString(3));
-            assertEquals("@p1", rs.getString(4));
+            Assert.assertEquals("jtds_spmeta", rs.getString(3));
+            Assert.assertEquals("@p1", rs.getString(4));
             //
             rs = dbmd.getProcedures(null, null, "jtds_spmeta%");
             assertTrue(checkColumnNames(rs, new String[]{"PROCEDURE_CAT", "PROCEDURE_SCHEM", "PROCEDURE_NAME",
                     "","","","REMARKS","PROCEDURE_TYPE"}));
             assertTrue(rs.next());
-            assertEquals("jtds_spmeta", rs.getString(3));
+            Assert.assertEquals("jtds_spmeta", rs.getString(3));
             //
             rs = dbmd.getSchemas();
             assertTrue(checkColumnNames(rs, new String[]{"TABLE_SCHEM","TABLE_CATALOG"}));
@@ -401,12 +406,12 @@ public class DatabaseMetaDataTest extends BaseTestCase {
                     "TABLE_TYPE","REMARKS","TYPE_CAT","TYPE_SCHEM","TYPE_NAME",
                     "SELF_REFERENCING_COL_NAME","REF_GENERATION"}));
             assertTrue(rs.next());
-            assertEquals("jTDS_META", rs.getString(3));
+            Assert.assertEquals("jTDS_META", rs.getString(3));
             //
             rs = dbmd.getTableTypes();
             assertTrue(checkColumnNames(rs, new String[]{"TABLE_TYPE"}));
             assertTrue(rs.next());
-            assertEquals("SYSTEM TABLE", rs.getString(1));
+            Assert.assertEquals("SYSTEM TABLE", rs.getString(1));
             //
             rs = dbmd.getTypeInfo();
             assertTrue(checkColumnNames(rs, new String[]{"TYPE_NAME","DATA_TYPE","PRECISION","LITERAL_PREFIX",
@@ -415,7 +420,7 @@ public class DatabaseMetaDataTest extends BaseTestCase {
                     "MINIMUM_SCALE","MAXIMUM_SCALE","SQL_DATA_TYPE","SQL_DATETIME_SUB","NUM_PREC_RADIX"}));
             while (rs.next()) {
                 if (rs.getString(1).equalsIgnoreCase("nvarchar")) {
-                    assertEquals(java.sql.Types.VARCHAR, rs.getInt(2));
+                    Assert.assertEquals(java.sql.Types.VARCHAR, rs.getInt(2));
                 }
             }
             //
@@ -428,7 +433,7 @@ public class DatabaseMetaDataTest extends BaseTestCase {
             assertTrue(checkColumnNames(rs, new String[]{"SCOPE", "COLUMN_NAME","DATA_TYPE","TYPE_NAME",
                       "COLUMN_SIZE","BUFFER_LENGTH","DECIMAL_DIGITS","PSEUDO_COLUMN"}));
             assertTrue(rs.next());
-            assertEquals("ts", rs.getString(2));
+            Assert.assertEquals("ts", rs.getString(2));
         } finally {
             dropTable("jTDS_META2");
             dropTable("jTDS_META");
@@ -520,9 +525,9 @@ public class DatabaseMetaDataTest extends BaseTestCase {
         assertNotNull(rs);
         ResultSetMetaData rsmd = rs.getMetaData();
 
-        assertEquals("master", rsmd.getCatalogName(1));
-        assertEquals("dbo", rsmd.getSchemaName(1));
-        assertEquals("sysdatabases", rsmd.getTableName(1));
+        Assert.assertEquals("master", rsmd.getCatalogName(1));
+        Assert.assertEquals("dbo", rsmd.getSchemaName(1));
+        Assert.assertEquals("sysdatabases", rsmd.getTableName(1));
 
         stmt.close();
         rs.close();
@@ -575,7 +580,7 @@ public class DatabaseMetaDataTest extends BaseTestCase {
         pstmt.setString(12, "Test");
         pstmt.setString(13, "Test");
         pstmt.setString(14, "ebd558a0-0c68-11d9-9669-0800200c9a66");
-        assertEquals("No row inserted", 1, pstmt.executeUpdate());
+        Assert.assertEquals("No row inserted", 1, pstmt.executeUpdate());
         pstmt.close();
 
         // Select the row and check that getColumnClassName matches the actual
@@ -660,14 +665,14 @@ public class DatabaseMetaDataTest extends BaseTestCase {
             while (rs.next()) {
                 String cn = rs.getString("COLUMN_NAME");
                 int ord = rs.getInt("ORDINAL_POSITION");
-                assertEquals(cn+" typename", rs.getString("TYPE_NAME"), rsmd.getColumnTypeName(ord));
-                assertEquals(cn+" datatype", rs.getInt("DATA_TYPE"), rsmd.getColumnType(ord));
+                Assert.assertEquals(cn+" typename", rs.getString("TYPE_NAME"), rsmd.getColumnTypeName(ord));
+                Assert.assertEquals(cn+" datatype", rs.getInt("DATA_TYPE"), rsmd.getColumnType(ord));
                 if (rs.getInt("DATA_TYPE") != Types.REAL && rs.getInt("DATA_TYPE") != Types.DOUBLE) {
                     // Seems to be genuine disagreement between getColumns and metadata on float data!
-                    assertEquals(cn+" precision", rs.getInt("COLUMN_SIZE"), rsmd.getPrecision(ord));
+                    Assert.assertEquals(cn+" precision", rs.getInt("COLUMN_SIZE"), rsmd.getPrecision(ord));
                 }
-                assertEquals(cn+" scale", rs.getInt("DECIMAL_DIGITS"), rsmd.getScale(ord));
-                assertEquals(cn+" nullable", rs.getInt("NULLABLE"), rsmd.isNullable(ord));
+                Assert.assertEquals(cn+" scale", rs.getInt("DECIMAL_DIGITS"), rsmd.getScale(ord));
+                Assert.assertEquals(cn+" nullable", rs.getInt("NULLABLE"), rsmd.isNullable(ord));
             }
         } finally {
             dropTable("jTDSTYPETEST");
@@ -719,7 +724,7 @@ public class DatabaseMetaDataTest extends BaseTestCase {
                     }
                     pst.addBatch();
                 }
-                assertEquals(rows, pst.executeBatch().length);
+                Assert.assertEquals(rows, pst.executeBatch().length);
             }
 
             // create select
@@ -748,7 +753,7 @@ public class DatabaseMetaDataTest extends BaseTestCase {
             ResultSetMetaData rsmd = rs.getMetaData();
 
             int toalColumns = rsmd.getColumnCount();
-            assertEquals(tables * (columns + 1), toalColumns);
+            Assert.assertEquals(tables * (columns + 1), toalColumns);
 
             for (int r=0; r < rows; r++) {
                 assertTrue(rs.next());
@@ -760,12 +765,12 @@ public class DatabaseMetaDataTest extends BaseTestCase {
                     index ++;
 
                     // FIXME: column names are transformed to upper case by jTDS, think that's an error
-                    assertEquals(c > 1 ? ("COLUMN" + (c - 2)) : "ID", rsmd.getColumnName(index));
+                    Assert.assertEquals(c > 1 ? ("COLUMN" + (c - 2)) : "ID", rsmd.getColumnName(index));
 
-                    assertEquals(Types.INTEGER, rsmd.getColumnType(index));
+                    Assert.assertEquals(Types.INTEGER, rsmd.getColumnType(index));
 
                     // test for bug [1833720]
-                    assertEquals("#TABLE" + t, rsmd.getTableName(index));
+                    Assert.assertEquals("#TABLE" + t, rsmd.getTableName(index));
                 }
             }
         } finally {
@@ -793,14 +798,14 @@ public class DatabaseMetaDataTest extends BaseTestCase {
                 ResultSet rs = dbmd.getProcedureColumns(null, null,
                         "jtds_testparam", columnPatterns[i]);
                 assertTrue(rs.next());
-                assertEquals("@RETURN_VALUE", rs.getString("COLUMN_NAME"));
-                assertEquals(DatabaseMetaData.procedureColumnReturn, rs.getInt("COLUMN_TYPE"));
+                Assert.assertEquals("@RETURN_VALUE", rs.getString("COLUMN_NAME"));
+                Assert.assertEquals(DatabaseMetaData.procedureColumnReturn, rs.getInt("COLUMN_TYPE"));
                 assertTrue(rs.next());
-                assertEquals("@p1", rs.getString("COLUMN_NAME"));
-                assertEquals(DatabaseMetaData.procedureColumnIn, rs.getInt("COLUMN_TYPE"));
+                Assert.assertEquals("@p1", rs.getString("COLUMN_NAME"));
+                Assert.assertEquals(DatabaseMetaData.procedureColumnIn, rs.getInt("COLUMN_TYPE"));
                 assertTrue(rs.next());
-                assertEquals("@p2", rs.getString("COLUMN_NAME"));
-                assertEquals(DatabaseMetaData.procedureColumnInOut, rs.getInt("COLUMN_TYPE"));
+                Assert.assertEquals("@p2", rs.getString("COLUMN_NAME"));
+                Assert.assertEquals(DatabaseMetaData.procedureColumnInOut, rs.getInt("COLUMN_TYPE"));
                 rs.close();
             }
         } finally {
@@ -821,9 +826,9 @@ public class DatabaseMetaDataTest extends BaseTestCase {
             while (rs.next()) {
                 if ("text".equalsIgnoreCase(rs.getString(1))
                         || "ntext".equalsIgnoreCase(rs.getString(1))) {
-                    assertEquals(Types.LONGVARCHAR, rs.getInt(2));
+                    Assert.assertEquals(Types.LONGVARCHAR, rs.getInt(2));
                 } else if ("image".equalsIgnoreCase(rs.getString(1))) {
-                    assertEquals(Types.LONGVARBINARY, rs.getInt(2));
+                    Assert.assertEquals(Types.LONGVARBINARY, rs.getInt(2));
                 }
             }
         } finally {
@@ -835,9 +840,9 @@ public class DatabaseMetaDataTest extends BaseTestCase {
         while (rs.next()) {
             if ("text".equalsIgnoreCase(rs.getString(1))
                     || "ntext".equalsIgnoreCase(rs.getString(1))) {
-                assertEquals(Types.CLOB, rs.getInt(2));
+                Assert.assertEquals(Types.CLOB, rs.getInt(2));
             } else if ("image".equalsIgnoreCase(rs.getString(1))) {
-                assertEquals(Types.BLOB, rs.getInt(2));
+                Assert.assertEquals(Types.BLOB, rs.getInt(2));
             }
         }
 
@@ -909,11 +914,11 @@ public class DatabaseMetaDataTest extends BaseTestCase {
         rs.close();
 
         // test if the default values are being used
-        assertEquals(1, st.executeUpdate("insert into testDefaultValue (col0) values (" + columns[1] + ")"));
+        Assert.assertEquals(1, st.executeUpdate("insert into testDefaultValue (col0) values (" + columns[1] + ")"));
         rs = st.executeQuery("select * from testDefaultValue");
         assertTrue(rs.next());
         for (int i = 0; i < columns.length/2; i++) {
-            assertEquals(columns[i*2+1], rs.getObject(i+1).toString());
+            Assert.assertEquals(columns[i*2+1], rs.getObject(i+1).toString());
         }
         rs.close();
 
@@ -947,8 +952,5 @@ public class DatabaseMetaDataTest extends BaseTestCase {
         return true;
     }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(DatabaseMetaDataTest.class);
-    }
 
 }

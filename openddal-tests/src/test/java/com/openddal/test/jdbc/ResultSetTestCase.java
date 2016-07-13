@@ -15,18 +15,42 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import com.openddal.util.IOUtils;
-import org.junit.Test;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.*;
+import java.sql.Array;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.TimeZone;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+import com.openddal.util.IOUtils;
+
+import junit.framework.Assert;
 
 /**
  * Tests for the ResultSet implementation.
@@ -182,17 +206,17 @@ public class ResultSetTestCase extends BaseTestCase {
         rs.close();
         rs = stat.executeQuery("select * from test");
         assertTrue(rs.next());
-        assertEquals("Hello", rs.getString(2));
-        assertEquals("Hello", rs.getString("data"));
-        assertEquals("Hello", rs.getNString(2));
-        assertEquals("Hello", rs.getNString("data"));
-        assertEquals("Hello", IOUtils.readStringAndClose(
+        Assert.assertEquals("Hello", rs.getString(2));
+        Assert.assertEquals("Hello", rs.getString("data"));
+        Assert.assertEquals("Hello", rs.getNString(2));
+        Assert.assertEquals("Hello", rs.getNString("data"));
+        Assert.assertEquals("Hello", IOUtils.readStringAndClose(
                 rs.getNCharacterStream(2), -1));
-        assertEquals("Hello", IOUtils.readStringAndClose(
+        Assert.assertEquals("Hello", IOUtils.readStringAndClose(
                 rs.getNCharacterStream("data"), -1));
-        assertEquals("Hello", IOUtils.readStringAndClose(
+        Assert.assertEquals("Hello", IOUtils.readStringAndClose(
                 rs.getNClob(2).getCharacterStream(), -1));
-        assertEquals("Hello", IOUtils.readStringAndClose(
+        Assert.assertEquals("Hello", IOUtils.readStringAndClose(
                 rs.getNClob("data").getCharacterStream(), -1));
 
         rs = prep.executeQuery();
@@ -268,7 +292,7 @@ public class ResultSetTestCase extends BaseTestCase {
 
         rs = stat.executeQuery("select * from test");
         while (rs.next()) {
-            assertEquals("Hello", rs.getString(2));
+            Assert.assertEquals("Hello", rs.getString(2));
         }
 
         stat.execute("drop table test");
@@ -321,7 +345,7 @@ public class ResultSetTestCase extends BaseTestCase {
         ResultSet rs = stat.executeQuery("call " + x);
         rs.next();
         Object o = rs.getObject(1);
-        assertEquals(expected.getClass().getName(), o.getClass().getName());
+        Assert.assertEquals(expected.getClass().getName(), o.getClass().getName());
         assertTrue(expected.equals(o));
     }
 
@@ -400,7 +424,7 @@ public class ResultSetTestCase extends BaseTestCase {
         rs.next();
         rs.updateString(2, "Hallo");
         rs.updateRow();
-        assertEquals("Hallo", rs.getString(2));
+        Assert.assertEquals("Hallo", rs.getString(2));
         stat.execute("DROP TABLE TEST");
     }
 
@@ -483,9 +507,9 @@ public class ResultSetTestCase extends BaseTestCase {
         stat.execute("CREATE TABLE one (ID INT, NAME VARCHAR(255))");
         rs = stat.executeQuery("select * from one");
         meta = rs.getMetaData();
-        assertEquals("ID", meta.getColumnLabel(1));
+        Assert.assertEquals("ID", meta.getColumnLabel(1));
         assertEquals(11, meta.getColumnDisplaySize(1));
-        assertEquals("NAME", meta.getColumnLabel(2));
+        Assert.assertEquals("NAME", meta.getColumnLabel(2));
         assertEquals(255, meta.getColumnDisplaySize(2));
         stat.execute("DROP TABLE one");
 
@@ -592,7 +616,7 @@ public class ResultSetTestCase extends BaseTestCase {
 
         ResultSetMetaData meta = rs.getMetaData();
         assertEquals(3, meta.getColumnCount());
-        assertEquals("resultSet".toUpperCase(), meta.getCatalogName(1));
+        Assert.assertEquals("resultSet".toUpperCase(), meta.getCatalogName(1));
         assertTrue("PUBLIC".equals(meta.getSchemaName(2)));
         assertTrue("TEST".equals(meta.getTableName(1)));
         assertTrue("ID".equals(meta.getColumnName(1)));
@@ -610,7 +634,7 @@ public class ResultSetTestCase extends BaseTestCase {
         assertFalse(meta.isDefinitelyWritable(1));
         assertTrue(meta.getColumnDisplaySize(1) > 0);
         assertTrue(meta.getColumnDisplaySize(2) > 0);
-        assertEquals(null, meta.getColumnClassName(3));
+        Assert.assertEquals(null, meta.getColumnClassName(3));
 
         assertTrue(rs.getRow() == 0);
         assertResultSetMeta(rs, 3, new String[]{"ID", "VALUE", "N"},
@@ -925,16 +949,16 @@ public class ResultSetTestCase extends BaseTestCase {
 
         rs = stat.executeQuery("call date '99999-12-23'");
         rs.next();
-        assertEquals("99999-12-23", rs.getString(1));
+        Assert.assertEquals("99999-12-23", rs.getString(1));
         rs = stat.executeQuery("call timestamp '99999-12-23 01:02:03.000'");
         rs.next();
-        assertEquals("99999-12-23 01:02:03.0", rs.getString(1));
+        Assert.assertEquals("99999-12-23 01:02:03.0", rs.getString(1));
         rs = stat.executeQuery("call date '-99999-12-23'");
         rs.next();
-        assertEquals("-99999-12-23", rs.getString(1));
+        Assert.assertEquals("-99999-12-23", rs.getString(1));
         rs = stat.executeQuery("call timestamp '-99999-12-23 01:02:03.000'");
         rs.next();
-        assertEquals("-99999-12-23 01:02:03.0", rs.getString(1));
+        Assert.assertEquals("-99999-12-23 01:02:03.0", rs.getString(1));
 
         stat.execute("CREATE TABLE TEST(ID INT PRIMARY KEY,VALUE DATETIME)");
         stat.execute("INSERT INTO TEST VALUES(1,DATE '2011-11-11')");
@@ -996,18 +1020,18 @@ public class ResultSetTestCase extends BaseTestCase {
         assertTrue(!rs.wasNull());
         trace("Date: " + date.toString() +
                 " Time:" + time.toString() + " Timestamp:" + ts.toString());
-        assertEquals("2002-02-02", date.toString());
-        assertEquals("02:02:02", time.toString());
-        assertEquals("2002-02-02 02:02:02.0", ts.toString());
+        Assert.assertEquals("2002-02-02", date.toString());
+        Assert.assertEquals("02:02:02", time.toString());
+        Assert.assertEquals("2002-02-02 02:02:02.0", ts.toString());
         rs.next();
-        assertEquals("1800-01-01", rs.getDate("value").toString());
-        assertEquals("00:00:00", rs.getTime("value").toString());
-        assertEquals("1800-01-01 00:00:00.0",
+        Assert.assertEquals("1800-01-01", rs.getDate("value").toString());
+        Assert.assertEquals("00:00:00", rs.getTime("value").toString());
+        Assert.assertEquals("1800-01-01 00:00:00.0",
                 rs.getTimestamp("value").toString());
         rs.next();
-        assertEquals("9999-12-31", rs.getDate("Value").toString());
-        assertEquals("23:59:59", rs.getTime("Value").toString());
-        assertEquals("9999-12-31 23:59:59.0",
+        Assert.assertEquals("9999-12-31", rs.getDate("Value").toString());
+        Assert.assertEquals("23:59:59", rs.getTime("Value").toString());
+        Assert.assertEquals("9999-12-31 23:59:59.0",
                 rs.getTimestamp("Value").toString());
         rs.next();
         assertTrue(rs.getDate("Value") == null && rs.wasNull());
@@ -1022,9 +1046,9 @@ public class ResultSetTestCase extends BaseTestCase {
         date = (Date) rs.getObject(1);
         time = (Time) rs.getObject(2);
         ts = (Timestamp) rs.getObject(3);
-        assertEquals("2001-02-03", date.toString());
-        assertEquals("14:15:16", time.toString());
-        assertEquals("2007-08-09 10:11:12.141516171", ts.toString());
+        Assert.assertEquals("2001-02-03", date.toString());
+        Assert.assertEquals("14:15:16", time.toString());
+        Assert.assertEquals("2007-08-09 10:11:12.141516171", ts.toString());
 
         stat.execute("DROP TABLE TEST");
     }
@@ -1113,10 +1137,10 @@ public class ResultSetTestCase extends BaseTestCase {
 
         rs.next();
         assertEquals(2, rs.getInt(1));
-        assertEquals("2001-02-03", rs.getDate(2, regular).toString());
-        assertEquals("04:05:06", rs.getTime(3, regular).toString());
+        Assert.assertEquals("2001-02-03", rs.getDate(2, regular).toString());
+        Assert.assertEquals("04:05:06", rs.getTime(3, regular).toString());
         assertFalse(rs.getTime(3, other).toString().equals("04:05:06"));
-        assertEquals("2007-08-09 10:11:12.131415",
+        Assert.assertEquals("2007-08-09 10:11:12.131415",
                 rs.getTimestamp(4, regular).toString());
         assertFalse(rs.getTimestamp(4, other).toString().
                 equals("2007-08-09 10:11:12.131415"));
@@ -1125,20 +1149,20 @@ public class ResultSetTestCase extends BaseTestCase {
         assertEquals(3, rs.getInt("ID"));
         assertFalse(rs.getTimestamp("TS", regular).toString().
                 equals("2107-08-09 10:11:12.131415"));
-        assertEquals("2107-08-09 10:11:12.131415",
+        Assert.assertEquals("2107-08-09 10:11:12.131415",
                 rs.getTimestamp("TS", other).toString());
         assertFalse(rs.getTime("T", regular).toString().equals("14:05:06"));
-        assertEquals("14:05:06",
+        Assert.assertEquals("14:05:06",
                 rs.getTime("T", other).toString());
         // checkFalse(rs.getDate(2, regular).toString(), "2101-02-03");
         // check(rs.getDate("D", other).toString(), "2101-02-03");
 
         rs.next();
         assertEquals(4, rs.getInt("ID"));
-        assertEquals("2107-08-09 10:11:12.131415",
+        Assert.assertEquals("2107-08-09 10:11:12.131415",
                 rs.getTimestamp("TS").toString());
-        assertEquals("14:05:06", rs.getTime("T").toString());
-        assertEquals("2101-02-03", rs.getDate("D").toString());
+        Assert.assertEquals("14:05:06", rs.getTime("T").toString());
+        Assert.assertEquals("2101-02-03", rs.getDate("D").toString());
 
         assertFalse(rs.next());
         stat.execute("DROP TABLE TEST");
@@ -1163,7 +1187,7 @@ public class ResultSetTestCase extends BaseTestCase {
         assertEqualsWithNull(new byte[]{(byte) 0x01, (byte) 0x01,
                         (byte) 0x01, (byte) 0x01},
                 rs.getBytes(2));
-        assertTrue(!rs.wasNull());
+        Assert.assertTrue(!rs.wasNull());
         rs.next();
         assertEqualsWithNull(new byte[]{(byte) 0x02, (byte) 0x02,
                         (byte) 0x02, (byte) 0x02},
@@ -1209,7 +1233,7 @@ public class ResultSetTestCase extends BaseTestCase {
                         10, Integer.MAX_VALUE}, new int[]{0, 0});
         rs.next();
         Object obj = rs.getObject(2);
-        assertTrue(obj instanceof java.sql.Clob);
+        Assert.assertTrue(obj instanceof java.sql.Clob);
         string = rs.getString(2);
         assertTrue(string != null && string.equals("Test"));
         assertTrue(!rs.wasNull());
@@ -1303,18 +1327,18 @@ public class ResultSetTestCase extends BaseTestCase {
         assertEquals(11, ((Integer) list2[0]).intValue());
 
         assertEquals(Types.NULL, array.getBaseType());
-        assertEquals("NULL", array.getBaseTypeName());
+        Assert.assertEquals("NULL", array.getBaseTypeName());
 
-        assertTrue(array.toString().endsWith(": (11, 12)"));
+        Assert.assertTrue(array.toString().endsWith(": (11, 12)"));
 
         // free
         array.free();
-        assertEquals("null", array.toString());
+        Assert.assertEquals("null", array.toString());
         assertThrows(ErrorCode.OBJECT_CLOSED, array).getBaseType();
         assertThrows(ErrorCode.OBJECT_CLOSED, array).getBaseTypeName();
         assertThrows(ErrorCode.OBJECT_CLOSED, array).getResultSet();
 
-        assertFalse(rs.next());
+        Assert.assertFalse(rs.next());
         stat.execute("DROP TABLE TEST");
     }
 
@@ -1333,14 +1357,14 @@ public class ResultSetTestCase extends BaseTestCase {
             }
             return out.toByteArray();
         } catch (IOException e) {
-            assertTrue(false);
+            Assert.assertTrue(false);
             return null;
         }
     }
 
     private void assertEqualsWithNull(byte[] expected, byte[] got) {
         if (got == null || expected == null) {
-            assertTrue(got == expected);
+            Assert.assertTrue(got == expected);
         } else {
             assertEquals(got, expected);
         }
@@ -1352,12 +1376,12 @@ public class ResultSetTestCase extends BaseTestCase {
         int i1 = rs.getInt(column);
         if (bd == null) {
             trace("should be: null");
-            assertTrue(rs.wasNull());
+            Assert.assertTrue(rs.wasNull());
         } else {
             trace("BigDecimal i=" + i + " bd=" + bd + " ; i1=" + i1 + " bd1=" + bd1);
-            assertTrue(!rs.wasNull());
-            assertTrue(i1 == i);
-            assertTrue(bd1.compareTo(new BigDecimal(bd)) == 0);
+            Assert.assertTrue(!rs.wasNull());
+            Assert.assertTrue(i1 == i);
+            Assert.assertTrue(bd1.compareTo(new BigDecimal(bd)) == 0);
         }
     }
 

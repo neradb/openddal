@@ -15,15 +15,30 @@
  */
 package com.openddal.test.jdbc;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.Writer;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Connection;
+import java.sql.NClob;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Random;
+
+import org.junit.Test;
+
 import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.ErrorCode;
 import com.openddal.test.BaseTestCase;
 import com.openddal.util.IOUtils;
-import org.junit.Test;
 
-import java.io.*;
-import java.sql.*;
-import java.util.Random;
+import junit.framework.Assert;
 
 /**
  * Test the Blob, Clob, and NClob implementations.
@@ -66,10 +81,10 @@ public class LobApiTestCase extends BaseTestCase {
         rs.next();
         Clob clob = rs.getClob(2);
         byte[] data = IOUtils.readBytesAndClose(clob.getAsciiStream(), -1);
-        assertEquals("x", new String(data, "UTF-8"));
-        assertTrue(clob.toString().endsWith("'x'"));
+        Assert.assertEquals("x", new String(data, "UTF-8"));
+        Assert.assertTrue(clob.toString().endsWith("'x'"));
         clob.free();
-        assertTrue(clob.toString().endsWith("null"));
+        Assert.assertTrue(clob.toString().endsWith("null"));
 
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, clob).
                 truncate(0);
@@ -95,9 +110,9 @@ public class LobApiTestCase extends BaseTestCase {
                 position((Blob) null, 0);
         assertThrows(ErrorCode.FEATURE_NOT_SUPPORTED_1, blob).
                 getBinaryStream(1, 1);
-        assertTrue(blob.toString().endsWith("X'00'"));
+        Assert.assertTrue(blob.toString().endsWith("X'00'"));
         blob.free();
-        assertTrue(blob.toString().endsWith("null"));
+        Assert.assertTrue(blob.toString().endsWith("null"));
 
         stat.execute("drop table test");
         conn.close();
@@ -135,18 +150,18 @@ public class LobApiTestCase extends BaseTestCase {
         rs.next();
         Clob c2 = rs.getClob(2);
         Blob b2 = rs.getBlob(3);
-        assertFalse(rs.next());
+        Assert.assertFalse(rs.next());
         // now close
         rs.close();
         // but the LOBs must stay open
-        assertEquals(0, c1.length());
-        assertEquals(0, b1.length());
-        assertEquals(chars.length, c2.length());
-        assertEquals(bytes.length, b2.length());
-        assertEquals("", c1.getSubString(1, 0));
-        assertEquals(new byte[0], b1.getBytes(1, 0));
-        assertEquals(d, c2.getSubString(1, (int) c2.length()));
-        assertEquals(bytes, b2.getBytes(1, (int) b2.length()));
+        Assert.assertEquals(0, c1.length());
+        Assert.assertEquals(0, b1.length());
+        Assert.assertEquals(chars.length, c2.length());
+        Assert.assertEquals(bytes.length, b2.length());
+        Assert.assertEquals("", c1.getSubString(1, 0));
+        Assert.assertEquals(new byte[0], b1.getBytes(1, 0));
+        Assert.assertEquals(d, c2.getSubString(1, (int) c2.length()));
+        Assert.assertEquals(bytes, b2.getBytes(1, (int) b2.length()));
         stat.execute("drop table test");
         conn.close();
     }
@@ -207,11 +222,11 @@ public class LobApiTestCase extends BaseTestCase {
         prep.execute();
         ResultSet rs = stat.executeQuery("select c, b from test order by id");
         rs.next();
-        assertEquals(new String(new char[10000]), rs.getString(1));
-        assertEquals(new byte[0], rs.getBytes(2));
+        Assert.assertEquals(new String(new char[10000]), rs.getString(1));
+        Assert.assertEquals(new byte[0], rs.getBytes(2));
         rs.next();
-        assertEquals("", rs.getString(1));
-        assertEquals(new byte[10000], rs.getBytes(2));
+        Assert.assertEquals("", rs.getString(1));
+        Assert.assertEquals(new byte[10000], rs.getBytes(2));
         stat.execute("drop table test");
         conn.close();
     }
@@ -249,18 +264,18 @@ public class LobApiTestCase extends BaseTestCase {
         rs = stat.executeQuery("select * from test");
         rs.next();
         Blob b2 = rs.getBlob(2);
-        assertEquals(length, b2.length());
+        Assert.assertEquals(length, b2.length());
         byte[] bytes = b.getBytes(1, length);
         byte[] bytes2 = b2.getBytes(1, length);
-        assertEquals(bytes, bytes2);
+        Assert.assertEquals(bytes, bytes2);
         rs.next();
         b2 = rs.getBlob(2);
-        assertEquals(length, b2.length());
+        Assert.assertEquals(length, b2.length());
         bytes2 = b2.getBytes(1, length);
-        assertEquals(bytes, bytes2);
+        Assert.assertEquals(bytes, bytes2);
         while (rs.next()) {
             bytes2 = rs.getBytes(2);
-            assertEquals(bytes, bytes2);
+            Assert.assertEquals(bytes, bytes2);
         }
     }
 
@@ -328,14 +343,14 @@ public class LobApiTestCase extends BaseTestCase {
         rs = stat.executeQuery("select * from test");
         rs.next();
         Clob c2 = rs.getClob(2);
-        assertEquals(length, c2.length());
+        Assert.assertEquals(length, c2.length());
         String s = c.getSubString(1, length);
         String s2 = c2.getSubString(1, length);
         while (rs.next()) {
             c2 = rs.getClob(2);
-            assertEquals(length, c2.length());
+            Assert.assertEquals(length, c2.length());
             s2 = c2.getSubString(1, length);
-            assertEquals(s, s2);
+            Assert.assertEquals(s, s2);
         }
     }
 

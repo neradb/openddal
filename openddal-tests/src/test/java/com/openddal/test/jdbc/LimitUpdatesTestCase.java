@@ -15,13 +15,16 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.junit.Test;
+
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Test for limit updates.
@@ -89,26 +92,26 @@ public class LimitUpdatesTestCase extends BaseTestCase {
                 prep.setInt(2, 0);
                 prep.execute();
             }
-            assertEquals(numRows, countWhere(conn, 0));
+            Assert.assertEquals(numRows, countWhere(conn, 0));
 
             // update all elements than available
             prep.close();
             prep = conn.prepareStatement("UPDATE TEST SET VALUE_ID = ?");
             prep.setInt(1, 1);
             prep.execute();
-            assertEquals(numRows, countWhere(conn, 1));
+            Assert.assertEquals(numRows, countWhere(conn, 1));
 
             // update less elements than available
             updateLimit(conn, 2, numRows / 2);
-            assertEquals(numRows / 2, countWhere(conn, 2));
+            Assert.assertEquals(numRows / 2, countWhere(conn, 2));
 
             // update more elements than available
             updateLimit(conn, 3, numRows * 2);
-            assertEquals(numRows, countWhere(conn, 3));
+            Assert.assertEquals(numRows, countWhere(conn, 3));
 
             // update no elements
             updateLimit(conn, 4, 0);
-            assertEquals(0, countWhere(conn, 4));
+            Assert.assertEquals(0, countWhere(conn, 4));
         } finally {
             if (prep != null) {
                 prep.close();

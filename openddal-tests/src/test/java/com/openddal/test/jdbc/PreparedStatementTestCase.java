@@ -15,18 +15,32 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import com.openddal.util.Task;
-import org.junit.Test;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.UUID;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+import com.openddal.util.Task;
+
+import junit.framework.Assert;
 
 /**
  * Tests for the PreparedStatement implementation.
@@ -175,26 +189,26 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.setString(2, "Hello");
         ResultSet rs = prep.executeQuery();
         rs.next();
-        assertEquals(1, rs.getInt(1));
-        assertEquals("Hello", rs.getString(2));
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals("Hello", rs.getString(2));
 
         prep = conn.prepareStatement("select * from values(?, ?), (2, 'World!')");
         prep.setInt(1, 1);
         prep.setString(2, "Hello");
         rs = prep.executeQuery();
         rs.next();
-        assertEquals(1, rs.getInt(1));
-        assertEquals("Hello", rs.getString(2));
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals("Hello", rs.getString(2));
         rs.next();
-        assertEquals(2, rs.getInt(1));
-        assertEquals("World!", rs.getString(2));
+        Assert.assertEquals(2, rs.getInt(1));
+        Assert.assertEquals("World!", rs.getString(2));
 
         prep = conn.prepareStatement("values 1, 2");
         rs = prep.executeQuery();
         rs.next();
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
     }
 
     private void testToString(Connection conn) throws SQLException {
@@ -216,7 +230,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         stat.execute("prepare test(int, int) as select ?1*?2");
         ResultSet rs = stat.executeQuery("execute test(3, 2)");
         rs.next();
-        assertEquals(6, rs.getInt(1));
+        Assert.assertEquals(6, rs.getInt(1));
         stat.execute("deallocate test");
     }
 
@@ -239,7 +253,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
             if (i % 2 == 0) {
                 check = i;
             }
-            assertEquals(getString(check), rs.getString(2));
+            Assert.assertEquals(getString(check), rs.getString(2));
         }
         assertFalse(rs.next());
         stat.execute("DELETE FROM TEST");
@@ -252,7 +266,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         rs = stat.executeQuery("SELECT * FROM TEST ORDER BY ID");
         for (int i = 0; i < 3; i++) {
             assertTrue(rs.next());
-            assertEquals(getString(i), rs.getString(2));
+            Assert.assertEquals(getString(i), rs.getString(2));
         }
         assertFalse(rs.next());
         stat.execute("DROP TABLE TEST");
@@ -280,13 +294,13 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.setInt(3, 1);
         ResultSet rs = prep.executeQuery();
         rs.next();
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         prep.setInt(1, 2);
         prep.setInt(2, 2);
         prep.setInt(3, 2);
         rs = prep.executeQuery();
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
         stat.execute("DROP TABLE TEST");
     }
 
@@ -306,7 +320,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.execute();
         rs = stat.executeQuery("SELECT COUNT(DISTINCT H) FROM TEST");
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
 
         stat.execute("DROP TABLE TEST");
     }
@@ -327,7 +341,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.setString(1, "X");
         rs = prep.executeQuery();
         rs.next();
-        assertEquals(0, rs.getInt(1));
+        Assert.assertEquals(0, rs.getInt(1));
 
         stat.execute("CREATE TABLE t1 (c1 INT, c2 VARCHAR(10))");
         stat.execute("INSERT INTO t1 SELECT X, CONCAT('Test', X)  " +
@@ -339,11 +353,11 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.setInt(1, 2);
         rs = prep.executeQuery();
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
         prep.setInt(1, 3);
         rs = prep.executeQuery();
         rs.next();
-        assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(3, rs.getInt(1));
         stat.execute("DROP TABLE t1, t2");
 
     }
@@ -393,12 +407,12 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.cancel();
         SQLException e = (SQLException) t.getException();
         assertTrue(e != null);
-        assertEquals(ErrorCode.STATEMENT_WAS_CANCELED, e.getErrorCode());
+        Assert.assertEquals(ErrorCode.STATEMENT_WAS_CANCELED, e.getErrorCode());
         prep.setInt(1, 1);
         prep.setInt(2, 1);
         ResultSet rs = prep.executeQuery();
         assertTrue(rs.next());
-        assertEquals(0, rs.getInt(1));
+        Assert.assertEquals(0, rs.getInt(1));
         assertFalse(rs.next());
     }
 
@@ -407,13 +421,13 @@ public class PreparedStatementTestCase extends BaseTestCase {
         PreparedStatement prep = conn.prepareStatement(
                 "select * from table(x int = ?, name varchar = ?)");
         ResultSetMetaData meta = prep.getMetaData();
-        assertEquals(2, meta.getColumnCount());
-        assertEquals("INTEGER", meta.getColumnTypeName(1));
-        assertEquals("VARCHAR", meta.getColumnTypeName(2));
+        Assert.assertEquals(2, meta.getColumnCount());
+        Assert.assertEquals("INTEGER", meta.getColumnTypeName(1));
+        Assert.assertEquals("VARCHAR", meta.getColumnTypeName(2));
         prep = conn.prepareStatement("call 1");
         meta = prep.getMetaData();
-        assertEquals(1, meta.getColumnCount());
-        assertEquals("INTEGER", meta.getColumnTypeName(1));
+        Assert.assertEquals(1, meta.getColumnCount());
+        Assert.assertEquals("INTEGER", meta.getColumnTypeName(1));
     }
 
     private void testArray(Connection conn) throws SQLException {
@@ -422,9 +436,9 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.setObject(1, new Object[]{new BigDecimal("1"), "2"});
         ResultSet rs = prep.executeQuery();
         rs.next();
-        assertEquals("1", rs.getString(1));
+        Assert.assertEquals("1", rs.getString(1));
         rs.next();
-        assertEquals("2", rs.getString(1));
+        Assert.assertEquals("2", rs.getString(1));
         assertFalse(rs.next());
     }
 
@@ -438,9 +452,9 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.execute();
         ResultSet rs = stat.executeQuery("select * from test_uuid");
         rs.next();
-        assertEquals("ffffffff-ffff-fffe-ffff-ffffffffffff", rs.getString(1));
+        Assert.assertEquals("ffffffff-ffff-fffe-ffff-ffffffffffff", rs.getString(1));
         Object o = rs.getObject(1);
-        assertEquals("java.util.UUID", o.getClass().getName());
+        Assert.assertEquals("java.util.UUID", o.getClass().getName());
         stat.execute("drop table test_uuid");
     }
 
@@ -452,7 +466,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         ResultSet rs = stat.getGeneratedKeys();
         rs.next();
         byte[] data = rs.getBytes(1);
-        assertEquals(16, data.length);
+        Assert.assertEquals(16, data.length);
         stat.execute("INSERT INTO TEST_UUID VALUES(random_UUID())");
         rs = stat.getGeneratedKeys();
         assertFalse(rs.next());
@@ -490,7 +504,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         assertTrue(o instanceof byte[]);
         o = rs.getObject(3);
         assertTrue(o instanceof Integer);
-        assertEquals(103, ((Integer) o).intValue());
+        Assert.assertEquals(103, ((Integer) o).intValue());
         assertFalse(rs.next());
         stat.execute("DROP TABLE TEST");
     }
@@ -502,7 +516,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         ResultSet rs = prep.executeQuery();
         rs.next();
         Timestamp ts2 = rs.getTimestamp(1);
-        assertEquals(ts.toString(), ts2.toString());
+        Assert.assertEquals(ts.toString(), ts2.toString());
     }
 
     private void testPreparedSubquery(Connection conn) throws SQLException {
@@ -516,16 +530,16 @@ public class PreparedStatementTestCase extends BaseTestCase {
                 "UPDATE TEST SET FLAG=true WHERE ID=(SELECT ?)");
         p.clearParameters();
         p.setLong(1, 0);
-        assertEquals(1, p.executeUpdate());
+        Assert.assertEquals(1, p.executeUpdate());
         p.clearParameters();
         p.setLong(1, 1);
-        assertEquals(1, p.executeUpdate());
+        Assert.assertEquals(1, p.executeUpdate());
         ResultSet rs = u.executeQuery();
         assertTrue(rs.next());
-        assertEquals(0, rs.getInt(1));
+        Assert.assertEquals(0, rs.getInt(1));
         assertTrue(rs.getBoolean(2));
         assertTrue(rs.next());
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         assertTrue(rs.getBoolean(2));
 
         p = conn.prepareStatement("SELECT * FROM TEST " +
@@ -543,15 +557,15 @@ public class PreparedStatementTestCase extends BaseTestCase {
     private void testParameterMetaData(Connection conn) throws SQLException {
         PreparedStatement prep = conn.prepareStatement("SELECT ?, ?, ? FROM DUAL");
         ParameterMetaData pm = prep.getParameterMetaData();
-        assertEquals("java.lang.String", pm.getParameterClassName(1));
-        assertEquals("VARCHAR", pm.getParameterTypeName(1));
-        assertEquals(3, pm.getParameterCount());
-        assertEquals(ParameterMetaData.parameterModeIn, pm.getParameterMode(1));
-        assertEquals(Types.VARCHAR, pm.getParameterType(1));
-        assertEquals(0, pm.getPrecision(1));
-        assertEquals(0, pm.getScale(1));
-        assertEquals(ResultSetMetaData.columnNullableUnknown, pm.isNullable(1));
-        assertEquals(pm.isSigned(1), true);
+        Assert.assertEquals("java.lang.String", pm.getParameterClassName(1));
+        Assert.assertEquals("VARCHAR", pm.getParameterTypeName(1));
+        Assert.assertEquals(3, pm.getParameterCount());
+        Assert.assertEquals(ParameterMetaData.parameterModeIn, pm.getParameterMode(1));
+        Assert.assertEquals(Types.VARCHAR, pm.getParameterType(1));
+        Assert.assertEquals(0, pm.getPrecision(1));
+        Assert.assertEquals(0, pm.getScale(1));
+        Assert.assertEquals(ResultSetMetaData.columnNullableUnknown, pm.isNullable(1));
+        Assert.assertEquals(pm.isSigned(1), true);
         assertThrows(ErrorCode.INVALID_VALUE_2, pm).getPrecision(0);
         assertThrows(ErrorCode.INVALID_VALUE_2, pm).getPrecision(4);
         prep.close();
@@ -582,11 +596,11 @@ public class PreparedStatementTestCase extends BaseTestCase {
                                 String className, int type, String typeName, int precision,
                                 int scale) throws SQLException {
         ParameterMetaData meta = prep.getParameterMetaData();
-        assertEquals(className, meta.getParameterClassName(index));
-        assertEquals(type, meta.getParameterType(index));
-        assertEquals(typeName, meta.getParameterTypeName(index));
-        assertEquals(precision, meta.getPrecision(index));
-        assertEquals(scale, meta.getScale(index));
+        Assert.assertEquals(className, meta.getParameterClassName(index));
+        Assert.assertEquals(type, meta.getParameterType(index));
+        Assert.assertEquals(typeName, meta.getParameterTypeName(index));
+        Assert.assertEquals(precision, meta.getPrecision(index));
+        Assert.assertEquals(scale, meta.getScale(index));
     }
 
     private void testLikeIndex(Connection conn) throws SQLException {
@@ -599,7 +613,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
 
         prep = conn.prepareStatement(
                 "EXPLAIN SELECT * FROM TEST WHERE NAME LIKE ?");
-        assertEquals(1, prep.getParameterMetaData().getParameterCount());
+        Assert.assertEquals(1, prep.getParameterMetaData().getParameterCount());
         prepExe = conn.prepareStatement(
                 "SELECT * FROM TEST WHERE NAME LIKE ?");
         prep.setString(1, "%orld");
@@ -610,7 +624,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         assertTrue(plan.contains(".tableScan"));
         rs = prepExe.executeQuery();
         rs.next();
-        assertEquals("World", rs.getString(2));
+        Assert.assertEquals("World", rs.getString(2));
         assertFalse(rs.next());
 
         prep.setString(1, "H%");
@@ -621,7 +635,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         assertTrue(plan1.contains("IDXNAME"));
         rs = prepExe.executeQuery();
         rs.next();
-        assertEquals("Hello", rs.getString(2));
+        Assert.assertEquals("Hello", rs.getString(2));
         assertFalse(rs.next());
 
         stat.execute("DROP TABLE IF EXISTS TEST");
@@ -655,7 +669,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.setInt(1, 1);
         rs = prep.executeQuery();
         assertTrue(rs.next());
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         assertFalse(rs.next());
 
         prep = conn.prepareStatement("SELECT COUNT(*) FROM TEST " +
@@ -664,7 +678,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.setInt(1, 1);
         rs = prep.executeQuery();
         assertTrue(rs.next());
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         assertFalse(rs.next());
 
         prep = conn.prepareStatement("SELECT * FROM TEST WHERE ? IS NULL");
@@ -675,13 +689,13 @@ public class PreparedStatementTestCase extends BaseTestCase {
                 prepareStatement("select ? from dual union select ? from dual");
         prep = conn.prepareStatement("select cast(? as varchar) " +
                 "from dual union select ? from dual");
-        assertEquals(2, prep.getParameterMetaData().getParameterCount());
+        Assert.assertEquals(2, prep.getParameterMetaData().getParameterCount());
         prep.setString(1, "a");
         prep.setString(2, "a");
         rs = prep.executeQuery();
         rs.next();
-        assertEquals("a", rs.getString(1));
-        assertEquals("a", rs.getString(1));
+        Assert.assertEquals("a", rs.getString(1));
+        Assert.assertEquals("a", rs.getString(1));
         assertFalse(rs.next());
 
         stat.execute("DROP TABLE TEST");
@@ -693,15 +707,15 @@ public class PreparedStatementTestCase extends BaseTestCase {
         stat.execute("INSERT INTO TEST VALUES(1),(2),(3)");
         PreparedStatement prep = conn.prepareStatement("select x.id, ? from "
                 + "(select * from test where id in(?, ?)) x where x.id*2 <>  ?");
-        assertEquals(4, prep.getParameterMetaData().getParameterCount());
+        Assert.assertEquals(4, prep.getParameterMetaData().getParameterCount());
         prep.setInt(1, 0);
         prep.setInt(2, 1);
         prep.setInt(3, 2);
         prep.setInt(4, 4);
         ResultSet rs = prep.executeQuery();
         rs.next();
-        assertEquals(1, rs.getInt(1));
-        assertEquals(0, rs.getInt(2));
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(0, rs.getInt(2));
         assertFalse(rs.next());
         stat.execute("DROP TABLE TEST");
     }
@@ -836,24 +850,24 @@ public class PreparedStatementTestCase extends BaseTestCase {
         assertTrue(prep.execute());
         rs = prep.getResultSet();
         assertFalse(prep.getMoreResults());
-        assertEquals(-1, prep.getUpdateCount());
+        Assert.assertEquals(-1, prep.getUpdateCount());
         // supposed to be closed now
         assertThrows(ErrorCode.OBJECT_CLOSED, rs).next();
-        assertEquals(-1, prep.getUpdateCount());
+        Assert.assertEquals(-1, prep.getUpdateCount());
 
         prep = conn.prepareStatement("UPDATE TEST SET ID = 2");
         assertFalse(prep.execute());
-        assertEquals(1, prep.getUpdateCount());
+        Assert.assertEquals(1, prep.getUpdateCount());
         assertFalse(prep.getMoreResults(Statement.CLOSE_CURRENT_RESULT));
-        assertEquals(-1, prep.getUpdateCount());
+        Assert.assertEquals(-1, prep.getUpdateCount());
         // supposed to be closed now
         assertThrows(ErrorCode.OBJECT_CLOSED, rs).next();
-        assertEquals(-1, prep.getUpdateCount());
+        Assert.assertEquals(-1, prep.getUpdateCount());
 
         prep = conn.prepareStatement("DELETE FROM TEST");
         prep.executeUpdate();
         assertFalse(prep.getMoreResults());
-        assertEquals(-1, prep.getUpdateCount());
+        Assert.assertEquals(-1, prep.getUpdateCount());
         stat.execute("DROP TABLE TEST");
     }
 
@@ -905,14 +919,14 @@ public class PreparedStatementTestCase extends BaseTestCase {
                 new Double(Double.MAX_VALUE)));
         assertTrue(rs.getObject(10).equals(
                 java.sql.Date.valueOf("2001-02-03")));
-        assertEquals("04:05:06", rs.getObject(11).toString());
+        Assert.assertEquals("04:05:06", rs.getObject(11).toString());
         assertTrue(rs.getObject(11).equals(
                 java.sql.Time.valueOf("04:05:06")));
         assertTrue(rs.getObject(12).equals(
                 java.sql.Timestamp.valueOf("2001-02-03 04:05:06.123456789")));
         assertTrue(rs.getObject(13).equals(
                 java.sql.Timestamp.valueOf("2001-02-03 00:00:00")));
-        assertEquals(new byte[]{10, 20, 30}, (byte[]) rs.getObject(14));
+        Assert.assertEquals(new byte[]{10, 20, 30}, (byte[]) rs.getObject(14));
         assertTrue(rs.getObject(15).equals('a'));
         assertTrue(rs.getObject(16).equals(
                 java.sql.Date.valueOf("2001-01-02")));
@@ -946,7 +960,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.execute();
         ResultSet rs = prep.getGeneratedKeys();
         rs.next();
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         assertFalse(rs.next());
 
         prep = conn.prepareStatement(
@@ -955,7 +969,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.execute();
         rs = prep.getGeneratedKeys();
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
         assertFalse(rs.next());
 
         prep = conn.prepareStatement(
@@ -964,7 +978,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.execute();
         rs = prep.getGeneratedKeys();
         rs.next();
-        assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(3, rs.getInt(1));
         assertFalse(rs.next());
 
         prep = conn.prepareStatement(
@@ -973,7 +987,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.execute();
         rs = prep.getGeneratedKeys();
         rs.next();
-        assertEquals(4, rs.getInt(1));
+        Assert.assertEquals(4, rs.getInt(1));
         assertFalse(rs.next());
 
         prep = conn.prepareStatement(
@@ -984,7 +998,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         prep.execute();
         rs = prep.getGeneratedKeys();
         rs.next();
-        assertEquals(5, rs.getInt(1));
+        Assert.assertEquals(5, rs.getInt(1));
         assertFalse(rs.next());
 
         stat.execute("DROP TABLE TEST");
@@ -1047,29 +1061,29 @@ public class PreparedStatementTestCase extends BaseTestCase {
         rs = stat.executeQuery("SELECT ID, V1, V2 FROM T_BLOB ORDER BY ID");
 
         rs.next();
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         assertTrue(rs.getBytes(2) == null && rs.wasNull());
         assertTrue(rs.getBytes(3) == null && rs.wasNull());
 
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
         assertTrue(rs.getBytes(2) == null && rs.wasNull());
         assertTrue(rs.getBytes(3) == null && rs.wasNull());
 
         rs.next();
-        assertEquals(3, rs.getInt(1));
-        assertEquals(big1, rs.getBytes(2));
-        assertEquals(big2, rs.getBytes(3));
+        Assert.assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(big1, rs.getBytes(2));
+        Assert.assertEquals(big2, rs.getBytes(3));
 
         rs.next();
-        assertEquals(4, rs.getInt(1));
-        assertEquals(big2, rs.getBytes(2));
-        assertEquals(big1, rs.getBytes(3));
+        Assert.assertEquals(4, rs.getInt(1));
+        Assert.assertEquals(big2, rs.getBytes(2));
+        Assert.assertEquals(big1, rs.getBytes(3));
 
         rs.next();
-        assertEquals(5, rs.getInt(1));
-        assertEquals(big2, rs.getBytes(2));
-        assertEquals(big1, rs.getBytes(3));
+        Assert.assertEquals(5, rs.getInt(1));
+        Assert.assertEquals(big2, rs.getBytes(2));
+        Assert.assertEquals(big1, rs.getBytes(3));
 
         assertFalse(rs.next());
     }
@@ -1127,29 +1141,29 @@ public class PreparedStatementTestCase extends BaseTestCase {
         rs = stat.executeQuery("SELECT ID, V1, V2 FROM T_CLOB ORDER BY ID");
 
         rs.next();
-        assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getInt(1));
         assertTrue(rs.getCharacterStream(2) == null && rs.wasNull());
         assertTrue(rs.getAsciiStream(3) == null && rs.wasNull());
 
         rs.next();
-        assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getInt(1));
         assertTrue(rs.getString(2) == null && rs.wasNull());
         assertTrue(rs.getString(3) == null && rs.wasNull());
 
         rs.next();
-        assertEquals(3, rs.getInt(1));
-        assertEquals(ascii1, rs.getString(2));
-        assertEquals(ascii2, rs.getString(3));
+        Assert.assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(ascii1, rs.getString(2));
+        Assert.assertEquals(ascii2, rs.getString(3));
 
         rs.next();
-        assertEquals(4, rs.getInt(1));
-        assertEquals(ascii2, rs.getString(2));
-        assertEquals(ascii1, rs.getString(3));
+        Assert.assertEquals(4, rs.getInt(1));
+        Assert.assertEquals(ascii2, rs.getString(2));
+        Assert.assertEquals(ascii1, rs.getString(3));
 
         rs.next();
-        assertEquals(5, rs.getInt(1));
-        assertEquals(ascii1, rs.getString(2));
-        assertEquals(ascii2, rs.getString(3));
+        Assert.assertEquals(5, rs.getInt(1));
+        Assert.assertEquals(ascii1, rs.getString(2));
+        Assert.assertEquals(ascii2, rs.getString(3));
 
         assertFalse(rs.next());
         assertTrue(prep.getWarnings() == null);
@@ -1198,7 +1212,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         ps.setInt(2, 999);
         ps.execute();
         ps = conn.prepareStatement("SELECT * FROM TEST WHERE someColumn = ?");
-        assertEquals(Types.INTEGER,
+        Assert.assertEquals(Types.INTEGER,
                 ps.getParameterMetaData().getParameterType(1));
         stmt.execute("DROP TABLE TEST");
     }
@@ -1213,7 +1227,7 @@ public class PreparedStatementTestCase extends BaseTestCase {
         ps.execute();
         ps = conn
                 .prepareStatement("SELECT * FROM TEST WHERE someColumn IN (?,?)");
-        assertEquals(Types.INTEGER,
+        Assert.assertEquals(Types.INTEGER,
                 ps.getParameterMetaData().getParameterType(1));
         stmt.execute("DROP TABLE TEST");
     }

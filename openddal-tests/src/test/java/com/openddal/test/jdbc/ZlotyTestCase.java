@@ -15,15 +15,18 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Tests a custom BigDecimal implementation, as well
@@ -57,14 +60,14 @@ public class ZlotyTestCase extends BaseTestCase {
         ResultSet rs = conn.createStatement().executeQuery(
                 "SELECT * FROM TEST ORDER BY ID");
         rs.next();
-        assertEquals(0, rs.getInt(1));
-        assertEquals(0, rs.getBytes(2)[0]);
+        Assert.assertEquals(0, rs.getInt(1));
+        Assert.assertEquals(0, rs.getBytes(2)[0]);
         rs.next();
-        assertEquals(1, rs.getInt(1));
-        assertEquals(1, rs.getBytes(2)[0]);
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getBytes(2)[0]);
         rs.getBytes(2)[0] = 2;
-        assertEquals(1, rs.getBytes(2)[0]);
-        assertFalse(rs.next());
+        Assert.assertEquals(1, rs.getBytes(2)[0]);
+        Assert.assertFalse(rs.next());
         conn.close();
     }
 

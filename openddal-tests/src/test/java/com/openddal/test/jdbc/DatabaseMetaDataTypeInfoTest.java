@@ -17,6 +17,8 @@
 //
 package com.openddal.test.jdbc;
 
+import static junit.framework.Assert.assertTrue;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -25,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Tests for DatabaseMetaData.getTypeInfo().
@@ -39,19 +43,14 @@ public class DatabaseMetaDataTypeInfoTest extends BaseTestCase {
 
 
     
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(DatabaseMetaDataTypeInfoTest.class);
-    }
 
     public void setUp() throws Exception {
-        super.setUp();
         con = getConnection();
         typeInfoRs = con.getMetaData().getTypeInfo();
     }
 
     public void tearDown() throws Exception {
         typeInfoRs.close();
-        super.tearDown();
     }
 
     /**
@@ -101,7 +100,7 @@ public class DatabaseMetaDataTypeInfoTest extends BaseTestCase {
     public void testNvarcharNormalized() throws Exception {
         while (typeInfoRs.next()) {
             if (typeInfoRs.getString(1).equalsIgnoreCase("nvarchar")) {
-                assertEquals(java.sql.Types.VARCHAR, typeInfoRs.getInt(2));
+                Assert.assertEquals(java.sql.Types.VARCHAR, typeInfoRs.getInt(2));
             }
         }
     }

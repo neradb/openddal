@@ -15,10 +15,23 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.test.BaseTestCase;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
+
+import java.sql.BatchUpdateException;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import org.junit.Test;
 
-import java.sql.*;
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Test for batch updates.
@@ -130,7 +143,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         for (int t : updateCounts) {
             total += t;
         }
-        assertEquals(4, total);
+        Assert.assertEquals(4, total);
         conn.close();
     }
 
@@ -145,7 +158,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         }
         try {
             prep.executeBatch();
-            fail();
+            Assert.fail();
         } catch (BatchUpdateException e) {
             // expected
         }
@@ -156,7 +169,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         conn = getConnection();
         stat = conn.createStatement();
         DatabaseMetaData meta = conn.getMetaData();
-        assertTrue(meta.supportsBatchUpdates());
+        Assert.assertTrue(meta.supportsBatchUpdates());
         stat.executeUpdate("CREATE TABLE TEST(KEY_ID INT PRIMARY KEY,"
                 + "C_NAME VARCHAR(255),PRICE DECIMAL(20,2),TYPE_ID INT)");
         String newName = null;
@@ -220,7 +233,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         // System.out.println("upc="+p.executeUpdate());
 
         trace("updateCount length:" + updateCountLen);
-        assertEquals(3, updateCountLen);
+        Assert.assertEquals(3, updateCountLen);
         String query1 = "SELECT COUNT(*) FROM TEST WHERE TYPE_ID=2";
         String query2 = "SELECT COUNT(*) FROM TEST WHERE TYPE_ID=3";
         String query3 = "SELECT COUNT(*) FROM TEST WHERE TYPE_ID=4";
@@ -235,7 +248,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         retValue[i++] = rs.getInt(1);
         for (int j = 0; j < updateCount.length; j++) {
             trace("UpdateCount:" + updateCount[j]);
-            assertEquals(updateCount[j], retValue[j]);
+            Assert.assertEquals(updateCount[j], retValue[j]);
         }
     }
 
@@ -253,7 +266,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         int[] updateCount = stat.executeBatch();
         updCountLength = updateCount.length;
         trace("updateCount Length:" + updCountLength);
-        assertEquals(3, updCountLength);
+        Assert.assertEquals(3, updCountLength);
         String query1 = "SELECT COUNT(*) FROM TEST WHERE TYPE_ID=1";
         ResultSet rs = stat.executeQuery(query1);
         rs.next();
@@ -266,7 +279,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         for (int j = 0; j < updateCount.length; j++) {
             trace("Update Count:" + updateCount[j]);
             trace("Returned Value : " + retValue[j]);
-            assertEquals("j:" + j, retValue[j], updateCount[j]);
+            Assert.assertEquals("j:" + j, retValue[j], updateCount[j]);
         }
     }
 
@@ -282,7 +295,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         prep.setInt(1, 4);
         prep.addBatch();
         prep.clearBatch();
-        assertEquals(0, prep.executeBatch().length);
+        Assert.assertEquals(0, prep.executeBatch().length);
     }
 
     private void testClearBatch02() throws SQLException {
@@ -294,7 +307,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         stat.addBatch(sDelCoffee);
         stat.addBatch(sInsCoffee);
         stat.clearBatch();
-        assertEquals(0, stat.executeBatch().length);
+        Assert.assertEquals(0, stat.executeBatch().length);
     }
 
     private void testExecuteBatch01() throws SQLException {
@@ -360,7 +373,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         if (updCountLength == 0) {
             trace("executeBatch does not execute Empty Batch");
         } else {
-            fail("executeBatch");
+            Assert.fail("executeBatch");
         }
     }
 
@@ -381,7 +394,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         if (batchExceptionFlag) {
             trace("select not allowed; correct");
         } else {
-            fail("executeBatch select");
+            Assert.fail("executeBatch select");
         }
     }
 
@@ -416,7 +429,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         for (int j = 0; j < updateCount.length; j++) {
             trace("Update Count : " + updateCount[j]);
             if (updateCount[j] != retValue[j]) {
-                fail("j=" + j + " right:" + retValue[j]);
+                Assert.fail("j=" + j + " right:" + retValue[j]);
             }
         }
     }
@@ -430,7 +443,7 @@ public class BatchUpdatesTestCase extends BaseTestCase {
         if (updCountLength == 0) {
             trace("executeBatch Method does not execute the Empty Batch ");
         } else {
-            fail("executeBatch 0!=" + updCountLength);
+            Assert.fail("executeBatch 0!=" + updCountLength);
         }
     }
 

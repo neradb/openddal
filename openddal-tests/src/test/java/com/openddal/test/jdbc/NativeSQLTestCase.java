@@ -15,15 +15,18 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Random;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 public class NativeSQLTestCase extends BaseTestCase {
 
@@ -80,7 +83,7 @@ public class NativeSQLTestCase extends BaseTestCase {
         testRandom();
         testQuotes();
         conn.close();
-        assertTrue(conn.isClosed());
+        Assert.assertTrue(conn.isClosed());
     }
 
     private void testQuotes() throws SQLException {
@@ -118,7 +121,7 @@ public class NativeSQLTestCase extends BaseTestCase {
             ResultSet rs = stat.executeQuery(sql);
             rs.next();
             String raw = buffRaw.toString();
-            assertEquals(raw, rs.getString(1));
+            Assert.assertEquals(raw, rs.getString(1));
         }
     }
 
@@ -241,7 +244,7 @@ public class NativeSQLTestCase extends BaseTestCase {
         stat.setEscapeProcessing(false);
         assertThrows(ErrorCode.SYNTAX_ERROR_2, stat).
                 execute("CALL {d '2001-01-01'} // this is a test");
-        assertFalse(conn.isClosed());
+        Assert.assertFalse(conn.isClosed());
     }
 
     private void test(String original, String expected) {
@@ -250,9 +253,9 @@ public class NativeSQLTestCase extends BaseTestCase {
         try {
             String result = conn.nativeSQL(original);
             trace("result: <" + result + ">");
-            assertEquals(expected, result);
+            Assert.assertEquals(expected, result);
         } catch (SQLException e) {
-            assertEquals(expected, null);
+            Assert.assertEquals(expected, null);
             assertKnownException(e);
             trace("got exception, good");
         }

@@ -15,11 +15,19 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Savepoint;
+import java.sql.Statement;
+
 import org.junit.Test;
 
-import java.sql.*;
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Tests Statement.cancel
@@ -79,22 +87,22 @@ public class CancelTestCase extends BaseTestCase {
     private void testJdbcQueryTimeout() throws SQLException {
         Connection conn = getConnection();
         Statement stat = conn.createStatement();
-        assertEquals(0, stat.getQueryTimeout());
+        Assert.assertEquals(0, stat.getQueryTimeout());
         stat.setQueryTimeout(1);
-        assertEquals(1, stat.getQueryTimeout());
+        Assert.assertEquals(1, stat.getQueryTimeout());
         Statement s2 = conn.createStatement();
-        assertEquals(1, s2.getQueryTimeout());
+        Assert.assertEquals(1, s2.getQueryTimeout());
         ResultSet rs = s2.executeQuery("SELECT VALUE " +
                 "FROM INFORMATION_SCHEMA.SETTINGS WHERE NAME = 'QUERY_TIMEOUT'");
         rs.next();
-        assertEquals(1000, rs.getInt(1));
+        Assert.assertEquals(1000, rs.getInt(1));
         assertThrows(ErrorCode.STATEMENT_WAS_CANCELED, stat).
                 executeQuery("SELECT MAX(RAND()) " +
                         "FROM SYSTEM_RANGE(1, 100000000)");
         stat.setQueryTimeout(0);
         stat.execute("SET QUERY_TIMEOUT 1100");
         // explicit changes are not detected except, as documented
-        assertEquals(0, stat.getQueryTimeout());
+        Assert.assertEquals(0, stat.getQueryTimeout());
         conn.close();
     }
 

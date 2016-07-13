@@ -15,15 +15,31 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
-import org.junit.Test;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Updatable result set tests.
@@ -50,43 +66,43 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
 
         stat.execute("create table test(id int primary key, name varchar)");
         rs = stat.executeQuery("select * from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         stat.execute("drop table test");
 
         stat.execute("create table test(a int, b int, " +
                 "name varchar, primary key(a, b))");
         rs = stat.executeQuery("select * from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select a, name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         rs = stat.executeQuery("select b, name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         rs = stat.executeQuery("select b, name, a from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         stat.execute("drop table test");
 
         stat.execute("create table test(a int, b int, name varchar)");
         stat.execute("create unique index on test(b, a)");
         rs = stat.executeQuery("select * from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select a, name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         rs = stat.executeQuery("select b, name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         rs = stat.executeQuery("select b, name, a from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         stat.execute("drop table test");
 
         stat.execute("create table test(a int, b int, c int unique, " +
                 "name varchar, primary key(a, b))");
         rs = stat.executeQuery("select * from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select a, name, c from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select b, a, name, c from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         stat.execute("drop table test");
 
         stat.execute("create table test(id int primary key, " +
@@ -95,19 +111,19 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         stat.execute("create unique index on test(i, j)");
         stat.execute("create unique index on test(a, j)");
         rs = stat.executeQuery("select * from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select a, name, b from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select a, name, b from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         rs = stat.executeQuery("select i, b, k, name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         rs = stat.executeQuery("select a, i, name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         rs = stat.executeQuery("select b, i, k, name from test");
-        assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
         rs = stat.executeQuery("select a, k, j, name from test");
-        assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
+        Assert.assertEquals(ResultSet.CONCUR_UPDATABLE, rs.getConcurrency());
         stat.execute("drop table test");
 
         conn.close();
@@ -127,19 +143,19 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         ResultSet rs = stat.executeQuery(
                 "SELECT object,id,number FROM object_index WHERE id =1");
         rs.next();
-        assertEquals("hello", rs.getObject(1).toString());
+        Assert.assertEquals("hello", rs.getObject(1).toString());
         stat = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY,
                 ResultSet.CONCUR_UPDATABLE);
         rs = stat.executeQuery("SELECT object,id,number FROM object_index WHERE id =1");
         rs.next();
-        assertEquals("hello", rs.getObject(1).toString());
+        Assert.assertEquals("hello", rs.getObject(1).toString());
         rs.updateInt(2, 1);
         rs.updateRow();
         rs.close();
         stat = conn.createStatement();
         rs = stat.executeQuery("SELECT object,id,number FROM object_index WHERE id =1");
         rs.next();
-        assertEquals("hello", rs.getObject(1).toString());
+        Assert.assertEquals("hello", rs.getObject(1).toString());
         conn.close();
     }
 
@@ -163,11 +179,11 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         rs.updateRow();
         rs.beforeFirst();
         rs.next();
-        assertEquals(10, rs.getInt(1));
-        assertEquals("Hello", rs.getString(2));
+        Assert.assertEquals(10, rs.getInt(1));
+        Assert.assertEquals("Hello", rs.getString(2));
         rs.next();
-        assertEquals(2, rs.getInt(1));
-        assertEquals("Welt", rs.getString(2));
+        Assert.assertEquals(2, rs.getInt(1));
+        Assert.assertEquals("Welt", rs.getString(2));
 
         assertFalse(rs.isClosed());
         rs.close();
@@ -187,75 +203,75 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
 
         assertTrue(rs.isBeforeFirst());
         assertFalse(rs.isAfterLast());
-        assertEquals(0, rs.getRow());
+        Assert.assertEquals(0, rs.getRow());
 
         rs.next();
         assertFalse(rs.isBeforeFirst());
         assertFalse(rs.isAfterLast());
-        assertEquals(1, rs.getInt(1));
-        assertEquals(1, rs.getRow());
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getRow());
 
         rs.next();
         assertThrows(ErrorCode.RESULT_SET_READONLY, rs).insertRow();
         assertFalse(rs.isBeforeFirst());
         assertFalse(rs.isAfterLast());
-        assertEquals(2, rs.getInt(1));
-        assertEquals(2, rs.getRow());
+        Assert.assertEquals(2, rs.getInt(1));
+        Assert.assertEquals(2, rs.getRow());
 
         rs.next();
         assertFalse(rs.isBeforeFirst());
         assertFalse(rs.isAfterLast());
-        assertEquals(3, rs.getInt(1));
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(3, rs.getRow());
 
         assertFalse(rs.next());
         assertFalse(rs.isBeforeFirst());
         assertTrue(rs.isAfterLast());
-        assertEquals(0, rs.getRow());
+        Assert.assertEquals(0, rs.getRow());
 
         assertTrue(rs.first());
-        assertEquals(1, rs.getInt(1));
-        assertEquals(1, rs.getRow());
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals(1, rs.getRow());
 
         assertTrue(rs.last());
-        assertEquals(3, rs.getInt(1));
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(3, rs.getRow());
 
         assertTrue(rs.relative(0));
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getRow());
 
         assertTrue(rs.relative(-1));
-        assertEquals(2, rs.getRow());
+        Assert.assertEquals(2, rs.getRow());
 
         assertTrue(rs.relative(1));
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getRow());
 
         assertFalse(rs.relative(100));
         assertTrue(rs.isAfterLast());
 
         assertFalse(rs.absolute(0));
-        assertEquals(0, rs.getRow());
+        Assert.assertEquals(0, rs.getRow());
 
         assertTrue(rs.absolute(1));
-        assertEquals(1, rs.getRow());
+        Assert.assertEquals(1, rs.getRow());
 
         assertTrue(rs.absolute(2));
-        assertEquals(2, rs.getRow());
+        Assert.assertEquals(2, rs.getRow());
 
         assertTrue(rs.absolute(3));
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getRow());
 
         assertFalse(rs.absolute(4));
-        assertEquals(0, rs.getRow());
+        Assert.assertEquals(0, rs.getRow());
 
         // allowed for compatibility
         assertFalse(rs.absolute(0));
 
         assertTrue(rs.absolute(3));
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getRow());
 
         assertTrue(rs.absolute(-1));
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getRow());
 
         assertFalse(rs.absolute(4));
         assertTrue(rs.isAfterLast());
@@ -264,10 +280,10 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         assertTrue(rs.isAfterLast());
 
         assertTrue(rs.previous());
-        assertEquals(3, rs.getRow());
+        Assert.assertEquals(3, rs.getRow());
 
         assertTrue(rs.previous());
-        assertEquals(2, rs.getRow());
+        Assert.assertEquals(2, rs.getRow());
 
         conn.close();
     }
@@ -282,22 +298,22 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
                 + "O_I INT, SH SMALLINT, CL CLOB, BL BLOB)");
         ResultSet rs = stat.executeQuery("SELECT * FROM TEST");
         ResultSetMetaData meta = rs.getMetaData();
-        assertEquals("java.lang.Integer", meta.getColumnClassName(1));
-        assertEquals("java.lang.String", meta.getColumnClassName(2));
-        assertEquals("java.math.BigDecimal", meta.getColumnClassName(3));
-        assertEquals("java.lang.Boolean", meta.getColumnClassName(4));
-        assertEquals("java.lang.Byte", meta.getColumnClassName(5));
-        assertEquals("[B", meta.getColumnClassName(6));
-        assertEquals("java.sql.Date", meta.getColumnClassName(7));
-        assertEquals("java.sql.Time", meta.getColumnClassName(8));
-        assertEquals("java.sql.Timestamp", meta.getColumnClassName(9));
-        assertEquals("java.lang.Double", meta.getColumnClassName(10));
-        assertEquals("java.lang.Float", meta.getColumnClassName(11));
-        assertEquals("java.lang.Long", meta.getColumnClassName(12));
-        assertEquals("java.lang.Integer", meta.getColumnClassName(13));
-        assertEquals("java.lang.Short", meta.getColumnClassName(14));
-        assertEquals("java.sql.Clob", meta.getColumnClassName(15));
-        assertEquals("java.sql.Blob", meta.getColumnClassName(16));
+        Assert.assertEquals("java.lang.Integer", meta.getColumnClassName(1));
+        Assert.assertEquals("java.lang.String", meta.getColumnClassName(2));
+        Assert.assertEquals("java.math.BigDecimal", meta.getColumnClassName(3));
+        Assert.assertEquals("java.lang.Boolean", meta.getColumnClassName(4));
+        Assert.assertEquals("java.lang.Byte", meta.getColumnClassName(5));
+        Assert.assertEquals("[B", meta.getColumnClassName(6));
+        Assert.assertEquals("java.sql.Date", meta.getColumnClassName(7));
+        Assert.assertEquals("java.sql.Time", meta.getColumnClassName(8));
+        Assert.assertEquals("java.sql.Timestamp", meta.getColumnClassName(9));
+        Assert.assertEquals("java.lang.Double", meta.getColumnClassName(10));
+        Assert.assertEquals("java.lang.Float", meta.getColumnClassName(11));
+        Assert.assertEquals("java.lang.Long", meta.getColumnClassName(12));
+        Assert.assertEquals("java.lang.Integer", meta.getColumnClassName(13));
+        Assert.assertEquals("java.lang.Short", meta.getColumnClassName(14));
+        Assert.assertEquals("java.sql.Clob", meta.getColumnClassName(15));
+        Assert.assertEquals("java.sql.Blob", meta.getColumnClassName(16));
         rs.moveToInsertRow();
         rs.updateInt(1, 0);
         rs.updateNull(2);
@@ -466,33 +482,33 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         assertTrue(rs.getLong(12) == 0 && !rs.wasNull());
         assertTrue(rs.getObject(13) == null && rs.wasNull());
         assertTrue(rs.getShort(14) == 0 && !rs.wasNull());
-        assertEquals("test", rs.getString(15));
-        assertEquals(new byte[]{(byte) 0xff, 0x00}, rs.getBytes(16));
+        Assert.assertEquals("test", rs.getString(15));
+        Assert.assertEquals(new byte[]{(byte) 0xff, 0x00}, rs.getBytes(16));
 
         rs.next();
         assertTrue(rs.getInt(1) == 2);
-        assertEquals("+", rs.getString(2));
-        assertEquals("1.20", rs.getBigDecimal(3).toString());
+        Assert.assertEquals("+", rs.getString(2));
+        Assert.assertEquals("1.20", rs.getBigDecimal(3).toString());
         assertTrue(rs.getBoolean(4));
         assertTrue((rs.getByte(5) & 0xff) == 0xff);
-        assertEquals(new byte[]{0x00, (byte) 0xff}, rs.getBytes(6));
-        assertEquals("2005-09-21", rs.getDate(7).toString());
-        assertEquals("21:46:28", rs.getTime(8).toString());
-        assertEquals("2005-09-21 21:47:09.567890123", rs.getTimestamp(9).toString());
+        Assert.assertEquals(new byte[]{0x00, (byte) 0xff}, rs.getBytes(6));
+        Assert.assertEquals("2005-09-21", rs.getDate(7).toString());
+        Assert.assertEquals("21:46:28", rs.getTime(8).toString());
+        Assert.assertEquals("2005-09-21 21:47:09.567890123", rs.getTimestamp(9).toString());
         assertTrue(rs.getDouble(10) == 1.725);
         assertTrue(rs.getFloat(11) == (float) 2.5);
         assertTrue(rs.getLong(12) == Long.MAX_VALUE);
-        assertEquals(10, ((Integer) rs.getObject(13)).intValue());
+        Assert.assertEquals(10, ((Integer) rs.getObject(13)).intValue());
         assertTrue(rs.getShort(14) == Short.MIN_VALUE);
         // auml ouml uuml
-        assertEquals("\u00ef\u00f6\u00fc", rs.getString(15));
-        assertEquals(new byte[]{(byte) 0xab, 0x12}, rs.getBytes(16));
+        Assert.assertEquals("\u00ef\u00f6\u00fc", rs.getString(15));
+        Assert.assertEquals(new byte[]{(byte) 0xab, 0x12}, rs.getBytes(16));
 
         for (int i = 3; i <= 14; i++) {
             rs.next();
-            assertEquals(i, rs.getInt(1));
-            assertEquals("\u00ef\u00f6\u00fc", rs.getString(15));
-            assertEquals(new byte[]{(byte) 0xab, 0x12}, rs.getBytes(16));
+            Assert.assertEquals(i, rs.getInt(1));
+            Assert.assertEquals("\u00ef\u00f6\u00fc", rs.getString(15));
+            Assert.assertEquals(new byte[]{(byte) 0xab, 0x12}, rs.getBytes(16));
         }
         assertFalse(rs.next());
 
@@ -514,11 +530,11 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         ResultSet rs;
         rs = stat.executeQuery("SELECT * FROM TEST ORDER BY ID");
         rs.next();
-        assertEquals(0, rs.getInt(1));
+        Assert.assertEquals(0, rs.getInt(1));
         rs.moveToInsertRow();
         rs.updateInt(1, 100);
         rs.moveToCurrentRow();
-        assertEquals(0, rs.getInt(1));
+        Assert.assertEquals(0, rs.getInt(1));
 
         rs = stat.executeQuery("SELECT * FROM TEST");
         int j = max;
@@ -556,14 +572,14 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         while (rs.next()) {
             int id = rs.getInt(1);
             String name = rs.getString(2);
-            assertEquals(0, id % 2);
+            Assert.assertEquals(0, id % 2);
             if (id >= max) {
-                assertEquals("Inserted " + id, rs.getString(2));
+                Assert.assertEquals("Inserted " + id, rs.getString(2));
             } else {
                 if (id % 4 == 0) {
-                    assertEquals("Updated Hello" + id + "+", rs.getString(2));
+                    Assert.assertEquals("Updated Hello" + id + "+", rs.getString(2));
                 } else {
-                    assertEquals("Updated Hello" + id, rs.getString(2));
+                    Assert.assertEquals("Updated Hello" + id, rs.getString(2));
                 }
             }
             trace("id=" + id + " name=" + name);
@@ -605,7 +621,7 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
             error = true;
         }
         ResultSet rs = stat.executeQuery("SELECT * FROM TEST");
-        assertEquals(type, rs.getType());
+        Assert.assertEquals(type, rs.getType());
 
         assertState(rs, rows > 0, false, false, false);
         for (int i = 0; i < rows; i++) {
@@ -630,7 +646,7 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         }
         try {
             boolean valid = rs.first();
-            assertEquals(rows > 0, valid);
+            Assert.assertEquals(rows > 0, valid);
             if (valid) {
                 assertState(rs, false, true, rows == 1, rows == 0);
             }
@@ -641,7 +657,7 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
         }
         try {
             boolean valid = rs.last();
-            assertEquals(rows > 0, valid);
+            Assert.assertEquals(rows > 0, valid);
             if (valid) {
                 assertState(rs, false, rows == 1, true, rows == 0);
             }
@@ -654,10 +670,10 @@ public class UpdatableResultSetTestCase extends BaseTestCase {
 
     private void assertState(ResultSet rs, boolean beforeFirst,
                              boolean first, boolean last, boolean afterLast) throws SQLException {
-        assertEquals(beforeFirst, rs.isBeforeFirst());
-        assertEquals(first, rs.isFirst());
-        assertEquals(last, rs.isLast());
-        assertEquals(afterLast, rs.isAfterLast());
+        Assert.assertEquals(beforeFirst, rs.isBeforeFirst());
+        Assert.assertEquals(first, rs.isFirst());
+        Assert.assertEquals(last, rs.isLast());
+        Assert.assertEquals(afterLast, rs.isAfterLast());
     }
 
 }

@@ -15,11 +15,21 @@
  */
 package com.openddal.test.sql.ddl;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.test.BaseTestCase;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
 import org.junit.Test;
 
-import java.sql.*;
+import com.openddal.message.ErrorCode;
+import com.openddal.test.BaseTestCase;
+
+import junit.framework.Assert;
 
 /**
  * Test ALTER statements.
@@ -57,7 +67,7 @@ public class AlterTableTestCase extends BaseTestCase {
         stat.execute("update test set name='World'");
         ResultSet rs = stat.executeQuery("select * from test");
         rs.next();
-        assertEquals(3, rs.getInt(1));
+        Assert.assertEquals(3, rs.getInt(1));
         stat.execute("drop table test");
     }
 
@@ -167,9 +177,9 @@ public class AlterTableTestCase extends BaseTestCase {
         stat.execute("insert into t values (null, null)");
         ResultSet rs = stat.executeQuery("select id from t order by id");
         assertTrue(rs.next());
-        assertEquals(5, rs.getInt(1));
+        Assert.assertEquals(5, rs.getInt(1));
         assertTrue(rs.next());
-        assertEquals(10, rs.getInt(1));
+        Assert.assertEquals(10, rs.getInt(1));
         assertFalse(rs.next());
         stat.execute("drop table t");
     }
@@ -200,9 +210,9 @@ public class AlterTableTestCase extends BaseTestCase {
         DatabaseMetaData dbMeta = conn.getMetaData();
         ResultSet rs = dbMeta.getColumns(null, null, "T", null);
         assertTrue(rs.next());
-        assertEquals("Y", rs.getString("COLUMN_NAME"));
+        Assert.assertEquals("Y", rs.getString("COLUMN_NAME"));
         assertTrue(rs.next());
-        assertEquals("X", rs.getString("COLUMN_NAME"));
+        Assert.assertEquals("X", rs.getString("COLUMN_NAME"));
         assertFalse(rs.next());
         stat.execute("drop table T");
     }
@@ -214,9 +224,9 @@ public class AlterTableTestCase extends BaseTestCase {
         DatabaseMetaData dbMeta = conn.getMetaData();
         ResultSet rs = dbMeta.getColumns(null, null, "T", null);
         assertTrue(rs.next());
-        assertEquals("X", rs.getString("COLUMN_NAME"));
+        Assert.assertEquals("X", rs.getString("COLUMN_NAME"));
         assertTrue(rs.next());
-        assertEquals("Y", rs.getString("COLUMN_NAME"));
+        Assert.assertEquals("Y", rs.getString("COLUMN_NAME"));
         assertFalse(rs.next());
         stat.execute("drop table T");
     }

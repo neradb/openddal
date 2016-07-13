@@ -15,18 +15,31 @@
  */
 package com.openddal.test.jdbc;
 
-import com.openddal.message.ErrorCode;
-import com.openddal.result.SimpleResultSet;
-import com.openddal.test.BaseTestCase;
-import com.openddal.util.IOUtils;
-import org.junit.Test;
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
 
 import java.io.ByteArrayInputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigDecimal;
-import java.sql.*;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.util.Collections;
+
+import org.junit.Test;
+
+import com.openddal.message.ErrorCode;
+import com.openddal.result.SimpleResultSet;
+import com.openddal.test.BaseTestCase;
+import com.openddal.util.IOUtils;
+
+import junit.framework.Assert;
 
 /**
  * Tests for the CallableStatement class.
@@ -89,7 +102,7 @@ public class CallableStatementTestCase extends BaseTestCase {
             cs.registerOutParameter(1, Types.BIGINT);
             cs.execute();
             long id = cs.getLong(1);
-            assertEquals(1, id);
+            Assert.assertEquals(1, id);
             cs.close();
         }
         conn.createStatement().execute(
@@ -146,7 +159,7 @@ public class CallableStatementTestCase extends BaseTestCase {
         call.execute();
         rs = call.getResultSet();
         rs.next();
-        assertEquals(10, rs.getInt(1));
+        Assert.assertEquals(10, rs.getInt(1));
     }
 
     private void testPreparedStatement(Connection conn) throws SQLException {
@@ -155,7 +168,7 @@ public class CallableStatementTestCase extends BaseTestCase {
         call = conn.prepareCall("create table test(id int)");
         call.executeUpdate();
         call = conn.prepareCall("insert into test values(1), (2)");
-        assertEquals(2, call.executeUpdate());
+        Assert.assertEquals(2, call.executeUpdate());
         call = conn.prepareCall("drop table test");
         call.executeUpdate();
     }
@@ -166,57 +179,57 @@ public class CallableStatementTestCase extends BaseTestCase {
         call.setLong(2, 1);
         call.registerOutParameter(1, Types.BIGINT);
         call.execute();
-        assertEquals(1, call.getLong(1));
-        assertEquals(1, call.getByte(1));
-        assertEquals(1, ((Long) call.getObject(1)).longValue());
+        Assert.assertEquals(1, call.getLong(1));
+        Assert.assertEquals(1, call.getByte(1));
+        Assert.assertEquals(1, ((Long) call.getObject(1)).longValue());
         assertFalse(call.wasNull());
 
         call.setFloat(2, 1.1f);
         call.registerOutParameter(1, Types.REAL);
         call.execute();
-        assertEquals(1.1f, call.getFloat(1));
+        Assert.assertEquals(1.1f, call.getFloat(1));
 
         call.setDouble(2, Math.PI);
         call.registerOutParameter(1, Types.DOUBLE);
         call.execute();
-        assertEquals(Math.PI, call.getDouble(1));
+        Assert.assertEquals(Math.PI, call.getDouble(1));
 
         call.setBytes(2, new byte[11]);
         call.registerOutParameter(1, Types.BINARY);
         call.execute();
-        assertEquals(11, call.getBytes(1).length);
-        assertEquals(11, call.getBlob(1).length());
+        Assert.assertEquals(11, call.getBytes(1).length);
+        Assert.assertEquals(11, call.getBlob(1).length());
 
         call.setDate(2, java.sql.Date.valueOf("2000-01-01"));
         call.registerOutParameter(1, Types.DATE);
         call.execute();
-        assertEquals("2000-01-01", call.getDate(1).toString());
+        Assert.assertEquals("2000-01-01", call.getDate(1).toString());
 
         call.setTime(2, java.sql.Time.valueOf("01:02:03"));
         call.registerOutParameter(1, Types.TIME);
         call.execute();
-        assertEquals("01:02:03", call.getTime(1).toString());
+        Assert.assertEquals("01:02:03", call.getTime(1).toString());
 
         call.setTimestamp(2, java.sql.Timestamp.valueOf(
                 "2001-02-03 04:05:06.789"));
         call.registerOutParameter(1, Types.TIMESTAMP);
         call.execute();
-        assertEquals("2001-02-03 04:05:06.789", call.getTimestamp(1).toString());
+        Assert.assertEquals("2001-02-03 04:05:06.789", call.getTimestamp(1).toString());
 
         call.setBoolean(2, true);
         call.registerOutParameter(1, Types.BIT);
         call.execute();
-        assertEquals(true, call.getBoolean(1));
+        Assert.assertEquals(true, call.getBoolean(1));
 
         call.setShort(2, (short) 123);
         call.registerOutParameter(1, Types.SMALLINT);
         call.execute();
-        assertEquals(123, call.getShort(1));
+        Assert.assertEquals(123, call.getShort(1));
 
         call.setBigDecimal(2, BigDecimal.TEN);
         call.registerOutParameter(1, Types.DECIMAL);
         call.execute();
-        assertEquals("10", call.getBigDecimal(1).toString());
+        Assert.assertEquals("10", call.getBigDecimal(1).toString());
     }
 
     private void testCallWithResult(Connection conn) throws SQLException {
@@ -227,9 +240,9 @@ public class CallableStatementTestCase extends BaseTestCase {
             call.setInt(2, -3);
             call.registerOutParameter(1, Types.INTEGER);
             call.execute();
-            assertEquals(3, call.getInt(1));
+            Assert.assertEquals(3, call.getInt(1));
             call.executeUpdate();
-            assertEquals(3, call.getInt(1));
+            Assert.assertEquals(3, call.getInt(1));
         }
     }
 
@@ -247,8 +260,8 @@ public class CallableStatementTestCase extends BaseTestCase {
                 ResultSet.CONCUR_READ_ONLY);
         rs = call.executeQuery();
         rs.next();
-        assertEquals(1, rs.getInt(1));
-        assertEquals("Hello", rs.getString(2));
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals("Hello", rs.getString(2));
         assertFalse(rs.next());
         call = conn.prepareCall("SELECT * FROM TEST",
                 ResultSet.TYPE_FORWARD_ONLY,
@@ -256,8 +269,8 @@ public class CallableStatementTestCase extends BaseTestCase {
                 ResultSet.HOLD_CURSORS_OVER_COMMIT);
         rs = call.executeQuery();
         rs.next();
-        assertEquals(1, rs.getInt(1));
-        assertEquals("Hello", rs.getString(2));
+        Assert.assertEquals(1, rs.getInt(1));
+        Assert.assertEquals("Hello", rs.getString(2));
         assertFalse(rs.next());
         stat.execute("CREATE ALIAS testCall FOR \"" +
                 getClass().getName() + ".testCall\"");
@@ -280,45 +293,45 @@ public class CallableStatementTestCase extends BaseTestCase {
         call.registerOutParameter(4, Types.TIMESTAMP);
         call.executeUpdate();
 
-        assertEquals(t + 1, call.getTimestamp(3).getTime());
-        assertEquals(t + 1, call.getTimestamp("C").getTime());
+        Assert.assertEquals(t + 1, call.getTimestamp(3).getTime());
+        Assert.assertEquals(t + 1, call.getTimestamp("C").getTime());
 
-        assertEquals("2001-02-03 10:20:30.0", call.getTimestamp(4).toString());
-        assertEquals("2001-02-03 10:20:30.0", call.getTimestamp("D").toString());
-        assertEquals("10:20:30", call.getTime(4).toString());
-        assertEquals("10:20:30", call.getTime("D").toString());
-        assertEquals("2001-02-03", call.getDate(4).toString());
-        assertEquals("2001-02-03", call.getDate("D").toString());
+        Assert.assertEquals("2001-02-03 10:20:30.0", call.getTimestamp(4).toString());
+        Assert.assertEquals("2001-02-03 10:20:30.0", call.getTimestamp("D").toString());
+        Assert.assertEquals("10:20:30", call.getTime(4).toString());
+        Assert.assertEquals("10:20:30", call.getTime("D").toString());
+        Assert.assertEquals("2001-02-03", call.getDate(4).toString());
+        Assert.assertEquals("2001-02-03", call.getDate("D").toString());
 
-        assertEquals(100, call.getInt(1));
-        assertEquals(100, call.getInt("A"));
-        assertEquals(100, call.getLong(1));
-        assertEquals(100, call.getLong("A"));
-        assertEquals("100", call.getBigDecimal(1).toString());
-        assertEquals("100", call.getBigDecimal("A").toString());
-        assertEquals(100, call.getFloat(1));
-        assertEquals(100, call.getFloat("A"));
-        assertEquals(100, call.getDouble(1));
-        assertEquals(100, call.getDouble("A"));
-        assertEquals(100, call.getByte(1));
-        assertEquals(100, call.getByte("A"));
-        assertEquals(100, call.getShort(1));
-        assertEquals(100, call.getShort("A"));
+        Assert.assertEquals(100, call.getInt(1));
+        Assert.assertEquals(100, call.getInt("A"));
+        Assert.assertEquals(100, call.getLong(1));
+        Assert.assertEquals(100, call.getLong("A"));
+        Assert.assertEquals("100", call.getBigDecimal(1).toString());
+        Assert.assertEquals("100", call.getBigDecimal("A").toString());
+        Assert.assertEquals(100, call.getFloat(1));
+        Assert.assertEquals(100, call.getFloat("A"));
+        Assert.assertEquals(100, call.getDouble(1));
+        Assert.assertEquals(100, call.getDouble("A"));
+        Assert.assertEquals(100, call.getByte(1));
+        Assert.assertEquals(100, call.getByte("A"));
+        Assert.assertEquals(100, call.getShort(1));
+        Assert.assertEquals(100, call.getShort("A"));
         assertTrue(call.getBoolean(1));
         assertTrue(call.getBoolean("A"));
 
-        assertEquals("ABC", call.getString(2));
+        Assert.assertEquals("ABC", call.getString(2));
         Reader r = call.getCharacterStream(2);
-        assertEquals("ABC", IOUtils.readStringAndClose(r, -1));
+        Assert.assertEquals("ABC", IOUtils.readStringAndClose(r, -1));
         r = call.getNCharacterStream(2);
-        assertEquals("ABC", IOUtils.readStringAndClose(r, -1));
-        assertEquals("ABC", call.getString("B"));
-        assertEquals("ABC", call.getNString(2));
-        assertEquals("ABC", call.getNString("B"));
-        assertEquals("ABC", call.getClob(2).getSubString(1, 3));
-        assertEquals("ABC", call.getClob("B").getSubString(1, 3));
-        assertEquals("ABC", call.getNClob(2).getSubString(1, 3));
-        assertEquals("ABC", call.getNClob("B").getSubString(1, 3));
+        Assert.assertEquals("ABC", IOUtils.readStringAndClose(r, -1));
+        Assert.assertEquals("ABC", call.getString("B"));
+        Assert.assertEquals("ABC", call.getNString(2));
+        Assert.assertEquals("ABC", call.getNString("B"));
+        Assert.assertEquals("ABC", call.getClob(2).getSubString(1, 3));
+        Assert.assertEquals("ABC", call.getClob("B").getSubString(1, 3));
+        Assert.assertEquals("ABC", call.getNClob(2).getSubString(1, 3));
+        Assert.assertEquals("ABC", call.getNClob("B").getSubString(1, 3));
 
         try {
             call.getString(100);
@@ -342,48 +355,48 @@ public class CallableStatementTestCase extends BaseTestCase {
         call.setCharacterStream("B",
                 new StringReader("xyz"));
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setCharacterStream("B",
                 new StringReader("xyz-"), 3);
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setCharacterStream("B",
                 new StringReader("xyz-"), 3L);
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setAsciiStream("B",
                 new ByteArrayInputStream("xyz".getBytes("UTF-8")));
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setAsciiStream("B",
                 new ByteArrayInputStream("xyz-".getBytes("UTF-8")), 3);
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setAsciiStream("B",
                 new ByteArrayInputStream("xyz-".getBytes("UTF-8")), 3L);
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
 
         call.setClob("B", new StringReader("xyz"));
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setClob("B", new StringReader("xyz-"), 3);
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
 
         call.setNClob("B", new StringReader("xyz"));
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setNClob("B", new StringReader("xyz-"), 3);
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
 
         call.setString("B", "xyz");
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
         call.setNString("B", "xyz");
         call.executeUpdate();
-        assertEquals("XYZ", call.getString("B"));
+        Assert.assertEquals("XYZ", call.getString("B"));
 
         // test for exceptions after closing
         call.close();
