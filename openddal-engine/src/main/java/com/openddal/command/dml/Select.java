@@ -297,14 +297,24 @@ public class Select extends Query {
         }
     }
 
-    private void queryQuick(int columnCount, ResultTarget result) {
-        //lookupCursor.
-        Value[] row = new Value[columnCount];
-        for (int i = 0; i < columnCount; i++) {
-            Expression expr = expressions.get(i);
-            row[i] = expr.getValue(session);
+    private void queryQuick(int columnCount, ResultTarget result, long limitRows) {
+        int rowNumber = 0;
+        setCurrentRowNumber(0);
+        lookupCursor.query();
+        while (lookupCursor.next()) {
+            setCurrentRowNumber(rowNumber + 1);
+            Row searchRow = lookupCursor.get();
+            Value[] row = new Value[columnCount];
+            for (int i = 0; i < columnCount; i++) {
+                row[i] = searchRow.getValue(i);
+            }
+            result.addRow(row);
+            rowNumber++;
+            if (sort == null && limitRows > 0 && result.getRowCount() >= limitRows) {
+                break;
+            }
         }
-        result.addRow(row);
+        
     }
 
     private void queryGroupQuick(int columnCount, ResultTarget result) {
@@ -375,7 +385,7 @@ public class Select extends Query {
                 if (isGroupQuery) {
                     queryGroupQuick(columnCount, to);
                 } else {
-                    queryQuick(columnCount, to);
+                    queryQuick(columnCount, to, limitRows);
                 }
             } else if (isGroupQuery) {
                 queryGroup(columnCount, result);
@@ -675,6 +685,15 @@ public class Select extends Query {
                 e.setEvaluatable(f, true);
             }
         }
+    }
+    
+
+    @Override
+    public String explainPlan() {
+        if(lookupCursor != null) {
+            return lookupCursor.explain();
+        }
+        return "cross node join";
     }
 
     public void setHaving(Expression having) {

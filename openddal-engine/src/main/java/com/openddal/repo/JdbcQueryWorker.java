@@ -52,7 +52,7 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
             opendConnection = doGetConnection(optional);
 
             if (trace.isDebugEnabled()) {
-                trace.debug("{0} Preparing: {};", shardName, sql);
+                trace.debug("{0} Preparing: {1};", shardName, sql);
             }
             opendStatement = opendConnection.prepareStatement(sql);
             applyQueryTimeout(opendStatement);

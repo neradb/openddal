@@ -20,6 +20,7 @@ import com.openddal.command.dml.Merge;
 import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.Update;
+import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.excutor.works.BatchUpdateWorker;
@@ -41,8 +42,10 @@ public class JdbcWorkerFactory implements WorkerFactory {
 
     @Override
     public QueryWorker createQueryWorker(Select select, ObjectNode node,
-            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
-        SQLTranslated translated = repo.getSQLTranslator().translate(select, node, consistencyTableNodes);
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes, Expression[] rewriteCols,
+            Integer limit, Integer offset) {
+        SQLTranslated translated = repo.getSQLTranslator().translate(select, node, consistencyTableNodes, rewriteCols,
+                limit, offset);
         JdbcQueryWorker handler = new JdbcQueryWorker(select.getSession(), node.getShardName(), translated.sql,
                 translated.params);
         return handler;

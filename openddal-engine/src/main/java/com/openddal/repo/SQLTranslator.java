@@ -30,6 +30,7 @@ import com.openddal.command.dml.Merge;
 import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.Update;
+import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.result.Row;
 import com.openddal.route.rule.GroupObjectNode;
@@ -43,10 +44,15 @@ public interface SQLTranslator {
 
     String identifier(String identifier);
 
-    SQLTranslated translate(Select prepared, ObjectNode node,
-            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
+    SQLTranslated translate(Select select, ObjectNode executionOn,
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes, Expression[] exprList, Integer limit,
+            Integer offset);
 
     SQLTranslated translate(Select prepared, GroupObjectNode node,
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes, Expression[] selectCols, Integer limit,
+            Integer offset);
+
+    SQLTranslated translate(Select prepared, ObjectNode node,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes);
 
     SQLTranslated translate(CreateTable prepared, ObjectNode node, ObjectNode refNode);
@@ -65,11 +71,11 @@ public interface SQLTranslator {
 
     SQLTranslated translate(Delete delete, ObjectNode node);
 
-    SQLTranslated translate(Insert insert, ObjectNode node, Row ... rows);
-    
-    SQLTranslated translate(Replace replace, ObjectNode node, Row ... rows);
-    
-    SQLTranslated translate(Merge merge, ObjectNode node, Row ... rows);
+    SQLTranslated translate(Insert insert, ObjectNode node, Row... rows);
+
+    SQLTranslated translate(Replace replace, ObjectNode node, Row... rows);
+
+    SQLTranslated translate(Merge merge, ObjectNode node, Row... rows);
 
     SQLTranslated translate(Update update, ObjectNode node, Row row);
 

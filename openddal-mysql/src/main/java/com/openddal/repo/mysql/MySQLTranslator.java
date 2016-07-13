@@ -38,6 +38,7 @@ import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
+import com.openddal.value.ValueInt;
 import com.openddal.value.ValueNull;
 
 /**
@@ -58,18 +59,19 @@ public class MySQLTranslator implements SQLTranslator {
     public String identifier(String identifier) {
         return database.identifier(identifier);
     }
-
+    
     /**
      * @see http://dev.mysql.com/doc/refman/5.7/en/select.html
      */
     @Override
     public SQLTranslated translate(Select select, ObjectNode executionOn,
-            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes, Expression[] selectCols, Integer limit, Integer offset) {
+
         // can not use the field sqlStatement because the parameter
         // indexes may be incorrect: ? may be in fact ?2 for a subquery
         // but indexes may be set manually as well
         if (executionOn instanceof GroupObjectNode) {
-            return translate(select, (GroupObjectNode) executionOn, consistencyTableNodes);
+            return translate(select, (GroupObjectNode) executionOn, consistencyTableNodes, selectCols, limit, offset);
         }
         Map<TableFilter, ObjectNode> nodeMapping = consistencyTableNodes.get(executionOn);
         List<Value> params = New.arrayList(10);
@@ -79,11 +81,11 @@ public class MySQLTranslator implements SQLTranslator {
         if (select.isDistinct()) {
             buff.append(" DISTINCT");
         }
-        int visibleColumnCount = select.getColumnCount();
+        int visibleColumnCount = selectCols.length;
         for (int i = 0; i < visibleColumnCount; i++) {
             buff.appendExceptFirst(",");
             buff.append(' ');
-            buff.append(exprList[i].getSQL());
+            buff.append(selectCols[i].getPreparedSQL(select.getSession(), params));
         }
         buff.append(" FROM ");
         TableFilter filter = select.getTopTableFilter();
@@ -108,7 +110,8 @@ public class MySQLTranslator implements SQLTranslator {
         }
         Expression condition = select.getCondition();
         if (condition != null) {
-            buff.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
+            buff.append(" WHERE ").append(
+                    StringUtils.unEnclose(condition.getPreparedSQL(select.getSession(), params)));
         }
         int[] groupIndex = select.getGroupIndex();
         if (groupIndex != null) {
@@ -118,7 +121,7 @@ public class MySQLTranslator implements SQLTranslator {
                 Expression g = exprList[gi];
                 g = g.getNonAliasExpression();
                 buff.appendExceptFirst(", ");
-                buff.append(StringUtils.unEnclose(g.getSQL()));
+                buff.append(StringUtils.unEnclose(g.getPreparedSQL(select.getSession(), params)));
             }
         }
         ArrayList<Expression> group = select.getGroupBy();
@@ -127,7 +130,7 @@ public class MySQLTranslator implements SQLTranslator {
             buff.resetCount();
             for (Expression g : group) {
                 buff.appendExceptFirst(", ");
-                buff.append(StringUtils.unEnclose(g.getSQL()));
+                buff.append(StringUtils.unEnclose(g.getPreparedSQL(select.getSession(), params)));
             }
         }
         Expression having = select.getHaving();
@@ -137,21 +140,21 @@ public class MySQLTranslator implements SQLTranslator {
             // in this case the query is not run directly, just getPlanSQL is
             // called
             Expression h = having;
-            buff.append(" HAVING ").append(StringUtils.unEnclose(h.getSQL()));
+            buff.append(" HAVING ").append(StringUtils.unEnclose(h.getPreparedSQL(select.getSession(), params)));
         } else if (havingIndex >= 0) {
             Expression h = exprList[havingIndex];
-            buff.append(" HAVING ").append(StringUtils.unEnclose(h.getSQL()));
+            buff.append(" HAVING ").append(StringUtils.unEnclose(h.getPreparedSQL(select.getSession(), params)));
         }
         SortOrder sort = select.getSortOrder();
         if (sort != null) {
             buff.append(" ORDER BY ").append(sort.getSQL(exprList, visibleColumnCount));
         }
-        Expression limitExpr = select.getLimit();
-        Expression offsetExpr = select.getOffset();
-        if (limitExpr != null) {
-            buff.append(" LIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
-            if (offsetExpr != null) {
-                buff.append(" OFFSET ").append(StringUtils.unEnclose(offsetExpr.getSQL()));
+        if (limit != null) {
+            buff.append(" LIMIT ").append("?");
+            params.add(ValueInt.get(limit));
+            if (offset != null) {
+                buff.append(" OFFSET ").append("?");
+                params.add(ValueInt.get(offset));
             }
         }
 
@@ -159,6 +162,29 @@ public class MySQLTranslator implements SQLTranslator {
             buff.append(" FOR UPDATE");
         }
         return SQLTranslated.build().sql(buff.toString()).sqlParams(params);
+    
+    }
+
+    /**
+     * @see http://dev.mysql.com/doc/refman/5.7/en/select.html
+     */
+    @Override
+    public SQLTranslated translate(Select select, ObjectNode executionOn,
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
+
+        ArrayList<Expression> expressions = select.getExpressions();
+        Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
+       
+        Expression limitExpr = select.getLimit();
+        Expression offsetExpr = select.getOffset();
+        Integer limit = null, offset = null;
+        if (limitExpr != null) {
+            limit = limitExpr.getValue(select.getSession()).getInt();
+        }
+        if (offsetExpr != null) {
+            offset = offsetExpr.getValue(select.getSession()).getInt();
+        }
+        return translate(select, executionOn, consistencyTableNodes, exprList, limit, offset);
     }
 
     /**
@@ -225,12 +251,12 @@ public class MySQLTranslator implements SQLTranslator {
 
     @Override
     public SQLTranslated translate(Select select, GroupObjectNode node,
-            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes) {
+            Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes,Expression[] selectCols, Integer limit, Integer offset) {
         ObjectNode[] items = node.getItems();
         List<Value> params = New.arrayList(10 * items.length);
         StatementBuilder sql = new StatementBuilder("SELECT * FROM (");
         for (ObjectNode objectNode : items) {
-            SQLTranslated translated = translate(select, objectNode, consistencyTableNodes);
+            SQLTranslated translated = translate(select, objectNode, consistencyTableNodes,selectCols, limit, offset);
             sql.appendExceptFirst(" UNION ALL ");
             sql.append(translated.sql);
             params.addAll(translated.params);
@@ -799,9 +825,11 @@ public class MySQLTranslator implements SQLTranslator {
         }
         buff.append(" FROM ");
         buff.append(identifier(node.getCompositeObjectName()));
+        buff.append(" AS ");
+        buff.append(filter.getTableAlias());
         Expression condition = filter.getFilterCondition();
         if (condition != null) {
-            buff.append(" WHERE ").append(StringUtils.unEnclose(condition.getSQL()));
+            buff.append(" WHERE ").append(StringUtils.unEnclose(condition.getPreparedSQL(filter.getSession(), params)));
         }
         return SQLTranslated.build().sql(buff.toString()).sqlParams(params);
     

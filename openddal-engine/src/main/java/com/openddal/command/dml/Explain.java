@@ -85,7 +85,7 @@ public class Explain extends Prepared {
     }
 
     private void add(String text) {
-        Value[] row = {ValueString.get(text)};
+        Value[] row = {ValueString.get(text == null ? "" : text)};
         result.addRow(row);
     }
 

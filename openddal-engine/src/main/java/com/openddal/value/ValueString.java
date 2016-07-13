@@ -15,12 +15,12 @@
  */
 package com.openddal.value;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+
 import com.openddal.engine.SysProperties;
 import com.openddal.util.MathUtils;
 import com.openddal.util.StringUtils;
-
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 
 /**
  * Implementation of the VARCHAR data type.

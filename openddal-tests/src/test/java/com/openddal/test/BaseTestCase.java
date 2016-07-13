@@ -15,6 +15,10 @@
  */
 package com.openddal.test;
 
+import static junit.framework.Assert.assertFalse;
+import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -57,9 +61,9 @@ import com.openddal.util.FilePath;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.MurmurHash;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
-public abstract class BaseTestCase extends TestCase {
+public abstract class BaseTestCase {
 
     /**
      * The base directory.
@@ -494,7 +498,8 @@ public abstract class BaseTestCase extends TestCase {
         for (int i = 0; len < 0 || i < len; i++) {
             int ce = expected.read();
             int ca = actual.read();
-            assertEquals("pos:" + i, ce, ca);
+            Assert.assertEquals(expected, actual);
+            assertEquals(ce, ca);
             if (ce == -1) {
                 break;
             }
@@ -523,7 +528,7 @@ public abstract class BaseTestCase extends TestCase {
             actual.read(new byte[0]);
             int ce = expected.read();
             if (ca != ce) {
-                assertEquals("Error at index " + i, ce, ca);
+                assertEquals(ce, ca);
             }
             if (ca == -1) {
                 break;
@@ -552,7 +557,7 @@ public abstract class BaseTestCase extends TestCase {
         while (rs0.next()) {
             assertTrue(message, rs1.next());
             for (int i = 0; i < columns; i++) {
-                assertEquals(message, rs0.getString(i + 1), rs1.getString(i + 1));
+                Assert.assertEquals(rs0.getString(i + 1), rs1.getString(i + 1));
             }
         }
         assertFalse(message, rs0.next());
@@ -676,9 +681,9 @@ public abstract class BaseTestCase extends TestCase {
         ResultSet rs = stat.executeQuery(sql);
         if (rs.next()) {
             String actual = rs.getString(1);
-            assertEquals(expected, actual);
+            Assert.assertEquals(expected, actual);
         } else {
-            assertEquals(expected, null);
+            Assert.assertEquals(expected, null);
         }
     }
 
@@ -732,24 +737,24 @@ public abstract class BaseTestCase extends TestCase {
                 String className = meta.getColumnClassName(i + 1);
                 switch (t) {
                 case Types.INTEGER:
-                    assertEquals("INTEGER", typeName);
-                    assertEquals("java.lang.Integer", className);
+                    Assert.assertEquals("INTEGER", typeName);
+                    Assert.assertEquals("java.lang.Integer", className);
                     break;
                 case Types.VARCHAR:
-                    assertEquals("VARCHAR", typeName);
-                    assertEquals("java.lang.String", className);
+                    Assert.assertEquals("VARCHAR", typeName);
+                    Assert.assertEquals("java.lang.String", className);
                     break;
                 case Types.SMALLINT:
-                    assertEquals("SMALLINT", typeName);
-                    assertEquals("java.lang.Short", className);
+                    Assert.assertEquals("SMALLINT", typeName);
+                    Assert.assertEquals("java.lang.Short", className);
                     break;
                 case Types.TIMESTAMP:
-                    assertEquals("TIMESTAMP", typeName);
-                    assertEquals("java.sql.Timestamp", className);
+                    Assert.assertEquals("TIMESTAMP", typeName);
+                    Assert.assertEquals("java.sql.Timestamp", className);
                     break;
                 case Types.DECIMAL:
-                    assertEquals("DECIMAL", typeName);
-                    assertEquals("java.math.BigDecimal", className);
+                    Assert.assertEquals("DECIMAL", typeName);
+                    Assert.assertEquals("java.math.BigDecimal", className);
                     break;
                 default:
                 }
@@ -914,7 +919,7 @@ public abstract class BaseTestCase extends TestCase {
     protected void assertEquals(Integer expected, Integer actual) {
         if (expected == null || actual == null) {
             if (expected != actual) {
-                assertEquals("" + expected, "" + actual);
+                Assert.assertEquals("" + expected, "" + actual);
             }
         } else {
             assertEquals(expected.intValue(), actual.intValue());
@@ -958,7 +963,7 @@ public abstract class BaseTestCase extends TestCase {
                 fail("only found in first: " + s + " remaining: " + list2);
             }
         }
-        assertEquals("remaining: " + list2, 0, list2.size());
+        Assert.assertEquals("remaining: " + list2, 0, list2.size());
         assertFalse(rs2.next());
     }
 

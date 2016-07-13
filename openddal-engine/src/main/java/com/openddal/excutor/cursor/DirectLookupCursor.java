@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.openddal.command.dml.Select;
+import com.openddal.command.expression.Expression;
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.ConditionExtractor;
@@ -19,18 +20,21 @@ import com.openddal.engine.Constants;
 import com.openddal.excutor.ExecutionFramework;
 import com.openddal.excutor.works.QueryWorker;
 import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
-
+/**
+ * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ */
 public class DirectLookupCursor extends ExecutionFramework<Select> implements Cursor {
 
     private Cursor cursor;
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
-    private List<QueryWorker> queryHandlers;
+    private List<QueryWorker> workers;
     private boolean alwaysFalse;
 
     public DirectLookupCursor(Select select) {
@@ -48,16 +52,34 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
                 return;
             }
         }
-        
+        ArrayList<Expression> expressions = prepared.getExpressions();
+        Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
+        Integer limit = null, offset = null;
+        Expression limitExpr = prepared.getLimit();
+        Expression offsetExpr = prepared.getOffset();
+        if (limitExpr != null) {
+            limit = limitExpr.getValue(session).getInt();
+        }
+        if (offsetExpr != null) {
+            offset = offsetExpr.getValue(session).getInt();
+        }
         RoutingResult rr = doRoute(prepared);
+        if(rr.isMultipleNode() && offset != null) {
+            if(limit != null && limit > database.getSettings().analyzeSample) {
+                throw DbException.get(ErrorCode.INVALID_VALUE_2, "limit", limit + ", the max support limit "
+                        + database.getSettings().analyzeSample + " is defined by analyzeSample.");
+            }
+            offset = offset != null ? 0 : offset;
+        }
         ObjectNode[] selectNodes = rr.getSelectNodes();
         if (session.getDatabase().getSettings().optimizeMerging) {
             selectNodes = rr.group();
         }
-        queryHandlers = New.arrayList(selectNodes.length);
+        workers = New.arrayList(selectNodes.length);
         for (ObjectNode node : selectNodes) {
-            QueryWorker queryHandler = queryHandlerFactory.createQueryWorker(prepared, node, consistencyTableNodes);
-            queryHandlers.add(queryHandler);
+            QueryWorker queryHandler = queryHandlerFactory.createQueryWorker(prepared, node, consistencyTableNodes,
+                    exprList, limit, offset);
+            workers.add(queryHandler);
         }
     }
 
@@ -68,12 +90,13 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         if(alwaysFalse) {
             return ResultCursor.EMPTY_CURSOR;
         }
+        this.cursor = invokeQueryWorker(workers);
         return this;
     }
 
     @Override
     public String doExplain() {
-        return null;
+        return explainForWorker(workers);
     }
 
     private RoutingResult doRoute(Select prepare) {
@@ -180,7 +203,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     }
 
     public double getCost() {
-        return queryHandlers.size() * Constants.COST_ROW_OFFSET;
+        return workers.size() * Constants.COST_ROW_OFFSET;
     }
 
     public static boolean isDirectLookupQuery(Select select) {
