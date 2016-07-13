@@ -283,7 +283,7 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
 
     protected static ArrayList<TableFilter> filterNotTableMate(List<TableFilter> filters) {
         ArrayList<TableFilter> result = New.arrayList(filters.size());
-        for (TableFilter tf : result) {
+        for (TableFilter tf : filters) {
             if (tf.isFromTableMate()) {
                 result.add(tf);
             }

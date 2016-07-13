@@ -618,7 +618,6 @@ public class Select extends Query {
         if(DirectLookupCursor.isDirectLookupQuery(this)) {
             lookupCursor = new DirectLookupCursor(this);
             lookupCursor.prepare();
-            return lookupCursor.getCost();
         }
         
         TableFilter[] topArray = topFilters.toArray(new TableFilter[topFilters.size()]);

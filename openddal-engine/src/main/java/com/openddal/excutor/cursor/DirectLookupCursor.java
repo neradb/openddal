@@ -1,6 +1,7 @@
 package com.openddal.excutor.cursor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -282,61 +283,49 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
                 throw new IllegalArgumentException("not sharding TableFilter");
             }
             ArrayList<IndexCondition> conditions = filter.getIndexConditions();
-            int length = table1.getColumns().length;
-            IndexCondition[] masks = new IndexCondition[length];
-            for (IndexCondition condition : conditions) {
-                int id = condition.getColumn().getColumnId();
-                if (id >= 0) {
-                    masks[id] = condition;
+            List<IndexCondition> masks = New.arrayList(10);
+            List<Column> compareColumns = New.arrayList(10);
+            for (Column column : columns1) {
+                for (IndexCondition condition : conditions) {
+                    Column compareColumn = condition.getCompareColumn();
+                    if ((condition.getMask(conditions) & IndexCondition.EQUALITY) != IndexCondition.EQUALITY) {
+                        continue;
+                    }
+                    if (condition.getColumn() != column || compareColumn == null) {
+                        continue;
+                    }
+                    masks.add(condition);
+                    compareColumns.add(compareColumn);
                 }
             }
 
-            if (masks != null) {
-                List<Column> joinCols = New.arrayList();
-                for (int i = 0, len = columns1.length; i < len; i++) {
-                    Column column = columns1[i];
-                    int index = column.getColumnId();
-                    IndexCondition mask = masks[index];
-                    if ((mask.getMask(conditions) & IndexCondition.EQUALITY) == IndexCondition.EQUALITY) {
-                        Column compareColumn = mask.getCompareColumn();
-                        if (compareColumn != null) {
-                            joinCols.add(compareColumn);
-                        }
-                        if (i == columns1.length - 1) {
-                            Set<Table> tables = New.hashSet();
-                            for (Column column2 : joinCols) {
-                                tables.add(column2.getTable());
-                            }
-                            for (Table table : tables) {
-                                if (!(table instanceof TableMate)) {
-                                    continue;
-                                }
-                                TableMate table2 = (TableMate) table;
-                                Column[] columns2 = table2.getRuleColumns();
-                                if (columns2 == null) {
-                                    continue;
-                                }
-                                boolean contains = true;
-                                for (Column column2 : columns2) {
-                                    if (!joinCols.contains(column2)) {
-                                        contains = false;
-                                        break;
-                                    }
-                                }
-                                if (contains) {
-                                    joinTableChain.add(filter);
-                                }
-                                for (TableFilter tf : filters) {
-                                    if (tf.getTable() == table && !joinTableChain.contains(filter)) {
-                                        evaluationJoinChain(tf);
-                                    }
-                                }
-
-                            }
-                        }
+            Set<Table> tables = New.hashSet();
+            for (IndexCondition mask : masks) {
+                Column compareColumn = mask.getCompareColumn();
+                Table table = compareColumn.getTable();
+                if (!(table instanceof TableMate)) {
+                    continue;
+                }
+                TableMate tableMate = (TableMate) table;
+                Column[] rc = tableMate.getRuleColumns();
+                if (compareColumns.containsAll(Arrays.asList(rc))) {
+                    tables.add(table);
+                }
+            }
+            if (tables.isEmpty()) {
+                return;
+            }
+            for (Table table : tables) {
+                for (TableFilter tf : filters) {
+                    if (tf.getTable() == table && !joinTableChain.contains(tf)) {
+                        joinTableChain.add(tf);
+                        evaluationJoinChain(tf);
                     }
                 }
+
             }
+
+
         }
 
     }
