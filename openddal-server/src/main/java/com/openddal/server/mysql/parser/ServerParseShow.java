@@ -18,7 +18,10 @@ public final class ServerParseShow {
     public static final int VARIABLES     = 8;
     public static final int SESSION_VARIABLES = 9;
     public static final int SESSION_STATUS = 10;
-
+    // show engines
+    // @author little-pan
+    // @since 2016-07-13
+    public static final int ENGINES        = 11;
 
     public static int parse(String stmt, int offset) {
         int i = offset;
@@ -39,6 +42,9 @@ public final class ServerParseShow {
             case 'D':
             case 'd':
                 return dataCheck(stmt, i);
+            case 'E':
+            case 'e':
+            	return engineCheck(stmt, i);
             case 'G':
             case 'g':
                 return showGVCheck(stmt, i);
@@ -77,6 +83,29 @@ public final class ServerParseShow {
             }
         }
         return OTHER;
+    }
+    
+    static final int engineCheck(final String stmt, final int offset){
+    	if(stmt.length() > offset + "NGINES".length()){
+    		int i = offset;
+    		final char c1 = stmt.charAt(++i);
+    		final char c2 = stmt.charAt(++i);
+    		final char c3 = stmt.charAt(++i);
+    		final char c4 = stmt.charAt(++i);
+    		final char c5 = stmt.charAt(++i);
+    		final char c6 = stmt.charAt(++i);
+    		if( (c1 == 'N' || c1 == 'n') && 
+    			(c2 == 'G' || c2 == 'g') && 
+    			(c3 == 'I' || c3 == 'i') &&
+    			(c4 == 'N' || c4 == 'n') &&
+    			(c5 == 'E' || c5 == 'e') && 
+    			(c6 == 'S' || c6 == 's') &&
+    			(stmt.length() == ++i || ParseUtil.isEOF(stmt.charAt(i)))
+    		){
+    			return ENGINES;
+    		}
+    	}
+    	return OTHER;
     }
 
     private static int slowCheck(String stmt, int offset) {
