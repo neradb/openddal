@@ -16,7 +16,6 @@ import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.dbobject.table.TableFilter.TableFilterVisitor;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Constants;
 import com.openddal.excutor.ExecutionFramework;
@@ -46,15 +45,14 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
 
     @Override
     protected void doPrepare() {
-        ArrayList<TableFilter> topFilters = prepared.getTopFilters();
-        for (TableFilter tf : topFilters) {
-            ConditionExtractor extractor = new ConditionExtractor(tf);
-            boolean alwaysFalse = extractor.isAlwaysFalse();
-            if (alwaysFalse) {
-                this.alwaysFalse = alwaysFalse;
-                return;
-            }
+        TableFilter topFilters = prepared.getTopTableFilter();
+        ConditionExtractor extractor = new ConditionExtractor(topFilters);
+        boolean alwaysFalse = extractor.isAlwaysFalse();
+        if (alwaysFalse) {
+            this.alwaysFalse = alwaysFalse;
+            return;
         }
+
         ArrayList<Expression> expressions = prepared.getExpressions();
         Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
         Integer limit = null, offset = null;
@@ -101,7 +99,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     }
 
     private RoutingResult doRoute(Select prepare) {
-        List<TableFilter> filters = filterNotTableMate(prepare.getTopFilters());
+        List<TableFilter> filters = filterNotTableMate(prepare.getFilters());
         List<TableFilter> shards = New.arrayList(filters.size());
         List<TableFilter> globals = New.arrayList(filters.size());
         List<TableFilter> fixeds = New.arrayList(filters.size());
@@ -123,9 +121,10 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         }
         RoutingResult result = null;
         if (!shards.isEmpty()) {
-            for (TableFilter tf : shards) {
-                TableMate table = getTableMate(tf);
-                ConditionExtractor extractor = new ConditionExtractor(tf);
+            TableFilter f = prepare.getTopTableFilter();
+            for (; f != null && shards.contains(f); f = f.getJoin()) {
+                TableMate table = getTableMate(f);
+                ConditionExtractor extractor = new ConditionExtractor(f);
                 RoutingResult r = routingHandler.doRoute(table, extractor.getStart(), extractor.getEnd(),
                         extractor.getInColumns());
                 result = (result == null || r.compareTo(result) < 0) ? r : result;
@@ -208,7 +207,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     }
 
     public static boolean isDirectLookupQuery(Select select) {
-        DirectLookupEstimator estimator = new DirectLookupEstimator(select.getTopFilters());
+        DirectLookupEstimator estimator = new DirectLookupEstimator(select.getFilters());
         return estimator.isDirectLookup();
     }
 
@@ -220,14 +219,9 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         private DirectLookupEstimator(ArrayList<TableFilter> topFilters) {
             this.filters = New.arrayList();
             for (TableFilter tf : topFilters) {
-                tf.visit(new TableFilterVisitor() {
-                    @Override
-                    public void accept(TableFilter f) {
-                        if (!StringUtils.startsWith(f.getTableAlias(), Constants.PREFIX_JOIN)) {
-                            filters.add(f);
-                        }
-                    }
-                });
+                if (!StringUtils.startsWith(tf.getTableAlias(), Constants.PREFIX_JOIN)) {
+                    filters.add(tf);
+                }
 
             }
         }

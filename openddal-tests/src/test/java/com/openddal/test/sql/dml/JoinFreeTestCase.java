@@ -62,6 +62,7 @@ public class JoinFreeTestCase extends BaseTestCase{
             rs.next();
             String plan = rs.getString(1);
             assertContains(plan, "SINGLE_EXECUTION");
+            System.out.println(plan);
             rs.close();
             rs = stmt.executeQuery(sql);
             printResultSet(rs);
@@ -90,6 +91,7 @@ public class JoinFreeTestCase extends BaseTestCase{
             rs.next();
             String plan = rs.getString(1);
             assertContains(plan, "SINGLE_EXECUTION");
+            System.out.println(plan);
             rs.close();
             rs = stmt.executeQuery(sql);
             printResultSet(rs);

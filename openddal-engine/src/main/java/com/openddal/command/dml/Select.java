@@ -100,6 +100,10 @@ public class Select extends Query {
         return topFilters;
     }
 
+    public ArrayList<TableFilter> getFilters() {
+        return filters;
+    }
+
     public void setExpressions(ArrayList<Expression> expressions) {
         this.expressions = expressions;
     }
@@ -594,8 +598,8 @@ public class Select extends Query {
                 }
             }
         }
-        cost = preparePlan();
         isDirectLookupQuery = DirectLookupCursor.isDirectLookupQuery(this);
+        cost = preparePlan();
         expressionArray = new Expression[expressions.size()];
         expressions.toArray(expressionArray);
         isPrepared = true;
