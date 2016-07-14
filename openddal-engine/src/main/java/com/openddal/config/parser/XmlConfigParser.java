@@ -43,7 +43,6 @@ import com.openddal.config.Shard.ShardItem;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.config.TableRuleGroup;
-import com.openddal.route.algorithm.Partitioner;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
@@ -341,7 +340,7 @@ public class XmlConfigParser {
                 if (algorithmConfig == null) {
                     throw new ParsingException("The algorithm ref '" + text + "' is not found.");
                 }
-                Partitioner algorithm = constructAlgorithm(algorithmConfig);
+                Object algorithm = constructAlgorithm(algorithmConfig);
                 shardTable.setPartitioner(algorithm);
             }
         }
@@ -573,24 +572,19 @@ public class XmlConfigParser {
         }
     }
 
-    private Partitioner constructAlgorithm(RuleAlgorithmConfig algorithmConfig) {
-        Partitioner partitioner = null;
+    private Object constructAlgorithm(RuleAlgorithmConfig algorithmConfig) {
         try {
             Object object = Class.forName(algorithmConfig.clazz).newInstance();
             Class<?> objectClass = object.getClass();
-            if (!(object instanceof Partitioner)) {
-                throw new ParsingException("invalid class " + objectClass.getName());
-            }
-            partitioner = (Partitioner) object;
             BeanInfo beanInfo = Introspector.getBeanInfo(objectClass);
             PropertyDescriptor[] propertyDescriptors = beanInfo.getPropertyDescriptors();
             for (PropertyDescriptor propertyDescriptor : propertyDescriptors) {
                 String propertyValue = algorithmConfig.properties.getProperty(propertyDescriptor.getName());
                 if (propertyValue != null) {
-                    XmlConfigParser.setPropertyWithAutomaticType(partitioner, propertyDescriptor, propertyValue);
+                    XmlConfigParser.setPropertyWithAutomaticType(object, propertyDescriptor, propertyValue);
                 }
             }
-            return partitioner;
+            return object;
         } catch (InvocationTargetException e) {
             throw new ParsingException("There was an error to construct partitioner " + algorithmConfig.clazz
                     + " Cause: " + e.getTargetException(), e);

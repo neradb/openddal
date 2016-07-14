@@ -94,6 +94,9 @@ public abstract class BaseTestCase {
      */
     protected long start;
     protected DataSource dataSource;
+    protected static String url = "jdbc:openddal:config/ddal-config.xml;";
+    protected static String driverClassName = "com.openddal.jdbc.JdbcDriver";
+
 
     public BaseTestCase() {
         BasicDataSource ds = newDataSource();
@@ -103,8 +106,8 @@ public abstract class BaseTestCase {
 
     private BasicDataSource newDataSource() {
         BasicDataSource ds = new BasicDataSource();
-        ds.setDriverClassName("com.openddal.jdbc.JdbcDriver");
-        ds.setUrl("jdbc:openddal:config/ddal-config.xml;");
+        ds.setDriverClassName(driverClassName);
+        ds.setUrl(url);
         ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         ds.setTestOnBorrow(true);
         ds.setValidationQuery("select 1 from dual");

@@ -135,7 +135,8 @@ public abstract class CommonPartitioner implements Partitioner {
     protected boolean checkNull(Value value) {
         if (isNull(value)) {
             if (getDefaultNodeIndex() == -1) {
-                throw new RuleEvaluateException("Null value.");
+                throw new RuleEvaluateException(
+                        "No default node defined when no rule column value from SQL");
             }
             return true;
         } else {

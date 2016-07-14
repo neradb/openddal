@@ -34,7 +34,12 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
     @Override
     public RoutingResult calculate(ShardedTableRule tableRouter, RoutingArgument arg) {
         ObjectNode[] partition = tableRouter.getObjectNodes();
-        Partitioner partitioner = tableRouter.getPartitioner();
+        boolean typeof = tableRouter.getPartitioner() instanceof Partitioner;
+        if (!typeof) {
+            String name = tableRouter.getPartitioner().getClass().getName();
+            throw new RuleEvaluateException("Algorithm " + name + " not type of " + Partitioner.class.getName());
+        }
+        Partitioner partitioner = (Partitioner)tableRouter.getPartitioner();
         switch (arg.getArgumentType()) {
             case RoutingArgument.NONE_ROUTING_ARGUMENT:
                 return RoutingResult.fixedResult(partition);
@@ -67,7 +72,7 @@ public class RoutingCalculatorImpl implements RoutingCalculator {
     @Override
     public RoutingResult calculate(ShardedTableRule tableRouter, List<RoutingArgument> arguments) {
         ObjectNode[] partition = tableRouter.getObjectNodes();
-        Partitioner partitioner = tableRouter.getPartitioner();
+        Object partitioner = tableRouter.getPartitioner();
         boolean typeof = partitioner instanceof MultColumnPartitioner;
         if (!typeof) {
             String name = partitioner.getClass().getName();

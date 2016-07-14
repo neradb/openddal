@@ -88,7 +88,7 @@ public class RoutingHandlerImpl implements RoutingHandler {
         List<RoutingArgument> args = New.arrayList(ruleCols.length);
         for (Column ruleCol : ruleCols) {
             Value v = row.getValue(ruleCol.getColumnId());
-            RoutingArgument arg = new RoutingArgument(v);
+            RoutingArgument arg = new RoutingArgument(ruleCol.getName(), v);
             args.add(arg);
         }
         RoutingResult rr;
@@ -112,6 +112,7 @@ public class RoutingHandlerImpl implements RoutingHandler {
                 Column[] ruleCols = table.getRuleColumns();
                 List<RoutingArgument> args = New.arrayList(ruleCols.length);
                 for (Column ruleCol : ruleCols) {
+                    String ruleColName = ruleCol.getName();
                     RoutingArgument arg;
                     int idx = ruleCol.getColumnId();
                     Value startV = first == null ? null : first.getValue(idx);
@@ -121,21 +122,21 @@ public class RoutingHandlerImpl implements RoutingHandler {
                         if(database.compare(startV, endV) == 0) {
                             // an X=? condition will produce less rows than
                             // an X IN(..) condition
-                            arg = new RoutingArgument(startV);
+                            arg = new RoutingArgument(ruleColName, startV);
                         } else if(inColumns.get(ruleCol) != null) {
                             Set<Value> values = inColumns.get(ruleCol);
-                            arg = new RoutingArgument(New.arrayList(values));
+                            arg = new RoutingArgument(ruleColName, New.arrayList(values));
                         } else {
-                            arg = new RoutingArgument(startV, endV);
+                            arg = new RoutingArgument(ruleColName, startV, endV);
                         }
                         
                     } else if(inColumns.get(ruleCol) != null) {
                         Set<Value> values = inColumns.get(ruleCol);
-                        arg = new RoutingArgument(New.arrayList(values));
+                        arg = new RoutingArgument(ruleColName, New.arrayList(values));
                     } else if(startV != null || endV != null){
-                        arg = new RoutingArgument(startV, endV);
+                        arg = new RoutingArgument(ruleColName, startV, endV);
                     } else {
-                        arg = new RoutingArgument();
+                        arg = new RoutingArgument(ruleColName);
                     }                    
                     args.add(arg);
                 }

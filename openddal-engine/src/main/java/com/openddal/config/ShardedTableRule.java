@@ -3,6 +3,7 @@ package com.openddal.config;
 import java.io.Serializable;
 import java.util.Random;
 
+import com.openddal.route.algorithm.MultColumnPartitioner;
 import com.openddal.route.algorithm.Partitioner;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.StringUtils;
@@ -22,7 +23,7 @@ public class ShardedTableRule extends TableRule implements Serializable {
     private Random random = new Random();
     private ObjectNode[] objectNodes;
     private String[] ruleColumns;
-    private Partitioner partitioner; 
+    private Object partitioner; 
     private TableRuleGroup ownerGroup;
 
 
@@ -51,11 +52,16 @@ public class ShardedTableRule extends TableRule implements Serializable {
         this.ruleColumns = ruleColumns;
     }
 
-    public Partitioner getPartitioner() {
+    public Object getPartitioner() {
         return partitioner;
     }
-    public void setPartitioner(Partitioner partitioner) {
-        this.partitioner = partitioner;
+    public void setPartitioner(Object partitioner) {
+        if(partitioner instanceof Partitioner 
+                || partitioner instanceof MultColumnPartitioner) {
+            this.partitioner = partitioner;
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
     
     @Override

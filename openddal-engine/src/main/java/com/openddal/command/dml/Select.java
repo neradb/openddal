@@ -70,7 +70,7 @@ public class Select extends Query {
     private boolean isPrepared, checkInit;
     private SortOrder sort;
     private int currentGroupRowId;
-    private DirectLookupCursor lookupCursor;
+    private boolean isDirectLookupQuery;
 
     public Select(Session session) {
         super(session);
@@ -300,6 +300,7 @@ public class Select extends Query {
     private void queryQuick(int columnCount, ResultTarget result, long limitRows) {
         int rowNumber = 0;
         setCurrentRowNumber(0);
+        DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
         lookupCursor.query();
         while (lookupCursor.next()) {
             setCurrentRowNumber(rowNumber + 1);
@@ -381,7 +382,7 @@ public class Select extends Query {
         topTableFilter.lock(session, exclusive, exclusive);
         ResultTarget to = result != null ? result : target;
         if (limitRows != 0) {
-            if (lookupCursor != null) {
+            if (isDirectLookupQuery) {
                 if (isGroupQuery) {
                     queryGroupQuick(columnCount, to);
                 } else {
@@ -593,8 +594,8 @@ public class Select extends Query {
                 }
             }
         }
-
         cost = preparePlan();
+        isDirectLookupQuery = DirectLookupCursor.isDirectLookupQuery(this);
         expressionArray = new Expression[expressions.size()];
         expressions.toArray(expressionArray);
         isPrepared = true;
@@ -615,23 +616,17 @@ public class Select extends Query {
     }
 
     private double preparePlan() {
-        if(DirectLookupCursor.isDirectLookupQuery(this)) {
-            lookupCursor = new DirectLookupCursor(this);
-            lookupCursor.prepare();
-        }
-        
-        TableFilter[] topArray = topFilters.toArray(new TableFilter[topFilters.size()]);
+        TableFilter[] topArray = topFilters.toArray(
+                new TableFilter[topFilters.size()]);
         for (TableFilter t : topArray) {
             t.setFullCondition(condition);
         }
-
+        
         Optimizer optimizer = new Optimizer(topArray, condition, session);
         optimizer.optimize();
         topTableFilter = optimizer.getTopFilter();
         double planCost = optimizer.getCost();
-
         setEvaluatableRecursive(topTableFilter);
-
         topTableFilter.prepare();
         return planCost;
     }
@@ -689,7 +684,8 @@ public class Select extends Query {
 
     @Override
     public String explainPlan() {
-        if(lookupCursor != null) {
+        if(isDirectLookupQuery) {
+            DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
             return lookupCursor.explain();
         }
         return "cross node join";

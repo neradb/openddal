@@ -14,6 +14,7 @@ import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.config.TableRuleGroup;
 import com.openddal.config.parser.XmlConfigParser;
+import com.openddal.route.algorithm.MultColumnPartitioner;
 import com.openddal.route.algorithm.Partitioner;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.StringUtils;
@@ -261,9 +262,15 @@ public final class SessionFactoryBuilder {
             validateTableRule(table);
             if (table instanceof ShardedTableRule) {
                 ShardedTableRule shardedTable = (ShardedTableRule) table;
-                Partitioner partitioner = shardedTable.getPartitioner();
+                Object po = shardedTable.getPartitioner();
                 try {
-                    partitioner.initialize(shardedTable.getObjectNodes());
+                    if(po instanceof Partitioner) {
+                        Partitioner partitioner = (Partitioner)po;
+                        partitioner.initialize(shardedTable.getObjectNodes());
+                    } else if(po instanceof MultColumnPartitioner) {
+                        MultColumnPartitioner partitioner = (MultColumnPartitioner)po;
+                        partitioner.initialize(shardedTable.getObjectNodes());
+                    }
                 } catch (Exception e) {
                     String name = table.getName();
                     throw new IllegalStateException("initialize partitioner for table " + name + " error.", e);

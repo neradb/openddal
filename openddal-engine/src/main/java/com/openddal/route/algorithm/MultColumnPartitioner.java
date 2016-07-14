@@ -15,15 +15,23 @@
  */
 package com.openddal.route.algorithm;
 
-import com.openddal.route.rule.RoutingArgument;
-
 import java.util.List;
+
+import com.openddal.route.rule.ObjectNode;
+import com.openddal.route.rule.RoutingArgument;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public interface MultColumnPartitioner {
 
+    /**
+     * calling after the properties hash been set.
+     *
+     * @param tableNodes
+     */
+    void initialize(ObjectNode[] tableNodes);
+    
     /**
      * args is order by column
      *

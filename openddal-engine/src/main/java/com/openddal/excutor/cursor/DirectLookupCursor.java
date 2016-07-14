@@ -16,6 +16,7 @@ import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
+import com.openddal.dbobject.table.TableFilter.TableFilterVisitor;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Constants;
 import com.openddal.excutor.ExecutionFramework;
@@ -28,6 +29,7 @@ import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
+
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
@@ -48,7 +50,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         for (TableFilter tf : topFilters) {
             ConditionExtractor extractor = new ConditionExtractor(tf);
             boolean alwaysFalse = extractor.isAlwaysFalse();
-            if(alwaysFalse) {
+            if (alwaysFalse) {
                 this.alwaysFalse = alwaysFalse;
                 return;
             }
@@ -65,8 +67,8 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
             offset = offsetExpr.getValue(session).getInt();
         }
         RoutingResult rr = doRoute(prepared);
-        if(rr.isMultipleNode() && offset != null) {
-            if(limit != null && limit > database.getSettings().analyzeSample) {
+        if (rr.isMultipleNode() && offset != null) {
+            if (limit != null && limit > database.getSettings().analyzeSample) {
                 throw DbException.get(ErrorCode.INVALID_VALUE_2, "limit", limit + ", the max support limit "
                         + database.getSettings().analyzeSample + " is defined by analyzeSample.");
             }
@@ -84,11 +86,9 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         }
     }
 
-
-
     @Override
     protected Cursor doQuery() {
-        if(alwaysFalse) {
+        if (alwaysFalse) {
             return ResultCursor.EMPTY_CURSOR;
         }
         this.cursor = invokeQueryWorker(workers);
@@ -126,8 +126,8 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
             for (TableFilter tf : shards) {
                 TableMate table = getTableMate(tf);
                 ConditionExtractor extractor = new ConditionExtractor(tf);
-                RoutingResult r = routingHandler.doRoute(table, 
-                        extractor.getStart(), extractor.getEnd(), extractor.getInColumns());
+                RoutingResult r = routingHandler.doRoute(table, extractor.getStart(), extractor.getEnd(),
+                        extractor.getInColumns());
                 result = (result == null || r.compareTo(result) < 0) ? r : result;
             }
         } else if (!fixeds.isEmpty()) {
@@ -218,16 +218,17 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         private Set<TableFilter> joinTableChain;
 
         private DirectLookupEstimator(ArrayList<TableFilter> topFilters) {
-            this.filters = New.arrayList(topFilters.size());
+            this.filters = New.arrayList();
             for (TableFilter tf : topFilters) {
-                if (!StringUtils.startsWith(tf.getTableAlias(), Constants.PREFIX_JOIN)) {
-                    filters.add(tf);
-                }
-            }
-            for (TableFilter tf : filters) {
-                if (tf.getTable() instanceof TableMate) {
-                    continue;
-                }
+                tf.visit(new TableFilterVisitor() {
+                    @Override
+                    public void accept(TableFilter f) {
+                        if (!StringUtils.startsWith(f.getTableAlias(), Constants.PREFIX_JOIN)) {
+                            filters.add(f);
+                        }
+                    }
+                });
+
             }
         }
 
@@ -324,7 +325,6 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
                 }
 
             }
-
 
         }
 

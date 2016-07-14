@@ -15,6 +15,7 @@
  */
 package com.openddal.route.rule;
 
+import java.io.Serializable;
 import java.util.List;
 
 import com.openddal.util.New;
@@ -23,11 +24,14 @@ import com.openddal.value.Value;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class RoutingArgument {
+public class RoutingArgument implements Serializable {
 
     public static final int NONE_ROUTING_ARGUMENT = 0;
     public static final int FIXED_ROUTING_ARGUMENT = 1;
     public static final int RANGE_ROUTING_ARGUMENT = 2;
+    private static final long serialVersionUID = 1L;
+    
+    private final String columnName;
 
     private int argumentType;
 
@@ -37,25 +41,33 @@ public class RoutingArgument {
 
     private Value end;
 
-    public RoutingArgument() {
+    public RoutingArgument(String columnName) {
+        this.columnName = columnName;
         this.argumentType = NONE_ROUTING_ARGUMENT;
     }
     
-    public RoutingArgument(Value value) {
+    public RoutingArgument(String columnName, Value value) {
+        this.columnName = columnName;
         this.argumentType = FIXED_ROUTING_ARGUMENT;
         this.values = New.arrayList(1);
         this.values.add(value);
     }
 
-    public RoutingArgument(List<Value> values) {
+    public RoutingArgument(String columnName, List<Value> values) {
+        this.columnName = columnName;
         this.argumentType = FIXED_ROUTING_ARGUMENT;
         this.values = values;
     }
 
-    public RoutingArgument(Value start, Value end) {
+    public RoutingArgument(String columnName, Value start, Value end) {
+        this.columnName = columnName;
         this.argumentType = RANGE_ROUTING_ARGUMENT;
         this.start = start;
         this.end = end;
+    }
+    
+    public String getColumnName() {
+        return columnName;
     }
 
     public int getArgumentType() {
