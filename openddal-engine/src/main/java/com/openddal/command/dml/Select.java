@@ -100,10 +100,6 @@ public class Select extends Query {
         return topFilters;
     }
 
-    public ArrayList<TableFilter> getFilters() {
-        return filters;
-    }
-
     public void setExpressions(ArrayList<Expression> expressions) {
         this.expressions = expressions;
     }

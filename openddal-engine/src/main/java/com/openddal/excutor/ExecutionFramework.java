@@ -281,13 +281,18 @@ public abstract class ExecutionFramework<T extends Prepared> implements Executor
         return tableRule;
     }
 
-    protected static ArrayList<TableFilter> filterNotTableMate(List<TableFilter> filters) {
-        ArrayList<TableFilter> result = New.arrayList(filters.size());
-        for (TableFilter tf : filters) {
-            if (tf.isFromTableMate()) {
-                result.add(tf);
+    protected static ArrayList<TableFilter> filterNotTableMate(TableFilter f) {
+        ArrayList<TableFilter> result = New.arrayList();
+        do {
+            if (f.isFromTableMate()) {
+                result.add(f);
             }
-        }
+            TableFilter n = f.getNestedJoin();
+            if (n != null) {
+                result.addAll(filterNotTableMate(n));
+            }
+            f = f.getJoin();
+        } while (f != null);
         return result;
     }
 

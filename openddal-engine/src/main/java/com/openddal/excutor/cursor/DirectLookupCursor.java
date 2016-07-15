@@ -14,8 +14,10 @@ import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.ConditionExtractor;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.table.Column;
+import com.openddal.dbobject.table.RangeTable;
 import com.openddal.dbobject.table.Table;
 import com.openddal.dbobject.table.TableFilter;
+import com.openddal.dbobject.table.TableFilter.TableFilterVisitor;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Constants;
 import com.openddal.excutor.ExecutionFramework;
@@ -37,7 +39,6 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     private Cursor cursor;
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryWorker> workers;
-    private boolean alwaysFalse;
 
     public DirectLookupCursor(Select select) {
         super(select);
@@ -45,14 +46,6 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
 
     @Override
     protected void doPrepare() {
-        TableFilter topFilters = prepared.getTopTableFilter();
-        ConditionExtractor extractor = new ConditionExtractor(topFilters);
-        boolean alwaysFalse = extractor.isAlwaysFalse();
-        if (alwaysFalse) {
-            this.alwaysFalse = alwaysFalse;
-            return;
-        }
-
         ArrayList<Expression> expressions = prepared.getExpressions();
         Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
         Integer limit = null, offset = null;
@@ -86,9 +79,6 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
 
     @Override
     protected Cursor doQuery() {
-        if (alwaysFalse) {
-            return ResultCursor.EMPTY_CURSOR;
-        }
         this.cursor = invokeQueryWorker(workers);
         return this;
     }
@@ -99,7 +89,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     }
 
     private RoutingResult doRoute(Select prepare) {
-        List<TableFilter> filters = filterNotTableMate(prepare.getFilters());
+        List<TableFilter> filters = filterNotTableMate(prepare.getTopTableFilter());
         List<TableFilter> shards = New.arrayList(filters.size());
         List<TableFilter> globals = New.arrayList(filters.size());
         List<TableFilter> fixeds = New.arrayList(filters.size());
@@ -121,13 +111,20 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         }
         RoutingResult result = null;
         if (!shards.isEmpty()) {
-            TableFilter f = prepare.getTopTableFilter();
-            for (; f != null && shards.contains(f); f = f.getJoin()) {
+            for (TableFilter f : shards) {
+                f.setEvaluatable(f, false);
+                if (f.isJoinOuter() || f.isJoinOuterIndirect()) {
+                    prepare.getCondition().createIndexConditions(session, f);
+                }
                 TableMate table = getTableMate(f);
                 ConditionExtractor extractor = new ConditionExtractor(f);
                 RoutingResult r = routingHandler.doRoute(table, extractor.getStart(), extractor.getEnd(),
                         extractor.getInColumns());
                 result = (result == null || r.compareTo(result) < 0) ? r : result;
+            
+            }
+            for (TableFilter f : shards) {
+                f.setEvaluatable(f, true);
             }
         } else if (!fixeds.isEmpty()) {
             for (TableFilter tf : shards) {
@@ -207,28 +204,36 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     }
 
     public static boolean isDirectLookupQuery(Select select) {
-        DirectLookupEstimator estimator = new DirectLookupEstimator(select.getFilters());
+        DirectLookupEstimator estimator = new DirectLookupEstimator(select.getTopFilters());
         return estimator.isDirectLookup();
     }
 
     private static class DirectLookupEstimator {
 
         private final ArrayList<TableFilter> filters;
+        private final ArrayList<Expression> joinCond;
         private Set<TableFilter> joinTableChain;
 
         private DirectLookupEstimator(ArrayList<TableFilter> topFilters) {
             this.filters = New.arrayList();
-            for (TableFilter tf : topFilters) {
-                if (!StringUtils.startsWith(tf.getTableAlias(), Constants.PREFIX_JOIN)) {
-                    filters.add(tf);
-                }
-
+            this.joinCond = New.arrayList();
+            for (TableFilter f : topFilters) {
+                f.visit(new TableFilterVisitor() {
+                    @Override
+                    public void accept(TableFilter f) {
+                        filters.add(f);
+                        if (f.getJoinCondition() != null) {
+                            joinCond.add(f.getJoinCondition());
+                        }
+                    }
+                });
             }
+            
         }
 
         private boolean isDirectLookup() {
             for (TableFilter tf : filters) {
-                if (!tf.isFromTableMate()) {
+                if (!tf.isFromTableMate() && !isNestedJoinTable(tf)) {
                     return false;
                 }
             }
@@ -237,6 +242,9 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
             } else {
                 List<TableFilter> shardingTableFilter = New.arrayList();
                 for (TableFilter tf : filters) {
+                    if(isNestedJoinTable(tf)) {
+                        continue;
+                    }
                     if (!isGropTableFilter(tf)) {
                         return false;
                     }
@@ -258,7 +266,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         private boolean isGropTableFilter(TableFilter filter) {
             TableMate table1 = (TableMate) filter.getTable();
             for (TableFilter item : filters) {
-                if (item == filter) {
+                if (item == filter || isNestedJoinTable(item)) {
                     continue;
                 }
                 TableMate table2 = (TableMate) item.getTable();
@@ -277,7 +285,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
             if (columns1 == null) {
                 throw new IllegalArgumentException("not sharding TableFilter");
             }
-            ArrayList<IndexCondition> conditions = filter.getIndexConditions();
+            ArrayList<IndexCondition> conditions = getIndexConditions(filter);
             List<IndexCondition> masks = New.arrayList(10);
             List<Column> compareColumns = New.arrayList(10);
             for (Column column : columns1) {
@@ -320,6 +328,31 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
 
             }
 
+        }
+        
+        private boolean isNestedJoinTable(TableFilter f) {
+            return f.getTable() instanceof RangeTable 
+                    && StringUtils.startsWith(f.getTableAlias(), Constants.PREFIX_JOIN);
+        }
+
+        private ArrayList<IndexCondition> getIndexConditions(TableFilter filter) {
+            ArrayList<IndexCondition> indexConditions = filter.getIndexConditions();
+            if(joinCond.isEmpty()) {
+                return indexConditions;
+            }
+            ArrayList<IndexCondition> original = New.arrayList(indexConditions);
+            ArrayList<IndexCondition> result;
+            try {
+                for (Expression cond : joinCond) {
+                    //add to indexConditions 
+                    cond.createIndexConditions(filter.getSession(), filter);
+                } 
+                result = New.arrayList(indexConditions);
+                return result;
+            } finally {
+                indexConditions.clear();
+                indexConditions.addAll(original);
+            }
         }
 
     }

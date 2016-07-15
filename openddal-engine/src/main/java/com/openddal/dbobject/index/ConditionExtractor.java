@@ -49,6 +49,9 @@ public final class ConditionExtractor {
         // don't use enhanced for loop to avoid creating objects
         for (int i = 0, size = indexConditions.size(); i < size; i++) {
             IndexCondition condition = indexConditions.get(i);
+            if (!condition.isEvaluatable()) {
+                continue;
+            }
             if (condition.isAlwaysFalse()) {
                 alwaysFalse = true;
                 break;

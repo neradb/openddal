@@ -13,36 +13,6 @@ import com.openddal.value.Value;
 
 public class ResultCursor implements Cursor {
 
-    /**
-     * An empty cursor.
-     */
-    public static final Cursor EMPTY_CURSOR = new Cursor() {
-        @Override
-        public boolean previous() {
-            return false;
-        }
-
-        @Override
-        public boolean next() {
-            return false;
-        }
-
-        @Override
-        public SearchRow getSearchRow() {
-            return null;
-        }
-
-        @Override
-        public Row get() {
-            return null;
-        }
-
-        @Override
-        public String toString() {
-            return "EMPTY_CURSOR";
-        }
-    };
-
     private Session session;
     private Row current;
     private final ResultSet rs;

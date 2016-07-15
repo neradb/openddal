@@ -28,7 +28,7 @@
 				<algorithm>customer_partitioner</algorithm>
 			</tableRule>
 		</tableGroup>
-		
+
 		<tableGroup>
 			<tables>
 				<table name="g2_table1" ruleColumns="id, main_id" />
@@ -54,12 +54,19 @@
 		<table name="global2">
 			<broadcast>shard0,shard1,shard2,shard3</broadcast>
 		</table>
-		
+
 		<sequence name="joinfree_test_seq" strategy="hilo">
 			<property name="shard" value="shard0" />
-			<property name="cacheSize" value="100" />
+			<property name="cacheSize" value="1" />
 		</sequence>
-
+		<sequence name="joinfree_seq2" strategy="hilo">
+			<property name="shard" value="shard0" />
+			<property name="cacheSize" value="1" />
+		</sequence>
+		<sequence name="joinfree_seq3" strategy="hilo">
+			<property name="shard" value="shard0" />
+			<property name="cacheSize" value="1" />
+		</sequence>
 	</schema>
 
 	<cluster>

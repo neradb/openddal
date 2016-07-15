@@ -109,8 +109,6 @@ public abstract class BaseTestCase {
         ds.setDriverClassName(driverClassName);
         ds.setUrl(url);
         ds.setDefaultTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        ds.setTestOnBorrow(true);
-        ds.setValidationQuery("select 1 from dual");
         return ds;
     }
 
