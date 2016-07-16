@@ -31,6 +31,7 @@ import com.openddal.server.mysql.proto.RowPacket;
 import com.openddal.server.mysql.respo.CharacterSet;
 import com.openddal.server.mysql.respo.SelectVariables;
 import com.openddal.server.mysql.respo.ShowDatabases;
+import com.openddal.server.mysql.respo.ShowEngines;
 import com.openddal.server.mysql.respo.ShowVariables;
 import com.openddal.server.mysql.respo.ShowVersion;
 import com.openddal.server.mysql.respo.TxResultSet;
@@ -328,6 +329,9 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             case ServerParseShow.SESSION_VARIABLES:
                 sendResultSet(ShowVariables.getShowResultSet(stmt));
                 break;
+            case ServerParseShow.ENGINES:
+            	sendResultSet(ShowEngines.getResultSet());
+            	break;
             default:
                 execute(stmt, ServerParse.SHOW);
             }
