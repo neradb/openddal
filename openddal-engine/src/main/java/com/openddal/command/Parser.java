@@ -1030,8 +1030,8 @@ public class Parser {
         } else if (readIf("SERVER_ENCODING")) {
             // for PostgreSQL compatibility
             buff.append("'UTF8' AS SERVER_ENCODING FROM DUAL");
-        } else if (readIf("TABLES") || readIf("FULL") && readIf("TABLES")) {
-            // for MySQL compatibility: show [FULL] TABLES
+        } else if (readIf("TABLES")) {
+            // for MySQL compatibility
             String schema = Constants.SCHEMA_MAIN;
             if (readIf("FROM")) {
                 schema = readUniqueIdentifier();

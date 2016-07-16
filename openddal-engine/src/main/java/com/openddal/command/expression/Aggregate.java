@@ -243,6 +243,11 @@ public class Aggregate extends Expression {
         }
         lastGroupRowId = groupRowId;
 
+        if (select.isDirectLookupQuery()) {
+            updateAggregate0(session);
+            return;
+        }
+
         AggregateData data = (AggregateData) group.get(this);
         if (data == null) {
             data = AggregateData.create(type);
@@ -529,6 +534,9 @@ public class Aggregate extends Expression {
 
     @Override
     public boolean isEverything(ExpressionVisitor visitor) {
+        if (visitor.getType() == ExpressionVisitor.GET_AGGREGATE) {
+            visitor.addAggregate(this);
+        }
         if (on != null && !on.isEverything(visitor)) {
             return false;
         }
@@ -608,6 +616,24 @@ public class Aggregate extends Expression {
         }
         return text + StringUtils.enclose(on.getPreparedSQL(session, parameters));
     
+    }
+
+    private void updateAggregate0(Session session) {
+        HashMap<Expression, Object> group = select.getCurrentGroup();
+        AggregateData data = (AggregateData) group.get(this);
+        if (data == null) {
+            switch (type) {
+                case COUNT:
+                case COUNT_ALL:
+                    data = AggregateData.create(SUM);
+                    break;
+                default:
+                    data = AggregateData.create(type);
+            }
+            group.put(this, data);
+        }
+        Value v = select.getCurrentValues().get(this);
+        data.add(session.getDatabase(), dataType, distinct, v);
     }
 
 }

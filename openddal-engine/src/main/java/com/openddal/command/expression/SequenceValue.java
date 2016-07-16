@@ -90,20 +90,21 @@ public class SequenceValue extends Expression {
     @Override
     public boolean isEverything(ExpressionVisitor visitor) {
         switch (visitor.getType()) {
-        case ExpressionVisitor.EVALUATABLE:
-        case ExpressionVisitor.NOT_FROM_RESOLVER:
-        case ExpressionVisitor.GET_COLUMNS:
-            return true;
-        case ExpressionVisitor.DETERMINISTIC:
-        case ExpressionVisitor.READONLY:
-        case ExpressionVisitor.INDEPENDENT:
-        case ExpressionVisitor.QUERY_COMPARABLE:
-            return false;
-        case ExpressionVisitor.GET_DEPENDENCIES:
-            visitor.addDependency(sequence);
-            return true;
-        default:
-            throw DbException.throwInternalError("type="+visitor.getType());
+            case ExpressionVisitor.EVALUATABLE:
+            case ExpressionVisitor.NOT_FROM_RESOLVER:
+            case ExpressionVisitor.GET_COLUMNS:
+            case ExpressionVisitor.GET_AGGREGATE:
+                return true;
+            case ExpressionVisitor.DETERMINISTIC:
+            case ExpressionVisitor.READONLY:
+            case ExpressionVisitor.INDEPENDENT:
+            case ExpressionVisitor.QUERY_COMPARABLE:
+                return false;
+            case ExpressionVisitor.GET_DEPENDENCIES:
+                visitor.addDependency(sequence);
+                return true;
+            default:
+                throw DbException.throwInternalError("type=" + visitor.getType());
         }
     }
 

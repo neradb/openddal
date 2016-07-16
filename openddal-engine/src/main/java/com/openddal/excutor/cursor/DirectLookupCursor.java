@@ -3,12 +3,15 @@ package com.openddal.excutor.cursor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.openddal.command.dml.Select;
+import com.openddal.command.expression.Aggregate;
 import com.openddal.command.expression.Expression;
+import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.ConditionExtractor;
@@ -30,6 +33,7 @@ import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
+import com.openddal.value.Value;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -39,6 +43,7 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     private Cursor cursor;
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryWorker> workers;
+    ArrayList<Expression> expressions;
 
     public DirectLookupCursor(Select select) {
         super(select);
@@ -46,7 +51,22 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
 
     @Override
     protected void doPrepare() {
-        ArrayList<Expression> expressions = prepared.getExpressions();
+        expressions = prepared.getExpressions();
+        if (prepared.isGroupQuery()) {
+            ArrayList<Expression> selectExprs = New.arrayList(10);
+            int[] groupIndex = prepared.getGroupIndex();
+            for (int i = 0; i < groupIndex.length; i++) {
+                int idx = groupIndex[i];
+                Expression expr = expressions.get(idx);
+                selectExprs.add(expr);
+            }
+            HashSet<Aggregate> aggregates = New.hashSet();
+            for (Expression expr : expressions) {
+                expr.isEverything(ExpressionVisitor.getAggregateVisitor(aggregates));
+            }
+            selectExprs.addAll(aggregates);
+            expressions = selectExprs;
+        }
         Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
         Integer limit = null, offset = null;
         Expression limitExpr = prepared.getLimit();
@@ -197,6 +217,16 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
     @Override
     public boolean previous() {
         throw DbException.throwInternalError();
+    }
+
+    public HashMap<Expression, Value> getCurrentValues() {
+        SearchRow searchRow = cursor.getSearchRow();
+        int len = expressions.size();
+        HashMap<Expression, Value> result = New.hashMapNonRehash(len);
+        for (int i = 0; i < len; i++) {
+            result.put(expressions.get(i), searchRow.getValue(i));
+        }
+        return result;
     }
 
     public double getCost() {

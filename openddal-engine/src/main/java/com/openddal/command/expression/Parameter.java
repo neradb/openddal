@@ -162,6 +162,7 @@ public class Parameter extends Expression implements ParameterInterface {
             case ExpressionVisitor.DETERMINISTIC:
             case ExpressionVisitor.READONLY:
             case ExpressionVisitor.GET_COLUMNS:
+            case ExpressionVisitor.GET_AGGREGATE:
                 return true;
             case ExpressionVisitor.INDEPENDENT:
                 return value != null;

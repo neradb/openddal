@@ -104,6 +104,10 @@ public class ExpressionVisitor {
      * Get all referenced columns.
      */
     public static final int COLUMNS_CONDITIONS = 10;
+    /**
+     * Get all aggregate function.
+     */
+    public static final int GET_AGGREGATE = 11;
 
     /**
      * The visitor singleton for the type QUERY_COMPARABLE.
@@ -117,11 +121,13 @@ public class ExpressionVisitor {
     private final HashSet<Column> columns;
     private final Table table;
     private final ColumnResolver resolver;
+    private final HashSet<Aggregate> aggregates;
 
     private ExpressionVisitor(int type,
                               int queryLevel,
                               HashSet<DbObject> dependencies,
                               HashSet<Column> columns,
+                              HashSet<Aggregate> aggregates,
                               Table table, ColumnResolver resolver) {
         this.type = type;
         this.queryLevel = queryLevel;
@@ -129,6 +135,7 @@ public class ExpressionVisitor {
         this.columns = columns;
         this.table = table;
         this.resolver = resolver;
+        this.aggregates = aggregates;
     }
 
     private ExpressionVisitor(int type) {
@@ -138,6 +145,8 @@ public class ExpressionVisitor {
         this.columns = null;
         this.table = null;
         this.resolver = null;
+        this.aggregates = null;
+
     }
 
     /**
@@ -149,7 +158,7 @@ public class ExpressionVisitor {
     public static ExpressionVisitor getDependenciesVisitor(
             HashSet<DbObject> dependencies) {
         return new ExpressionVisitor(GET_DEPENDENCIES, 0, dependencies, null,
-                null, null);
+                null, null, null);
     }
 
     /**
@@ -161,7 +170,7 @@ public class ExpressionVisitor {
      */
     static ExpressionVisitor getNotFromResolverVisitor(ColumnResolver resolver) {
         return new ExpressionVisitor(NOT_FROM_RESOLVER, 0, null, null, null,
-                resolver);
+                null,resolver);
     }
 
     /**
@@ -171,7 +180,17 @@ public class ExpressionVisitor {
      * @return the new visitor
      */
     public static ExpressionVisitor getColumnsVisitor(HashSet<Column> columns) {
-        return new ExpressionVisitor(GET_COLUMNS, 0, null, columns, null, null);
+        return new ExpressionVisitor(GET_COLUMNS, 0, null, columns, null, null, null);
+    }
+
+    /**
+     * Create a new visitor to get all referenced columns.
+     *
+     * @param columns the columns map
+     * @return the new visitor
+     */
+    public static ExpressionVisitor getAggregateVisitor(HashSet<Aggregate> aggregates) {
+        return new ExpressionVisitor(GET_AGGREGATE, 0, null, null, aggregates, null, null);
     }
 
     /**
@@ -193,6 +212,16 @@ public class ExpressionVisitor {
     void addColumn(Column column) {
         columns.add(column);
     }
+    
+    /**
+     * Add a new aggregate to the set of aggregate. This is used for
+     * GET_AGGREGATEAS visitors.
+     *
+     * @param aggregate the additional aggregate.
+     */
+    void addAggregate(Aggregate aggregate) {
+        aggregates.add(aggregate);
+    }
 
     /**
      * Get the dependency set.
@@ -212,7 +241,7 @@ public class ExpressionVisitor {
      */
     public ExpressionVisitor incrementQueryLevel(int offset) {
         return new ExpressionVisitor(type, queryLevel + offset, dependencies,
-                columns, table, resolver);
+                columns, aggregates, table, resolver);
     }
 
     /**

@@ -63,6 +63,7 @@ public class Select extends Query {
     private int[] groupIndex;
     private boolean[] groupByExpression;
     private HashMap<Expression, Object> currentGroup;
+    private HashMap<Expression, Value> currentValues;
     private int havingIndex;
     private boolean isGroupQuery;
     private boolean isForUpdate, isForUpdateMvcc;
@@ -125,6 +126,10 @@ public class Select extends Query {
 
     public int getCurrentGroupRowId() {
         return currentGroupRowId;
+    }
+
+    public HashMap<Expression, Value> getCurrentValues() {
+        return currentValues;
     }
 
     @Override
@@ -319,11 +324,76 @@ public class Select extends Query {
     }
 
     private void queryGroupQuick(int columnCount, ResultTarget result) {
-        for (int i = 0; i < columnCount; i++) {
-            Expression expr = expressions.get(i);
+        DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
+        ValueHashMap<HashMap<Expression, Object>> groups = ValueHashMap.newInstance();
+        int rowNumber = 0;
+        setCurrentRowNumber(0);
+        currentGroup = null;
+        currentValues = null;
+        ValueArray defaultGroup = ValueArray.get(new Value[0]);
+        int sampleSize = getSampleSizeValue(session);
+        while (lookupCursor.next()) {
+            setCurrentRowNumber(rowNumber + 1);
+            Value key;
+            rowNumber++;
+            currentValues = lookupCursor.getCurrentValues();
+            if (groupIndex == null) {
+                key = defaultGroup;
+            } else {
+                Value[] keyValues = new Value[groupIndex.length];
+                // update group
+                for (int i = 0; i < groupIndex.length; i++) {
+                    int idx = groupIndex[i];
+                    Expression expr = expressions.get(idx);
+                    keyValues[i] = currentValues.get(expr);
+                }
+                key = ValueArray.get(keyValues);
+            }
+            HashMap<Expression, Object> values = groups.get(key);
+            if (values == null) {
+                values = new HashMap<Expression, Object>();
+                groups.put(key, values);
+            }
+            currentGroup = values;
+            currentGroupRowId++;
+            int len = columnCount;
+            for (int i = 0; i < len; i++) {
+                if (groupByExpression == null || !groupByExpression[i]) {
+                    Expression expr = expressions.get(i);
+                    expr.updateAggregate(session);
+                }
+            }
+            if (sampleSize > 0 && rowNumber >= sampleSize) {
+                break;
+            }
+
         }
-  
-        // result.addRow(row);
+        if (groupIndex == null && groups.size() == 0) {
+            groups.put(defaultGroup, new HashMap<Expression, Object>());
+        }
+        ArrayList<Value> keys = groups.keys();
+        for (Value v : keys) {
+            ValueArray key = (ValueArray) v;
+            currentGroup = groups.get(key);
+            Value[] keyValues = key.getList();
+            Value[] row = new Value[columnCount];
+            for (int j = 0; groupIndex != null && j < groupIndex.length; j++) {
+                row[groupIndex[j]] = keyValues[j];
+            }
+            for (int j = 0; j < columnCount; j++) {
+                if (groupByExpression != null && groupByExpression[j]) {
+                    continue;
+                }
+                Expression expr = expressions.get(j);
+                row[j] = expr.getValue(session);
+            }
+            if (isHavingNullOrFalse(row)) {
+                continue;
+            }
+            row = keepOnlyDistinct(row, columnCount);
+            result.addRow(row);
+        }
+
     }
 
     @Override
@@ -873,6 +943,14 @@ public class Select extends Query {
 
     public SortOrder getSortOrder() {
         return sort;
+    }
+
+    public boolean isGroupQuery() {
+        return isGroupQuery;
+    }
+
+    public boolean isDirectLookupQuery() {
+        return isDirectLookupQuery;
     }
 
 }

@@ -82,6 +82,7 @@ public class Variable extends Expression {
             case ExpressionVisitor.QUERY_COMPARABLE:
             case ExpressionVisitor.GET_DEPENDENCIES:
             case ExpressionVisitor.GET_COLUMNS:
+            case ExpressionVisitor.GET_AGGREGATE:
                 return true;
             case ExpressionVisitor.DETERMINISTIC:
                 return false;

@@ -167,7 +167,6 @@ public abstract class Command implements CommandInterface {
         startTime = 0;
         Database database = session.getDatabase();
         Object sync = session;
-        boolean callStop = true;
         synchronized (sync) {
             session.setCurrentCommand(this);
             try {
@@ -177,7 +176,6 @@ public abstract class Command implements CommandInterface {
                     } catch (DbException e) {
                         throw e;
                     } catch (OutOfMemoryError e) {
-                        callStop = false;
                         // there is a serious problem:
                         // the transaction may be applied partially
                         // in this case we need to panic:
@@ -192,15 +190,12 @@ public abstract class Command implements CommandInterface {
                 e = e.addSQL(sql);
                 SQLException s = e.getSQLException();
                 if (s.getErrorCode() == ErrorCode.OUT_OF_MEMORY) {
-                    callStop = false;
                     database.shutdownImmediately();
                     throw e;
                 }
                 throw e;
             } finally {
-                if (callStop) {
-                    stop();
-                }
+                stop();
             }
         }
     }
@@ -209,7 +204,6 @@ public abstract class Command implements CommandInterface {
     public int executeUpdate() {
         Database database = session.getDatabase();
         Object sync = session;
-        boolean callStop = true;
         synchronized (sync) {
             session.setCurrentCommand(this);
             try {
@@ -219,7 +213,6 @@ public abstract class Command implements CommandInterface {
                     } catch (DbException e) {
                         throw e;
                     } catch (OutOfMemoryError e) {
-                        callStop = false;
                         database.shutdownImmediately();
                         throw DbException.convert(e);
                     } catch (Throwable e) {
@@ -230,18 +223,12 @@ public abstract class Command implements CommandInterface {
                 e = e.addSQL(sql);
                 SQLException s = e.getSQLException();
                 if (s.getErrorCode() == ErrorCode.OUT_OF_MEMORY) {
-                    callStop = false;
                     database.shutdownImmediately();
                     throw e;
                 }
                 throw e;
             } finally {
-                try {
-                    if (callStop) {
-                        stop();
-                    }
-                } finally {
-                }
+                stop();
             }
         }
     }

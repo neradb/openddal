@@ -126,7 +126,7 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
         ConditionExtractor extractor = new ConditionExtractor(tableFilter);
         this.alwaysFalse = extractor.isAlwaysFalse();
         if (extractor.isAlwaysFalse()) {
-            return ResultCursor.EMPTY_CURSOR;
+            return this;
         }
         RoutingResult result = routingHandler.doRoute(tableMate, 
                 extractor.getStart(), extractor.getStart(), extractor.getInColumns());

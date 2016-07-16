@@ -96,6 +96,7 @@ public class Rownum extends Expression {
             case ExpressionVisitor.NOT_FROM_RESOLVER:
             case ExpressionVisitor.GET_DEPENDENCIES:
             case ExpressionVisitor.GET_COLUMNS:
+            case ExpressionVisitor.GET_AGGREGATE:
                 // if everything else is the same, the rownum is the same
                 return true;
             default:
