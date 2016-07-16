@@ -16,9 +16,10 @@
 package com.openddal.server.mysql.respo;
 
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 
-import com.openddal.result.SimpleResultSet;
+import com.openddal.server.result.ThreadLocalResultSet;
 
 /**
  * Show engines: keeping some tools happy, such as MySQL workbench.
@@ -29,27 +30,36 @@ import com.openddal.result.SimpleResultSet;
 public final class ShowEngines {
 	
 	// engines table: singleton
-	private final static SimpleResultSet EMPTY_SET = new SimpleResultSet(){
+	private final static ThreadLocalResultSet ENGINES = new ThreadLocalResultSet(){
 		// - init
 		{
-			addColumn("ENGINE",       Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("SUPPORT",      Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("COMMENT",      Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("TRANSACTIONS", Types.VARCHAR, Integer.MAX_VALUE, 0);
+			// add-columns
+			addColumn("Engine",       Types.VARCHAR, Integer.MAX_VALUE, 0);
+			addColumn("Support",      Types.VARCHAR, Integer.MAX_VALUE, 0);
+			addColumn("Comment",      Types.VARCHAR, Integer.MAX_VALUE, 0);
+			addColumn("Transactions", Types.VARCHAR, Integer.MAX_VALUE, 0);
 			addColumn("XA",           Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("SAVEPOINTS",   Types.VARCHAR, Integer.MAX_VALUE, 0);
+			addColumn("Savepoints",   Types.VARCHAR, Integer.MAX_VALUE, 0);
+			// add-rows
+			// @author little-pan
+			// @since 2016-07-17
+			addRow("OpenDDAL", "Yes", 
+				"JDBC-shars, database middleware, distributed SQL engine", 
+				"Yes", "Yes", "Yes");
 		}
 		
-		@Override
-		public void close(){
-			// singleton: no close
-		}
 	};
 	
 	private ShowEngines(){}
 	
     public final static ResultSet getResultSet() {
-        return EMPTY_SET;
+    	try{
+    		// Resetting access status: 
+    		// close() may not be called when exception occurs!
+    		return (ENGINES.reset());
+    	}catch(final SQLException e){
+    		throw new RuntimeException(e);
+    	}
     }
     
 }
