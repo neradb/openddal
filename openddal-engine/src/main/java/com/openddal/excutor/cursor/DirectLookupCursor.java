@@ -79,8 +79,8 @@ public class DirectLookupCursor extends ExecutionFramework<Select> implements Cu
         }
         RoutingResult rr = doRoute(prepared);
         if (rr.isMultipleNode() && offset != null) {
-            if (limit != null && limit > database.getSettings().analyzeSample) {
-                throw DbException.get(ErrorCode.INVALID_VALUE_2, "limit", limit + ", the max support limit "
+            if (offset > database.getSettings().analyzeSample) {
+                throw DbException.get(ErrorCode.INVALID_VALUE_2, "offset", offset + ", the max support offset "
                         + database.getSettings().analyzeSample + " is defined by analyzeSample.");
             }
             offset = offset != null ? 0 : offset;

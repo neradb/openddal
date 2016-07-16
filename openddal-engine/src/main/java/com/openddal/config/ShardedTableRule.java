@@ -69,7 +69,8 @@ public class ShardedTableRule extends TableRule implements Serializable {
         if (this.metadataNode == null) {
             ObjectNode[] objectNodes = getObjectNodes();
             int bound = objectNodes.length - 1;
-            return objectNodes[random.nextInt(bound)];
+            int index = bound > 0 ? random.nextInt(bound) : bound;
+            return objectNodes[index];
         }
         return this.metadataNode;
     }

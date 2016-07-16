@@ -39,7 +39,8 @@ public class GlobalTableRule extends TableRule {
     private ObjectNode randomMetadataNode() {
         ObjectNode[] objectNodes = getBroadcasts();
         int bound = objectNodes.length - 1;
-        return objectNodes[random.nextInt(bound)];
+        int index = bound > 0 ? random.nextInt(bound) : bound;
+        return objectNodes[index];
     }
 
     public int getType() {
