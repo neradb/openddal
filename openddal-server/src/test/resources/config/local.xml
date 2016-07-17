@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ddal-config PUBLIC "-//openddal.com//DTD ddal-config//EN" "http://openddal.com/dtd/ddal-config.dtd">
+<ddal-config>
+
+    <settings>
+        <property name="sqlMode" value="MySQL" />
+        <property name="transactionMode" value="BESTEFFORTS_1PC" />
+        <property name="defaultQueryTimeout" value="3000000" />
+        <property name="validationQuery" value="select 1" />
+        <property name="validationQueryTimeout" value="1000" />
+    </settings>
+
+    <schema name="SCHEMA_MAIN" force="false">
+
+        <table name="product">
+            <broadcast>shard0,shard1</broadcast>
+        </table>
+
+        <table name="customer_login_log">
+            <node shard="shard0" name="t_customer_login_log"/>
+        </table>
+    </schema>
+
+    <cluster>
+        <shard name="shard0">
+            <member ref="db1m" />
+        </shard>
+        <shard name="shard1">
+            <member ref="db2m" />
+        </shard>
+    </cluster>
+
+
+
+    <dataNodes>
+        <datasource id="db1m" class="org.apache.commons.dbcp.BasicDataSource">
+            <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+            <property name="url"
+                      value="jdbc:mysql://localhost:3306/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true" />
+            <property name="username" value="root" />
+            <property name="password" value="xujianhai" />
+            <property name="maxWait" value="0" />
+            <property name="poolPreparedStatements" value="true" />
+        </datasource>
+        <datasource id="db2m" class="org.apache.commons.dbcp.BasicDataSource">
+            <property name="driverClassName" value="com.mysql.jdbc.Driver" />
+            <property name="url"
+                      value="jdbc:mysql://localhost:3306/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true" />
+            <property name="username" value="root" />
+            <property name="password" value="xujianhai" />
+            <property name="maxWait" value="0" />
+            <property name="poolPreparedStatements" value="true" />
+        </datasource>
+    </dataNodes>
+
+
+    <algorithms>
+        <ruleAlgorithm name="customer_partitioner"
+                       class="com.openddal.route.algorithm.HashBucketPartitioner">
+            <property name="partitionCount" value="8" />
+            <property name="partitionLength" value="128" />
+        </ruleAlgorithm>
+        <ruleAlgorithm name="order_partitioner"
+                       class="com.openddal.route.algorithm.HashBucketPartitioner">
+            <property name="partitionCount" value="16" />
+            <property name="partitionLength" value="64" />
+        </ruleAlgorithm>
+    </algorithms>
+
+</ddal-config>
