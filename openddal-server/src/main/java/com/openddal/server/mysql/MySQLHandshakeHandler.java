@@ -21,6 +21,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.openddal.server.mysql.auth.PrivilegeFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,7 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLHandshakeHandler.class);
     private final AtomicLong connIdGenerator = new AtomicLong(0);
     private final AttributeKey<MySQLSession> TMP_SESSION_KEY = AttributeKey.valueOf("_AUTHTMP_SESSION_KEY");
+    private static final String SEED_KEY = "seed";
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -80,8 +82,10 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         handshake.removeCapabilityFlag(Flags.CLIENT_RESERVED);
         handshake.removeCapabilityFlag(Flags.CLIENT_REMEMBER_OPTIONS);
 
+
         MySQLSession temp = new MySQLSession();
         temp.setHandshake(handshake);
+        temp.setAttachment(SEED_KEY, handshake.challenge1);
         ctx.attr(TMP_SESSION_KEY).set(temp);
         out.writeBytes(handshake.toPacket());
         ctx.writeAndFlush(out);
@@ -167,6 +171,11 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
                 byte[] packet = new byte[transport.in.readableBytes()];
                 transport.in.readBytes(packet);
                 authReply = HandshakeResponse.loadFromPacket(packet);
+                // check user pass
+                if(!PrivilegeFactory.getInstance().getConrrentPrivilege().hasPrivilege(authReply.username, authReply.authResponse,
+                        (String) session.getAttachment(SEED_KEY))) {
+                    throw new Exception();
+                }
                 Connection connect = connectEngine(authReply);
                 session.setHandshakeResponse(authReply);
                 session.setEngineConnection(connect);
