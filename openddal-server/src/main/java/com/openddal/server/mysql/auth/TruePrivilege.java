@@ -1,4 +1,4 @@
-package com.openddal.server.frontend;
+package com.openddal.server.mysql.auth;
 
 /**
  * Created by snow_young on 16/7/17.

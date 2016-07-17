@@ -1,4 +1,4 @@
-package com.openddal.server.frontend;
+package com.openddal.server.mysql.auth;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

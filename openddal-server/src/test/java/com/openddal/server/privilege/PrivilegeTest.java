@@ -1,6 +1,6 @@
 package com.openddal.server.privilege;
 
-import com.openddal.server.frontend.PropPrivilege;
+import com.openddal.server.mysql.auth.PropPrivilege;
 import org.junit.Assert;
 import org.junit.Test;
 

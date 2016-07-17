@@ -1,4 +1,4 @@
-package com.openddal.server.frontend;
+package com.openddal.server.mysql.auth;
 
 import com.openddal.engine.SysProperties;
 
