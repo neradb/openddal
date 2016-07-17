@@ -16,10 +16,9 @@
 package com.openddal.server.mysql.respo;
 
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
 
-import com.openddal.server.result.ThreadLocalResultSet;
+import com.openddal.result.SimpleResultSet;
 
 /**
  * Show engines: keeping some tools happy, such as MySQL workbench.
@@ -29,37 +28,37 @@ import com.openddal.server.result.ThreadLocalResultSet;
  */
 public final class ShowEngines {
 	
-	// engines table: singleton
-	private final static ThreadLocalResultSet ENGINES = new ThreadLocalResultSet(){
-		// - init
-		{
-			// add-columns
-			addColumn("Engine",       Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("Support",      Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("Comment",      Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("Transactions", Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("XA",           Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("Savepoints",   Types.VARCHAR, Integer.MAX_VALUE, 0);
-			// add-rows
-			// @author little-pan
-			// @since 2016-07-17
-			addRow("OpenDDAL", "Yes", 
-				"JDBC-shars, database middleware, distributed SQL engine", 
-				"Yes", "Yes", "Yes");
-		}
-		
-	};
+	// Simply use SimpleResultSet
+	private final static ResultSet Engines(){
+		return (new SimpleResultSet(){
+			// - init
+			{
+				// add-columns
+				addColumn("Engine",       Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Support",      Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Comment",      Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Transactions", Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("XA",           Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Savepoints",   Types.VARCHAR, Integer.MAX_VALUE, 0);
+				// add-rows
+				// @author little-pan
+				// @since 2016-07-17
+				addRow(
+						"OpenDDAL",
+						"Yes", 
+						"JDBC-shars, database middleware, distributed SQL engine", 
+						"Yes", 
+						"Yes", 
+						"Yes"
+				);
+			}
+		});
+	}
 	
 	private ShowEngines(){}
 	
     public final static ResultSet getResultSet() {
-    	try{
-    		// Resetting access status: 
-    		// close() may not be called when exception occurs!
-    		return (ENGINES.reset());
-    	}catch(final SQLException e){
-    		throw new RuntimeException(e);
-    	}
+    	return Engines();
     }
     
 }
