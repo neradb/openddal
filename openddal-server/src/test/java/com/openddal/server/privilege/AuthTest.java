@@ -14,7 +14,7 @@ import org.junit.Test;
  * Created by snow_young on 16/7/16.
  */
 public class AuthTest {
-    private String ddalUrl = "jdbc:mysql://localhost:6100/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true" ;
+    private String ddalUrl = "jdbc:mysql://localhost:6100/schema_main?connectTimeout=1000&amp;rewriteBatchedStatements=true" ;
     @Test
     public void authDDAL() throws UnsupportedEncodingException, NoSuchAlgorithmException {
         try{
@@ -26,7 +26,7 @@ public class AuthTest {
         }
 
         String username = "root" ;
-        String password = "xujianhai" ;
+        String password = "X$re58i4klhfg" ;
         String failPassword = "xujianhai123";
         // test success
         Connection con = null;

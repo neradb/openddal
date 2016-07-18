@@ -94,8 +94,7 @@ public class SysProperties {
 
     public static final String ENGINE_CONFIG_LOCATION = Utils.getProperty("ddal.engineConfigLocation", "ddal-engine.xml");
 
-    // develop env config
-    public static final String USER_COFIG = System.getProperty("user.dir") + "/src/main/resources/user-config.properties";
+    public static final String SERVERUSER_CONFIG_LOCATION = Utils.getProperty("ddal.serverUserConfigLocation", "users.properties");
 
     private SysProperties() {
         // utility class
