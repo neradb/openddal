@@ -28,28 +28,37 @@ import com.openddal.result.SimpleResultSet;
  */
 public final class ShowEngines {
 	
-	// engines table: singleton
-	private final static SimpleResultSet EMPTY_SET = new SimpleResultSet(){
-		// - init
-		{
-			addColumn("ENGINE",       Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("SUPPORT",      Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("COMMENT",      Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("TRANSACTIONS", Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("XA",           Types.VARCHAR, Integer.MAX_VALUE, 0);
-			addColumn("SAVEPOINTS",   Types.VARCHAR, Integer.MAX_VALUE, 0);
-		}
-		
-		@Override
-		public void close(){
-			// singleton: no close
-		}
-	};
+	// Simply use SimpleResultSet
+	private final static ResultSet Engines(){
+		return (new SimpleResultSet(){
+			// - init
+			{
+				// add-columns
+				addColumn("Engine",       Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Support",      Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Comment",      Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Transactions", Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("XA",           Types.VARCHAR, Integer.MAX_VALUE, 0);
+				addColumn("Savepoints",   Types.VARCHAR, Integer.MAX_VALUE, 0);
+				// add-rows
+				// @author little-pan
+				// @since 2016-07-17
+				addRow(
+						"OpenDDAL",
+						"Yes", 
+						"JDBC-shars, database middleware, distributed SQL engine", 
+						"Yes", 
+						"Yes", 
+						"Yes"
+				);
+			}
+		});
+	}
 	
 	private ShowEngines(){}
 	
     public final static ResultSet getResultSet() {
-        return EMPTY_SET;
+    	return Engines();
     }
     
 }
