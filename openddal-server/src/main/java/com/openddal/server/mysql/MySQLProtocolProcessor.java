@@ -1,7 +1,6 @@
 package com.openddal.server.mysql;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -30,7 +29,7 @@ import com.openddal.server.mysql.proto.ResultSetPacket;
 import com.openddal.server.mysql.proto.RowPacket;
 import com.openddal.server.mysql.respo.CharacterSet;
 import com.openddal.server.mysql.respo.SelectVariables;
-import com.openddal.server.mysql.respo.ShowDatabases;
+import com.openddal.server.mysql.respo.ShowCharset;
 import com.openddal.server.mysql.respo.ShowEngines;
 import com.openddal.server.mysql.respo.ShowVariables;
 import com.openddal.server.mysql.respo.ShowVersion;
@@ -308,32 +307,39 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         ResultSet rs = null;
         try {
             switch (ServerParseShow.parse(stmt, offset)) {
-            case ServerParseShow.DATABASES:
-                DatabaseMetaData metaData = getConnection().getMetaData();
-                rs = metaData.getSchemas();
-                sendResultSet(ShowDatabases.toMySQLResultSet(rs));
-                break;
-            case ServerParseShow.CONNECTION:
-                unsupported("CONNECTION");
-                break;
-            case ServerParseShow.SLOW:
-                unsupported("SLOW");
-                break;
-            case ServerParseShow.PHYSICAL_SLOW:
-                unsupported("PHYSICAL_SLOW");
-                break;
-            case ServerParseShow.VARIABLES:
-                sendResultSet(ShowVariables.getResultSet());
-                break;
-            case ServerParseShow.SESSION_STATUS:
-            case ServerParseShow.SESSION_VARIABLES:
-                sendResultSet(ShowVariables.getShowResultSet(stmt));
-                break;
-            case ServerParseShow.ENGINES:
-            	sendResultSet(ShowEngines.getResultSet());
-            	break;
-            default:
-                execute(stmt, ServerParse.SHOW);
+                case ServerParseShow.DATABASES:
+                    execute("SHOW DATABASES", ServerParse.SHOW);
+                    break;
+                case ServerParseShow.FULL_TABKES:
+                    execute("SHOW TABLES", ServerParse.SHOW);
+                    break;
+                case ServerParseShow.CHARSET:
+                    sendResultSet(ShowCharset.getResultSet());
+                    break;
+                case ServerParseShow.COLLATION:
+                    sendResultSet(ShowCharset.getCollationResultSet());
+                    break;
+                case ServerParseShow.CONNECTION:
+                    unsupported("CONNECTION");
+                    break;
+                case ServerParseShow.SLOW:
+                    unsupported("SLOW");
+                    break;
+                case ServerParseShow.PHYSICAL_SLOW:
+                    unsupported("PHYSICAL_SLOW");
+                    break;
+                case ServerParseShow.VARIABLES:
+                    sendResultSet(ShowVariables.getResultSet());
+                    break;
+                case ServerParseShow.SESSION_STATUS:
+                case ServerParseShow.SESSION_VARIABLES:
+                    sendResultSet(ShowVariables.getShowResultSet(stmt));
+                    break;
+                case ServerParseShow.ENGINES:
+                    sendResultSet(ShowEngines.getResultSet());
+                    break;
+                default:
+                    execute(stmt, ServerParse.SHOW);
             }
         } finally {
             JdbcUtils.closeSilently(rs);

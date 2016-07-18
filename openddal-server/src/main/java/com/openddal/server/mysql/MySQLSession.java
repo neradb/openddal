@@ -19,8 +19,6 @@ import java.sql.Connection;
 import java.util.Map;
 
 import com.openddal.server.Session;
-import com.openddal.server.mysql.proto.Handshake;
-import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.util.CharsetUtil;
 import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
@@ -34,20 +32,21 @@ import io.netty.channel.Channel;
 public class MySQLSession implements Session {
 
     private Channel channel;
-    private Handshake handshake;
-    private HandshakeResponse handshakeResponse;
     private Connection engineConnection;
     private Map<String, Object> attachments = New.hashMap();
+    private long connectionId;
     private String charset;
     private int charsetIndex;
-    public String username;
-    public String schema;
+    private String seed;
+    private String username;
+    private String schema;
+
 
     /**
      * @return the sessionId
      */
     public long getConnectionId() {
-        return handshake.connectionId;
+        return connectionId;
     }
 
     @SuppressWarnings("unchecked")
@@ -69,7 +68,7 @@ public class MySQLSession implements Session {
      * @return the user
      */
     public String getUser() {
-        return handshakeResponse.username;
+        return username;
     }
 
     /**
@@ -83,7 +82,7 @@ public class MySQLSession implements Session {
      * @return the schema
      */
     public String getSchema() {
-        return handshakeResponse.schema;
+        return schema;
     }
 
     /**
@@ -101,24 +100,7 @@ public class MySQLSession implements Session {
         this.engineConnection = engineConnection;
     }
 
-    /**
-     * @param handshake the handshake to set
-     */
-    public void setHandshake(Handshake handshake) {
-        this.handshake = handshake;
-        setCharsetIndex((int)handshake.characterSet);
-    }
 
-    /**
-     * @param handshakeResponse the handshakeResponse to set
-     */
-    public void setHandshakeResponse(HandshakeResponse handshakeResponse) {
-        this.handshakeResponse = handshakeResponse;
-        this.username = handshakeResponse.username;
-        this.schema = handshakeResponse.schema;
-        this.setCharsetIndex((int)handshakeResponse.characterSet);
-
-    }
 
     public void bind(Channel channel) {
         this.channel = channel;
@@ -165,4 +147,25 @@ public class MySQLSession implements Session {
     public int getCharsetIndex() {
         return this.charsetIndex;
     }
+
+    public void setConnectionId(long connectionId) {
+        this.connectionId = connectionId;
+    }
+
+    public void setUser(String username) {
+        this.username = username;
+    }
+
+    public void setSchema(String schema) {
+        this.schema = schema;
+    }
+
+    public String getSeed() {
+        return seed;
+    }
+
+    public void setSeed(String seed) {
+        this.seed = seed;
+    }
+
 }

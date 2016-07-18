@@ -320,4 +320,7 @@ public class Flags {
 
     public static final int NOT_FIXED_DEC                           = 31;
 
+    public static final String MYSQL_NATIVE_PASSWORD = "mysql_native_password";
+    public static final String MYSQL_CLEAR_PASSWORD = "mysql_native_password";
+
 }

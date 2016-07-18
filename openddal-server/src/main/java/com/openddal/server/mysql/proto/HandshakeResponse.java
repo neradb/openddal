@@ -83,56 +83,52 @@ public class HandshakeResponse extends Packet {
     public static HandshakeResponse loadFromPacket(byte[] packet) {
         HandshakeResponse obj = new HandshakeResponse();
         Proto proto = new Proto(packet, 3);
-        
+
         obj.sequenceId = proto.get_fixed_int(1);
         obj.capabilityFlags = proto.get_fixed_int(2);
         proto.offset -= 2;
-        
+
         if (obj.hasCapabilityFlag(Flags.CLIENT_PROTOCOL_41)) {
             obj.capabilityFlags = proto.get_fixed_int(4);
             obj.maxPacketSize = proto.get_fixed_int(4);
             obj.characterSet = proto.get_fixed_int(1);
             proto.get_filler(23);
             obj.username = proto.get_null_str();
-            
+
             if (obj.hasCapabilityFlag(Flags.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
                 obj.authResponseLen = proto.get_lenenc_int();
                 obj.authResponse = proto.get_fixed_str(obj.authResponseLen, true);
-            }
-            else  {
+            } else {
                 if (obj.hasCapabilityFlag(Flags.CLIENT_SECURE_CONNECTION)) {
                     obj.authResponseLen = proto.get_fixed_int(1);
                     obj.authResponse = proto.get_fixed_str(obj.authResponseLen, true);
-                }
-                else {
+                } else {
                     obj.authResponse = proto.get_null_str();
                 }
             }
-            
+
             if (obj.hasCapabilityFlag(Flags.CLIENT_CONNECT_WITH_DB))
                 obj.schema = proto.get_null_str();
-            
+
             if (obj.hasCapabilityFlag(Flags.CLIENT_PLUGIN_AUTH))
                 obj.pluginName = proto.get_null_str();
-                
+
             if (obj.hasCapabilityFlag(Flags.CLIENT_CONNECT_ATTRS)) {
                 obj.clientAttributesLen = proto.get_lenenc_int();
                 obj.clientAttributes = proto.get_eop_str();
             }
-        }
-        else {
+        } else {
             obj.capabilityFlags = proto.get_fixed_int(2);
             obj.maxPacketSize = proto.get_fixed_int(3);
             obj.username = proto.get_null_str();
-            
+
             if (obj.hasCapabilityFlag(Flags.CLIENT_CONNECT_WITH_DB)) {
                 obj.authResponse = proto.get_null_str();
                 obj.schema = proto.get_null_str();
-            }
-            else
+            } else
                 obj.authResponse = proto.get_eop_str();
         }
-        
+
         return obj;
     }
 }

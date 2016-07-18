@@ -54,10 +54,10 @@ public class Handshake extends Packet {
         payload.add( Proto.build_fixed_int(4, this.connectionId));
         payload.add( Proto.build_fixed_str(8, this.challenge1));
         payload.add( Proto.build_filler(1));
-        payload.add( Proto.build_fixed_int(2, this.capabilityFlags >> 16));
+        payload.add(Proto.build_fixed_int(2, this.capabilityFlags & 0xffff));
         payload.add( Proto.build_fixed_int(1, this.characterSet));
         payload.add( Proto.build_fixed_int(2, this.statusFlags));
-        payload.add( Proto.build_fixed_int(2, this.capabilityFlags & 0xffff));
+        payload.add(Proto.build_fixed_int(2, this.capabilityFlags >> 16));
 
         if (this.hasCapabilityFlag(Flags.CLIENT_SECURE_CONNECTION)) {
             payload.add( Proto.build_fixed_int(1, this.authPluginDataLength));
@@ -89,12 +89,12 @@ public class Handshake extends Packet {
         obj.connectionId = proto.get_fixed_int(4);
         obj.challenge1 = proto.get_fixed_str(8);
         proto.get_filler(1);
-        obj.capabilityFlags = proto.get_fixed_int(2) << 16;
+        obj.capabilityFlags = proto.get_fixed_int(2) & 0xffff;
 
         if (proto.has_remaining_data()) {
             obj.characterSet = proto.get_fixed_int(1);
             obj.statusFlags = proto.get_fixed_int(2);
-            obj.setCapabilityFlag(proto.get_fixed_int(2));
+            obj.setCapabilityFlag(proto.get_fixed_int(2) << 16);
 
             if (obj.hasCapabilityFlag(Flags.CLIENT_PLUGIN_AUTH)) {
                 obj.authPluginDataLength = proto.get_fixed_int(1);

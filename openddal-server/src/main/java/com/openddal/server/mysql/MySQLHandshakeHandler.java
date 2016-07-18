@@ -58,7 +58,6 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLHandshakeHandler.class);
     private final AtomicLong connIdGenerator = new AtomicLong(0);
     private final AttributeKey<MySQLSession> TMP_SESSION_KEY = AttributeKey.valueOf("_AUTHTMP_SESSION_KEY");
-    private static final String SEED_KEY = "seed";
     private Privilege privilege = PrivilegeDefault.getPrivilege();
 
     @Override
@@ -70,17 +69,20 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         handshake.serverVersion = MySQLServer.SERVER_VERSION;
         handshake.connectionId = connIdGenerator.incrementAndGet();
         handshake.challenge1 = getRandomString(8);
-        //handshake.capabilityFlags = 4294951423L;
         handshake.characterSet = CharsetUtil.getIndex(MySQLServer.DEFAULT_CHARSET);
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
         handshake.challenge2 = getRandomString(12);
         handshake.authPluginDataLength = 21;
-        handshake.authPluginName = "mysql_native_password";
-        handshake.capabilityFlags = getServerCapabilities();
+        handshake.authPluginName = Flags.MYSQL_NATIVE_PASSWORD;
+        handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
+        handshake.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
+        handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
+        handshake.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
 
         MySQLSession temp = new MySQLSession();
-        temp.setHandshake(handshake);
-        temp.setAttachment(SEED_KEY, handshake.challenge1);
+        temp.setConnectionId(handshake.connectionId);
+        temp.setCharsetIndex((int) handshake.characterSet);
+        temp.setSeed(handshake.challenge1 + handshake.challenge2);
         ctx.attr(TMP_SESSION_KEY).set(temp);
         out.writeBytes(handshake.toPacket());
         ctx.writeAndFlush(out);
@@ -132,26 +134,6 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         return String.valueOf(chars);
     }
     
-    protected int getServerCapabilities() {
-        int flag = 0;
-        flag |= Flags.CLIENT_LONG_PASSWORD;
-        flag |= Flags.CLIENT_FOUND_ROWS;
-        flag |= Flags.CLIENT_LONG_FLAG;
-        flag |= Flags.CLIENT_CONNECT_WITH_DB;
-        // flag |= Flags.CLIENT_NO_SCHEMA;
-        // flag |= Flags.CLIENT_COMPRESS;
-        flag |= Flags.CLIENT_ODBC;
-        // flag |= Flags.CLIENT_LOCAL_FILES;
-        flag |= Flags.CLIENT_IGNORE_SPACE;
-        flag |= Flags.CLIENT_PROTOCOL_41;
-        flag |= Flags.CLIENT_INTERACTIVE;
-        // flag |= Flags.CLIENT_SSL;
-        flag |= Flags.CLIENT_IGNORE_SIGPIPE;
-        flag |= Flags.CLIENT_TRANSACTIONS;
-        // flag |= Flags.CLIENT_RESERVED;
-        flag |= Flags.CLIENT_SECURE_CONNECTION;
-        return flag;
-    }
         
     /**
      * @param channel
@@ -207,14 +189,14 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
                     return;
                 }
 
-                if(!privilege.checkPassword(authReply.username, authReply.authResponse,
-                        (String) session.getAttachment(SEED_KEY))) {
+                if (!privilege.checkPassword(authReply.username, authReply.authResponse, session.getSeed())) {
                     error(ErrorCode.ER_ACCESS_DENIED_ERROR,
                             "Access denied for user '" + authReply.username + "'");
                     return;
                 }
                 Connection connect = connectEngine(authReply);
-                session.setHandshakeResponse(authReply);
+                session.setUser(authReply.username);
+                session.setSchema(authReply.schema);
                 session.setEngineConnection(connect);
                 session.bind(ctx.channel());
                 session.setAttachment("remoteAddress", ctx.channel().remoteAddress().toString());
@@ -237,6 +219,7 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
             err.errorCode = errno;
             err.errorMessage = msg;
             transport.out.writeBytes(err.toPacket());
+            LOGGER.info(msg);
         } 
     }
 
