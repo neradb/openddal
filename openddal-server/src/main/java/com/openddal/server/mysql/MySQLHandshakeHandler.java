@@ -70,21 +70,13 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         handshake.serverVersion = MySQLServer.SERVER_VERSION;
         handshake.connectionId = connIdGenerator.incrementAndGet();
         handshake.challenge1 = getRandomString(8);
-        handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
+        //handshake.capabilityFlags = 4294951423L;
         handshake.characterSet = CharsetUtil.getIndex(MySQLServer.DEFAULT_CHARSET);
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
         handshake.challenge2 = getRandomString(12);
         handshake.authPluginDataLength = 21;
         handshake.authPluginName = "mysql_native_password";
-        // Remove some flags from the reply
-        handshake.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
-        handshake.removeCapabilityFlag(Flags.CLIENT_IGNORE_SPACE);
-        handshake.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
-        handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
-        handshake.removeCapabilityFlag(Flags.CLIENT_TRANSACTIONS);
-        handshake.removeCapabilityFlag(Flags.CLIENT_RESERVED);
-        handshake.removeCapabilityFlag(Flags.CLIENT_REMEMBER_OPTIONS);
-
+        handshake.capabilityFlags = getServerCapabilities();
 
         MySQLSession temp = new MySQLSession();
         temp.setHandshake(handshake);
@@ -131,7 +123,7 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         return connect;
     }
 
-    public static String getRandomString(int length) {
+    private String getRandomString(int length) {
         char[] chars = new char[length];
         Random random = new Random();
         for (int i = 0; i < length; i++) {
@@ -139,7 +131,28 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         }
         return String.valueOf(chars);
     }
-
+    
+    protected int getServerCapabilities() {
+        int flag = 0;
+        flag |= Flags.CLIENT_LONG_PASSWORD;
+        flag |= Flags.CLIENT_FOUND_ROWS;
+        flag |= Flags.CLIENT_LONG_FLAG;
+        flag |= Flags.CLIENT_CONNECT_WITH_DB;
+        // flag |= Flags.CLIENT_NO_SCHEMA;
+        // flag |= Flags.CLIENT_COMPRESS;
+        flag |= Flags.CLIENT_ODBC;
+        // flag |= Flags.CLIENT_LOCAL_FILES;
+        flag |= Flags.CLIENT_IGNORE_SPACE;
+        flag |= Flags.CLIENT_PROTOCOL_41;
+        flag |= Flags.CLIENT_INTERACTIVE;
+        // flag |= Flags.CLIENT_SSL;
+        flag |= Flags.CLIENT_IGNORE_SIGPIPE;
+        flag |= Flags.CLIENT_TRANSACTIONS;
+        // flag |= Flags.CLIENT_RESERVED;
+        flag |= Flags.CLIENT_SECURE_CONNECTION;
+        return flag;
+    }
+        
     /**
      * @param channel
      * @param buf
@@ -174,6 +187,11 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
                 byte[] packet = new byte[transport.in.readableBytes()];
                 transport.in.readBytes(packet);
                 authReply = HandshakeResponse.loadFromPacket(packet);
+                
+                if (!authReply.hasCapabilityFlag(Flags.CLIENT_PROTOCOL_41)) {
+                    error(ErrorCode.ER_NOT_SUPPORTED_AUTH_MODE, "We do not support Protocols under 4.1");
+                    return;
+                }
                 
                 if (!privilege.userExists(authReply.username)) {
                     error(ErrorCode.ER_ACCESS_DENIED_ERROR,

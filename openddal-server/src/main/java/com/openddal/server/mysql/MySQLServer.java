@@ -21,7 +21,7 @@ public class MySQLServer extends NettyServer {
     public static final byte PROTOCOL_VERSION = 10;
 
     public static final String VERSION_COMMENT = "OpenDDAL MySQL Protocol Server";
-    public static final String SERVER_VERSION = "5.7.13" + VERSION_COMMENT + "-" + Constants.getFullVersion();
+    public static final String SERVER_VERSION = "5.6.31" + VERSION_COMMENT + "-" + Constants.getFullVersion();
 
     public MySQLServer(ServerArgs args) {
         super(args);

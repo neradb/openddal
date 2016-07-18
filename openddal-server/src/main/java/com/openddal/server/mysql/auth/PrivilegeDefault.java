@@ -87,11 +87,11 @@ public class PrivilegeDefault implements Privilege {
         String path = SysProperties.SERVERUSER_CONFIG_LOCATION;
         InputStream source = Utils.getResourceAsStream(path);
         if(source == null) {
-            logger.info("Can't load privilege config from {}, using ", path);
+            logger.debug("Can't load privilege config from {}, using ", path);
             return TRUE_PRIVILEGE;
         }
         try {
-            logger.info("using privilege config from {}" , path);
+            logger.debug("Using privilege config from {}" , path);
             Properties prop = new Properties();
             prop.load(source);
             return new PrivilegeDefault(prop);
