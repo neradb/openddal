@@ -18,6 +18,7 @@
 
 package com.openddal.excutor;
 
+import com.openddal.engine.Session;
 import com.openddal.excutor.cursor.Cursor;
 import com.openddal.message.DbException;
 
@@ -25,19 +26,13 @@ import com.openddal.message.DbException;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public interface Executor {
-
-    /**
-     * Prepare this executor.
-     */
-    void prepare();
-
     /**
      * Execute the query.
      *
      * @return the result cursor
      * @throws DbException if it is not a query
      */
-    Cursor query();
+    Cursor query(Session s);
 
     /**
      * Execute the statement.
@@ -45,13 +40,13 @@ public interface Executor {
      * @return the update count
      * @throws DbException if it is a query
      */
-    int update();
+    int update(Session s);
 
     /**
      * Get the PreparedExecutor with the execution explain.
      *
      * @return the execution explain
      */
-    String explain();
+    String explain(Session s);
 
 }

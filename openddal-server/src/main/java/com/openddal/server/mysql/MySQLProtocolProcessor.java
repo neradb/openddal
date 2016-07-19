@@ -174,6 +174,9 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         case ServerParse.ROLLBACK:
             processRollback(sql, rs >>> 8);
             break;
+        case ServerParse.EXPLAIN:
+            execute(sql, ServerParse.EXPLAIN);
+            break;
         default:
             execute(sql, rs);
         }
@@ -408,6 +411,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         // @author little-pan
         // @since 2016-07-13
         case ServerParse.SHOW:
+        case ServerParse.EXPLAIN:
             try {
                 stmt = conn.createStatement();
                 rs = stmt.executeQuery(sql);
@@ -418,6 +422,10 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             }
             break;
         case ServerParse.SET:
+        case ServerParse.INSERT:
+        case ServerParse.DELETE:
+        case ServerParse.UPDATE:
+        case ServerParse.REPLACE:
             try {
                 stmt = conn.createStatement();
                 stmt.execute(sql);
@@ -429,7 +437,14 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             break;
 
         default:
-            unsupported(sql);
+            try {
+                stmt = conn.createStatement();
+                stmt.execute(sql);
+                sendOk();
+            } finally {
+                JdbcUtils.closeSilently(stmt);
+                JdbcUtils.closeSilently(rs);
+            };
         }
     }
 
@@ -446,7 +461,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
     }
 
     private void unsupported(String msg) throws Exception {
-        throw error(ErrorCode.ER_UNKNOWN_COM_ERROR, 
+        throw error(ErrorCode.ER_SYNTAX_ERROR, 
                 msg + " unsupported");
     }
     

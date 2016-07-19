@@ -38,7 +38,7 @@ import com.openddal.value.Value;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class MergeExecutor extends ExecutionFramework<Merge> {
+public class MergeExecutor extends ExecutionFramework{
 
 
     private static final int QUERY_FLUSH_THRESHOLD = 200;
@@ -46,12 +46,13 @@ public class MergeExecutor extends ExecutionFramework<Merge> {
     private int affectRows;
     private List<Row> mergeRows = New.arrayList(10);
     private List<UpdateWorker> workers;
+    private Merge prepared;
 
     /**
      * @param prepared
      */
     public MergeExecutor(Merge prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

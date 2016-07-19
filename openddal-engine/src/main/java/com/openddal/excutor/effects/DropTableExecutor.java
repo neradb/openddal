@@ -33,12 +33,13 @@ import com.openddal.util.StringUtils;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class DropTableExecutor extends ExecutionFramework<DropTable> {
+public class DropTableExecutor extends ExecutionFramework {
 
     private Map<DropTable, List<UpdateWorker>> dropWorkers = New.hashMap();
+    private DropTable prepared;
 
     public DropTableExecutor(DropTable prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

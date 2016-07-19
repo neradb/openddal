@@ -21,13 +21,11 @@ import com.openddal.excutor.ExecutionFramework;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class CallExecutor extends ExecutionFramework<Call> {
-
+public class CallExecutor extends ExecutionFramework {
     /**
      * @param prepared
      */
     public CallExecutor(Call prepared) {
-        super(prepared);
     }
 
     @Override

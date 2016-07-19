@@ -33,9 +33,9 @@ import com.openddal.util.StringUtils;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class JdbcDriver implements java.sql.Driver {
+public class Driver implements java.sql.Driver {
 
-    private static final JdbcDriver INSTANCE = new JdbcDriver();
+    private static final Driver INSTANCE = new Driver();
     private static volatile boolean registered;
 
     static {
@@ -45,7 +45,7 @@ public class JdbcDriver implements java.sql.Driver {
     /**
      * INTERNAL
      */
-    public static JdbcDriver load() {
+    public static Driver load() {
         try {
             if (!registered) {
                 synchronized (INSTANCE) {
@@ -86,7 +86,7 @@ public class JdbcDriver implements java.sql.Driver {
         // ... but has failed to stop it.
         // This is very likely to create a memory leak.
         try {
-            thread.setContextClassLoader(JdbcDriver.class.getClassLoader());
+            thread.setContextClassLoader(Driver.class.getClassLoader());
         } catch (Throwable t) {
             // ignore
         }

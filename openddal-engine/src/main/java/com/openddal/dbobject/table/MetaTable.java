@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.Locale;
 
 import com.openddal.command.Command;
+import com.openddal.config.GlobalTableRule;
+import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
@@ -35,6 +37,7 @@ import com.openddal.result.Csv;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.result.SortOrder;
+import com.openddal.route.rule.ObjectNode;
 import com.openddal.util.MathUtils;
 import com.openddal.util.New;
 import com.openddal.util.StatementBuilder;
@@ -82,7 +85,7 @@ public class MetaTable extends Table {
     private static final int CONSTRAINTS = 20;
     private static final int FUNCTION_COLUMNS = 21;
     private static final int CONSTANTS = 22;
-    private static final int DOMAINS = 23;
+    private static final int PARTITIONS = 23;
     private static final int TRIGGERS = 24;
     private static final int SESSIONS = 25;
     private static final int LOCKS = 26;
@@ -430,24 +433,16 @@ public class MetaTable extends Table {
                     "ID INT"
             );
             break;
-        case DOMAINS:
-            setObjectName("DOMAINS");
+        case PARTITIONS:
+            setObjectName("PARTITIONS");
             cols = createColumns(
-                    "DOMAIN_CATALOG",
-                    "DOMAIN_SCHEMA",
-                    "DOMAIN_NAME",
-                    "COLUMN_DEFAULT",
-                    "IS_NULLABLE",
-                    "DATA_TYPE INT",
-                    "PRECISION INT",
-                    "SCALE INT",
-                    "TYPE_NAME",
-                    "SELECTIVITY INT",
-                    "CHECK_CONSTRAINT",
-                    "REMARKS",
-                    "SQL",
-                    "ID INT"
-            );
+                    "PARTITIONS_CATALOG", 
+                    "PARTITIONS_SCHEMA", 
+                    "OBJECT_NAME", 
+                    "DATA_NODE", 
+                    "NODE_NAME", 
+                    "NODE_TYPE",
+                    "PARTITIONER");
             break;
         case TRIGGERS:
             setObjectName("TRIGGERS");
@@ -1183,11 +1178,88 @@ public class MetaTable extends Table {
             }
             break;
         }
+        case PARTITIONS: {
+            for (Table table : getAllTables(session)) {
+                String tableName = identifier(table.getName());
+                if (!checkIndex(session, tableName, indexFrom, indexTo)) {
+                    continue;
+                }
+                if (table instanceof TableMate) {
+                    TableMate tableMate = (TableMate) table;
+                    TableRule tableRule = tableMate.getTableRule();
+                    int type2 = tableRule.getType();
+                    switch (type2) {
+                    case TableRule.FIXED_NODE_TABLE:
+                        add(rows,
+                                // PARTITIONS_CATALOG
+                                catalog,
+                                // PARTITIONS_SCHEMA
+                                identifier(table.getSchema().getName()),
+                                // OBJECT_NAME
+                                tableName,
+                                // DATA_NODE
+                                tableRule.getMetadataNode().getShardName(),
+                                // NODE_NAME
+                                tableRule.getMetadataNode().getCompositeObjectName(),
+                                // NODE_TYPE
+                                "fixed",
+                                // PARTITIONER
+                                "");
+                        break;
+                    case TableRule.GLOBAL_NODE_TABLE:
+                        GlobalTableRule globalRule = (GlobalTableRule) tableMate.getTableRule();
+                        for (ObjectNode i : globalRule.getBroadcasts()) {
+                            add(rows,
+                                    // PARTITIONS_CATALOG
+                                    catalog,
+                                    // PARTITIONS_SCHEMA
+                                    identifier(table.getSchema().getName()),
+                                    // OBJECT_NAME
+                                    tableName,
+                                    // DATA_NODE
+                                    i.getShardName(),
+                                    // NODE_NAME
+                                    i.getCompositeObjectName(),
+                                    // NODE_TYPE
+                                    "broadcast",
+                                    // PARTITIONER
+                                    "");
+                        }
+                        break;
+                    case TableRule.SHARDED_NODE_TABLE:
+                        ShardedTableRule shardRule = (ShardedTableRule) tableMate.getTableRule();
+                        for (ObjectNode i : shardRule.getObjectNodes()) {
+                            add(rows,
+                                    // PARTITIONS_CATALOG
+                                    catalog,
+                                    // PARTITIONS_SCHEMA
+                                    identifier(table.getSchema().getName()),
+                                    // OBJECT_NAME
+                                    tableName,
+                                    // DATA_NODE
+                                    i.getShardName(),
+                                    // NODE_NAME
+                                    i.getCompositeObjectName(),
+                                    // NODE_TYPE
+                                    "sharded",
+                                    // PARTITIONER
+                                    shardRule.getPartitioner().getClass().getName());
+                        }
+                        break;
+
+                    default:
+                        break;
+                    }
+
+                }
+            }
+            break;
+
+        }
         case IN_DOUBT:
         case CROSS_REFERENCES:
         case CONSTRAINTS:
         case CONSTANTS: 
-        case DOMAINS: 
         case TRIGGERS:
         case LOCKS:
             break;

@@ -1067,6 +1067,14 @@ public class Parser {
         } else if (readIf("DATABASES") || readIf("SCHEMAS")) {
             // for MySQL compatibility
             buff.append("SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA");
+        } else if (readIf("PARTITIONS")) {
+            String tableName = readIdentifierWithSchema();
+            buff.append("OBJECT_NAME TABLE_NAME, DATA_NODE, "
+                    + "NODE_NAME, NODE_TYPE, "
+                    + "PARTITIONER FROM INFORMATION_SCHEMA.PARTITIONS "
+                    + "WHERE OBJECT_NAME=? ORDER BY DATA_NODE");
+            paramValues.add(ValueString.get(tableName));
+
         }
         boolean b = session.getAllowLiterals();
         try {

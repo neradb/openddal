@@ -38,23 +38,24 @@ import com.openddal.value.Value;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class DirectLookupCursor extends ExecutionFramework<Select> implements Cursor {
+public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
+    private Select prepared;
     private Cursor cursor;
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryWorker> workers;
-    ArrayList<Expression> expressions;
+    private ArrayList<Expression> expressions;
 
     public DirectLookupCursor(Select select) {
-        super(select);
+        this.prepared = select;
     }
 
     @Override
     protected void doPrepare() {
         expressions = prepared.getExpressions();
-        if (prepared.isGroupQuery()) {
+        int[] groupIndex = prepared.getGroupIndex();
+        if (prepared.isGroupQuery() && groupIndex != null) {
             ArrayList<Expression> selectExprs = New.arrayList(10);
-            int[] groupIndex = prepared.getGroupIndex();
             for (int i = 0; i < groupIndex.length; i++) {
                 int idx = groupIndex[i];
                 Expression expr = expressions.get(idx);

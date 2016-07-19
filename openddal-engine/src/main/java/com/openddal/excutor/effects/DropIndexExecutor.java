@@ -10,12 +10,12 @@ import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 
-public class DropIndexExecutor extends ExecutionFramework<DropIndex>{
+public class DropIndexExecutor extends ExecutionFramework {
     
     private List<UpdateWorker> workers;
-
+    private DropIndex prepared;
     public DropIndexExecutor(DropIndex prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

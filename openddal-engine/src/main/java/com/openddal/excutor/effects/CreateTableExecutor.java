@@ -44,15 +44,16 @@ import com.openddal.value.DataType;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class CreateTableExecutor extends ExecutionFramework<CreateTable> {
+public class CreateTableExecutor extends ExecutionFramework {
 
     private List<UpdateWorker> workers;
     private Insert asQueryInsert;
+    private CreateTable prepared;
     /**
      * @param prepared
      */
     public CreateTableExecutor(CreateTable prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

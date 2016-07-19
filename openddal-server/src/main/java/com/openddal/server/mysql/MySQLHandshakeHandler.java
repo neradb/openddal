@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import com.openddal.engine.Constants;
 import com.openddal.engine.SysProperties;
-import com.openddal.jdbc.JdbcDriver;
+import com.openddal.jdbc.Driver;
 import com.openddal.server.ProtocolHandler;
 import com.openddal.server.ProtocolTransport;
 import com.openddal.server.Session;
@@ -121,7 +121,7 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         prop.setProperty("user", authReply.username);
         prop.setProperty("password", authReply.authResponse);
         String url = Constants.START_URL + SysProperties.ENGINE_CONFIG_LOCATION;
-        Connection connect = JdbcDriver.load().connect(url, prop);
+        Connection connect = Driver.load().connect(url, prop);
         return connect;
     }
 

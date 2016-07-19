@@ -24,7 +24,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.openddal.command.Prepared;
 import com.openddal.config.GlobalTableRule;
 import com.openddal.config.ShardedTableRule;
 import com.openddal.config.TableRule;
@@ -54,51 +53,44 @@ import com.openddal.util.StringUtils;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public abstract class ExecutionFramework<T extends Prepared> implements Executor {
+public abstract class ExecutionFramework implements Executor {
 
-    protected final Session session;
-    protected final T prepared;
-    protected final Database database;
-    protected final ThreadPoolExecutor queryExecutor;
-    protected final RoutingHandler routingHandler;
-    protected final WorkerFactory queryHandlerFactory;
+    protected Session session;
+    protected Database database;
+    protected ThreadPoolExecutor queryExecutor;
+    protected RoutingHandler routingHandler;
+    protected WorkerFactory queryHandlerFactory;
 
     private boolean isPrepared;
 
-    public ExecutionFramework(T prepared) {
-        this.prepared = prepared;
-        this.session = prepared.getSession();
+    public final void prepare(Session s) {
+        if (isPrepared) {
+            return;
+        }
+        this.session = s;
         this.database = session.getDatabase();
         this.queryExecutor = database.getQueryExecutor();
         this.routingHandler = database.getRoutingHandler();
         this.queryHandlerFactory = session.getQueryHandlerFactory();
-
-    }
-
-    @Override
-    public final void prepare() {
-        if (isPrepared) {
-            return;
-        }
         doPrepare();
         isPrepared = true;
     }
 
     @Override
-    public final int update() {
-        prepare();
+    public final int update(Session s) {
+        prepare(s);
         return doUpdate();
     }
 
     @Override
-    public final Cursor query() {
-        prepare();
+    public final Cursor query(Session s) {
+        prepare(s);
         return doQuery();
     }
 
     @Override
-    public final String explain() {
-        prepare();
+    public final String explain(Session s) {
+        prepare(s);
         return doExplain();
     }
 

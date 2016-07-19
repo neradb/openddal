@@ -44,12 +44,12 @@ public final class ShowEngines {
 				// @author little-pan
 				// @since 2016-07-17
 				addRow(
-						"OpenDDAL",
-						"Yes", 
-						"JDBC-shars, database middleware, distributed SQL engine", 
-						"Yes", 
-						"Yes", 
-						"Yes"
+						"OPENDDAL_ENGINE",
+						"DEFAULT", 
+						"Distributed SQL Engine", 
+						"YES", 
+						"NO", 
+						"YES"
 				);
 			}
 		});

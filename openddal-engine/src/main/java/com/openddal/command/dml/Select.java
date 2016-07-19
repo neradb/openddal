@@ -306,7 +306,7 @@ public class Select extends Query {
         int rowNumber = 0;
         setCurrentRowNumber(0);
         DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
-        lookupCursor.query();
+        lookupCursor.query(session);
         while (lookupCursor.next()) {
             setCurrentRowNumber(rowNumber + 1);
             Row searchRow = lookupCursor.get();
@@ -756,7 +756,7 @@ public class Select extends Query {
     public String explainPlan() {
         if(isDirectLookupQuery) {
             DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
-            return lookupCursor.explain();
+            return lookupCursor.explain(session);
         }
         return "cross node join";
     }

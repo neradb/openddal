@@ -32,16 +32,17 @@ import com.openddal.util.New;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class CreateIndexExecutor extends ExecutionFramework<CreateIndex> {
+public class CreateIndexExecutor extends ExecutionFramework {
 
     private List<UpdateWorker> workers;
+    private CreateIndex prepared;
 
     /**
      * @param session
      * @param prepared
      */
     public CreateIndexExecutor(CreateIndex prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

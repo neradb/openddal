@@ -218,7 +218,7 @@ public abstract class Prepared {
         if (executor == null) {
             throw DbException.get(ErrorCode.METHOD_NOT_ALLOWED_FOR_QUERY);
         }
-        return executor.update();
+        return executor.update(session);
     }
 
     /**
@@ -298,7 +298,7 @@ public abstract class Prepared {
         if (executor == null) {
             return null;
         }
-        return executor.explain();
+        return executor.explain(session);
 
     }
 

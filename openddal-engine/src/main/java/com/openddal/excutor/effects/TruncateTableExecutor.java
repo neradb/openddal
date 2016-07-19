@@ -28,15 +28,16 @@ import com.openddal.util.New;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class TruncateTableExecutor extends ExecutionFramework<TruncateTable> {
+public class TruncateTableExecutor extends ExecutionFramework {
 
     private List<UpdateWorker> workers;
+    private TruncateTable prepared;
 
     /**
      * @param prepared
      */
     public TruncateTableExecutor(TruncateTable prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

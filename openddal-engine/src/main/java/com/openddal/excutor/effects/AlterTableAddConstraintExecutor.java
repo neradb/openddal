@@ -34,16 +34,13 @@ import com.openddal.util.New;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class AlterTableAddConstraintExecutor extends ExecutionFramework<AlterTableAddConstraint> {
-
+public class AlterTableAddConstraintExecutor extends ExecutionFramework {
+    private AlterTableAddConstraint prepared;
     private List<UpdateWorker> workers;
 
-    /**
-     * @param session
-     * @param prepared
-     */
+
     public AlterTableAddConstraintExecutor(AlterTableAddConstraint prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

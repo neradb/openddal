@@ -37,17 +37,17 @@ import com.openddal.value.Value;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class UpdateExecutor extends ExecutionFramework<Update> {
+public class UpdateExecutor extends ExecutionFramework {
 
     private List<UpdateWorker> workers;
     private boolean alwaysFalse;
-
+    private Update prepared;
 
     /**
      * @param prepared
      */
     public UpdateExecutor(Update prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     

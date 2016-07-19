@@ -38,19 +38,20 @@ import com.openddal.value.Value;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class ReplaceExecutor extends ExecutionFramework<Replace> {
+public class ReplaceExecutor extends ExecutionFramework {
 
     private static final int QUERY_FLUSH_THRESHOLD = 200;
     private int rowNumber;
     private int affectRows;
     private List<Row> replaceRows = New.arrayList(10);
     private List<UpdateWorker> workers;
+    private Replace prepared;
 
     /**
      * @param prepared
      */
     public ReplaceExecutor(Replace prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

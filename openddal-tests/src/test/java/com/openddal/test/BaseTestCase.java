@@ -95,7 +95,7 @@ public abstract class BaseTestCase {
     protected long start;
     protected DataSource dataSource;
     protected static String url = "jdbc:openddal:config/ddal-config.xml;";
-    protected static String driverClassName = "com.openddal.jdbc.JdbcDriver";
+    protected static String driverClassName = "com.openddal.jdbc.Driver";
 
 
     public BaseTestCase() {

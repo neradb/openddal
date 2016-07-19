@@ -539,7 +539,7 @@ public class TableMate extends Table {
         }
     }
 
-    private void validationPlanItem(PlanItem item) {
+    public void validationPlanItem(PlanItem item) {
         int priority = item.getScanningStrategy().priority;
         if (tableRule instanceof ShardedTableRule) {
             ShardedTableRule shardedTableRule = (ShardedTableRule) tableRule;

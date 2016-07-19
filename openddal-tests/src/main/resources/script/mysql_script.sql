@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS `customers` (
   `birthdate` date DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY (`birthdate`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `address` (
   `address_id` int(11) NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `address` (
   `phone_num` varchar(16) DEFAULT NULL,
   PRIMARY KEY (`address_id`),
   KEY (`customer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 CREATE TABLE IF NOT EXISTS `orders` (
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `orders` (
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`order_id`),
   KEY (`customer_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `order_items` (
   `item_id` int(11) NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   PRIMARY KEY (`order_id`),
   KEY (`create_date`),
   FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `order_status` (
   `status_id` int(11) NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `order_status` (
   PRIMARY KEY (`order_id`),
   KEY (`create_date`),
   FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `product_category` (
   `product_category_id` int(11) NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `product_category` (
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`product_category_id`),
   KEY (`create_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `product` (
   `product_id` int(11) NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `product` (
   PRIMARY KEY (`product_id`),
   KEY (`create_date`),
   FOREIGN KEY (`product_category_id`) REFERENCES `product_category` (`product_category_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 CREATE TABLE IF NOT EXISTS `customer_login_log` (
@@ -76,5 +76,5 @@ CREATE TABLE IF NOT EXISTS `customer_login_log` (
   `customer_id` int(11) NOT NULL,
   `logintime` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

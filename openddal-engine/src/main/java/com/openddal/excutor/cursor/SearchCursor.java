@@ -43,7 +43,7 @@ import com.openddal.util.New;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
+public class SearchCursor extends ExecutionFramework implements Cursor {
 
     private final TableFilter tableFilter;
     private Table table;
@@ -51,7 +51,6 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
     private boolean alwaysFalse;
 
     public SearchCursor(TableFilter tableFilter) {
-        super(tableFilter.getSelect());
         this.tableFilter = tableFilter;
         this.table = tableFilter.getTable();
     }
@@ -167,7 +166,12 @@ public class SearchCursor extends ExecutionFramework<Select> implements Cursor {
 
     protected void doPrepare() {
         HashSet<Column> columns = New.hashSet();
-        prepared.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
+        Select select = tableFilter.getSelect();
+        if(select != null) {
+            select.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
+        } else {
+            tableFilter.getTable().getColumns();
+        }
     }
 
     @Override

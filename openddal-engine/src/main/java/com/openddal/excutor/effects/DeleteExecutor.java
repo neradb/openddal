@@ -30,16 +30,17 @@ import com.openddal.util.New;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class DeleteExecutor extends ExecutionFramework<Delete> {
+public class DeleteExecutor extends ExecutionFramework {
     
     private List<UpdateWorker> workers;
     private boolean alwaysFalse;
+    private Delete prepared;
 
     /**
      * @param prepared
      */
     public DeleteExecutor(Delete prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override

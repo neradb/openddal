@@ -538,7 +538,7 @@ public class MySQLTranslator implements SQLTranslator {
             return SQLTranslated.build().sql(buff.toString());
         }
         case CommandInterface.ALTER_TABLE_ALTER_COLUMN_DEFAULT: {
-            StringBuilder buff = new StringBuilder("ALTER TABLE");
+            StringBuilder buff = new StringBuilder("ALTER TABLE ");
             buff.append(identifier(forTable));
             buff.append(" ALTER COLUMN ");
             buff.append(prepared.getOldColumn().getSQL());
@@ -547,7 +547,7 @@ public class MySQLTranslator implements SQLTranslator {
             return SQLTranslated.build().sql(buff.toString());
         }
         case CommandInterface.ALTER_TABLE_ALTER_COLUMN_CHANGE_TYPE: {
-            StringBuilder buff = new StringBuilder("ALTER TABLE");
+            StringBuilder buff = new StringBuilder("ALTER TABLE ");
             buff.append(identifier(forTable));
             buff.append(" ALTER COLUMN ");
             buff.append(prepared.getOldColumn().getSQL());
@@ -556,7 +556,7 @@ public class MySQLTranslator implements SQLTranslator {
             return SQLTranslated.build().sql(buff.toString());
         }
         case CommandInterface.ALTER_TABLE_ADD_COLUMN: {
-            StatementBuilder buff = new StatementBuilder("ALTER TABLE");
+            StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
             buff.append(identifier(forTable));
             ArrayList<Column> columnsToAdd = prepared.getColumnsToAdd();
             for (Column column : columnsToAdd) {
@@ -567,7 +567,7 @@ public class MySQLTranslator implements SQLTranslator {
             return SQLTranslated.build().sql(buff.toString());
         }
         case CommandInterface.ALTER_TABLE_DROP_COLUMN: {
-            StatementBuilder buff = new StatementBuilder("ALTER TABLE");
+            StatementBuilder buff = new StatementBuilder("ALTER TABLE ");
             buff.append(identifier(forTable));
             buff.append(" DROP COLUMN ");
             buff.append(oldColumn.getSQL());

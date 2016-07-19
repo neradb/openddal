@@ -40,19 +40,20 @@ import com.openddal.value.Value;
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
-public class InsertExecutor extends ExecutionFramework<Insert> implements ResultTarget {
+public class InsertExecutor extends ExecutionFramework implements ResultTarget {
 
     private static final int QUERY_FLUSH_THRESHOLD = 200;
     private int rowNumber;
     private int affectRows;
     private List<Row> newRows = New.arrayList(10);
     private List<UpdateWorker> workers;
+    private Insert prepared;
 
     /**
      * @param prepared
      */
     public InsertExecutor(Insert prepared) {
-        super(prepared);
+        this.prepared = prepared;
     }
 
     @Override
