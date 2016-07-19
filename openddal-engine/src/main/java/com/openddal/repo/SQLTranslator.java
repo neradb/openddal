@@ -31,6 +31,7 @@ import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
+import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.result.Row;
 import com.openddal.route.rule.GroupObjectNode;
@@ -79,8 +80,8 @@ public interface SQLTranslator {
 
     SQLTranslated translate(Update update, ObjectNode node, Row row);
 
-    SQLTranslated translate(TableFilter filter, ObjectNode node);
+    SQLTranslated translate(Column[] searchColumns, TableFilter filter, ObjectNode node);
 
-    SQLTranslated translate(TableFilter filter, GroupObjectNode node);
+    SQLTranslated translate(Column[] searchColumns, TableFilter filter, GroupObjectNode node);
 
 }

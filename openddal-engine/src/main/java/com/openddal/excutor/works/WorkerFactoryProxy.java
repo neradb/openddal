@@ -21,6 +21,7 @@ import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
+import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.result.Row;
@@ -48,8 +49,8 @@ public class WorkerFactoryProxy implements WorkerFactory {
     }
 
     @Override
-    public QueryWorker createQueryWorker(TableFilter filter, ObjectNode node) {
-        QueryWorker handler = target.createQueryWorker(filter, node);
+    public QueryWorker createQueryWorker(Column[] searchColumns, TableFilter filter, ObjectNode node) {
+        QueryWorker handler = target.createQueryWorker(searchColumns, filter, node);
         handler = holdeWorker(handler);
         return handler;
     }

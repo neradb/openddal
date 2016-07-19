@@ -16,14 +16,12 @@
 package com.openddal.dbobject.table;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.ConditionAndOr;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
-import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
@@ -95,7 +93,6 @@ public class TableFilter implements ColumnResolver {
     private ArrayList<Column> naturalJoinColumns;
     private boolean foundOne;
     private Expression fullCondition;
-    private Column[] searchColumns;
 
     /**
      * Create a new table filter object.
@@ -244,15 +241,6 @@ public class TableFilter implements ColumnResolver {
             }
         }
         */
-        HashSet<Column> columns = New.hashSet();
-        select.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
-        ArrayList<Column> selected = New.arrayList(10);
-        for (Column column : columns) {
-            if(table == column.getTable()) {
-                selected.add(column);
-            }
-        }
-        searchColumns = selected.toArray(new Column[selected.size()]);
         
         if (nestedJoin != null) {
             if (SysProperties.CHECK && nestedJoin == this) {
@@ -709,13 +697,6 @@ public class TableFilter implements ColumnResolver {
     @Override
     public Column[] getColumns() {
         return table.getColumns();
-    }
-
-    public Column[] getSearchColumns() {
-        if(searchColumns == null || searchColumns.length == 0) {
-            return table.getColumns();
-        }
-        return searchColumns;
     }
 
     /**

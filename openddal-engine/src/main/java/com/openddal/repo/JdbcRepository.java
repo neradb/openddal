@@ -314,6 +314,8 @@ public abstract class JdbcRepository implements Repository {
         String strategy = sequenceRule.getStrategy();
         if ("hilo".equals(strategy)) {
             return new TableHiLoGenerator(schema, sequenceRule);
+        } else if ("snowflake".equals(strategy)) {
+            return new SnowflakeGenerator(schema, sequenceRule);
         } else {
             throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, strategy + " sequence");
         }

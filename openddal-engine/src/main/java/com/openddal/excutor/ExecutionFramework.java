@@ -63,7 +63,7 @@ public abstract class ExecutionFramework implements Executor {
 
     private boolean isPrepared;
 
-    public final void prepare(Session s) {
+    protected final void prepare(Session s) {
         if (isPrepared) {
             return;
         }

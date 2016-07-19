@@ -23,6 +23,7 @@ import com.openddal.command.Prepared;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.table.Column;
+import com.openddal.dbobject.table.PlanItem;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
@@ -81,8 +82,9 @@ public class Update extends Prepared {
             e.mapColumns(tableFilter, 0);
             expressionMap.put(c, e.optimize(session));
         }
-        //PlanItem item = tableFilter.getBestPlanItem(session, 1);
-        //tableFilter.setPlanItem(item);
+        TableFilter[] filters = new TableFilter[] { tableFilter };
+        PlanItem item = tableFilter.getBestPlanItem(session, filters, 0);
+        tableFilter.setPlanItem(item);
         tableFilter.prepare();
     }
 

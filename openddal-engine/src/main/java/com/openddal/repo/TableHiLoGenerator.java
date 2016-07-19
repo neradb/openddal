@@ -112,7 +112,7 @@ public class TableHiLoGenerator extends Sequence {
         this.createTableIfNotExits();
     }
 
-    protected int getIntProperty(Properties params, String key, int def) {
+    static int getIntProperty(Properties params, String key, int def) {
         String s = params.getProperty(key);
         if (s != null) {
             try {

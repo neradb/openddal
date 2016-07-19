@@ -35,6 +35,7 @@ import com.openddal.command.dml.Replace;
 import com.openddal.command.dml.Select;
 import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
+import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Session;
 import com.openddal.result.Row;
@@ -50,7 +51,7 @@ public interface WorkerFactory {
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes, Expression[] rewriteCols,
             Integer limit, Integer offset);
 
-    QueryWorker createQueryWorker(TableFilter filter, ObjectNode node);
+    QueryWorker createQueryWorker(Column[] searchColumns, TableFilter filter, ObjectNode node);
 
     QueryWorker createQueryWorker(Call call, ObjectNode node);
 

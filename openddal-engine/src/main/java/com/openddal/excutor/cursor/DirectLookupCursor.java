@@ -53,15 +53,15 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
     @Override
     protected void doPrepare() {
         expressions = prepared.getExpressions();
-        int[] groupIndex = prepared.getGroupIndex();
-        if (prepared.isGroupQuery() && groupIndex != null) {
+        if (prepared.isGroupQuery()) {
             ArrayList<Expression> selectExprs = New.arrayList(10);
-            for (int i = 0; i < groupIndex.length; i++) {
+            int[] groupIndex = prepared.getGroupIndex();
+            for (int i = 0; groupIndex != null && i < groupIndex.length; i++) {
                 int idx = groupIndex[i];
                 Expression expr = expressions.get(idx);
                 selectExprs.add(expr);
             }
-            HashSet<Aggregate> aggregates = New.hashSet();
+            HashSet<Aggregate> aggregates = New.linkedHashSet();
             for (Expression expr : expressions) {
                 expr.isEverything(ExpressionVisitor.getAggregateVisitor(aggregates));
             }

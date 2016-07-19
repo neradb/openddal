@@ -49,6 +49,7 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     private Table table;
     private Cursor cursor;
     private boolean alwaysFalse;
+    private Column[] searchColumns;
 
     public SearchCursor(TableFilter tableFilter) {
         this.tableFilter = tableFilter;
@@ -135,14 +136,14 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
         }
         List<QueryWorker> workers = New.arrayList(selectNodes.length);
         for (ObjectNode objectNode : selectNodes) {
-            QueryWorker worker = queryHandlerFactory.createQueryWorker(tableFilter, objectNode);
+            QueryWorker worker = queryHandlerFactory.createQueryWorker(searchColumns, tableFilter, objectNode);
             workers.add(worker);
         }
         return invokeQueryWorker(workers);
     }
 
     private Cursor find(TableView tableView) {
-        return null;
+        throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, "subquery not supported yet.");
     }
 
     protected Cursor doQuery() {
@@ -159,18 +160,25 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
             TableView tableView = (TableView) table;
             this.cursor = find(tableView);
         } else {
-            DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, table.getClass().getName());
+            throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, table.getClass().getName());
         }
         return this;
     }
 
     protected void doPrepare() {
-        HashSet<Column> columns = New.hashSet();
         Select select = tableFilter.getSelect();
         if(select != null) {
+            HashSet<Column> columns = New.linkedHashSet();
             select.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
+            ArrayList<Column> selected = New.arrayList(10);
+            for (Column column : columns) {
+                if (table == column.getTable()) {
+                    selected.add(column);
+                }
+            }
+            searchColumns = selected.toArray(new Column[selected.size()]);
         } else {
-            tableFilter.getTable().getColumns();
+            searchColumns = tableFilter.getTable().getColumns();
         }
     }
 
