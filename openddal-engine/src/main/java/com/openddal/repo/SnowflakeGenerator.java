@@ -70,7 +70,7 @@ public class SnowflakeGenerator extends Sequence {
         private static final Random r = new Random();
 
         public IdWorker() {
-            this(1344322705519L);
+            this(1468947930946L);
         }
 
         public IdWorker(long idepoch) {
@@ -78,7 +78,7 @@ public class SnowflakeGenerator extends Sequence {
         }
 
         public IdWorker(long workerId, long datacenterId, long sequence) {
-            this(workerId, datacenterId, sequence, 1344322705519L);
+            this(workerId, datacenterId, sequence, 1468947930946L);
         }
 
         //
