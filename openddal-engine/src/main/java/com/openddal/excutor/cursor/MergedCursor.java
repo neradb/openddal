@@ -8,6 +8,8 @@ import com.openddal.util.New;
 
 public class MergedCursor implements Cursor {
 
+    private Cursor cursor;
+    private int index;
     private List<Cursor> cursors = New.arrayList(10);
     
     public void addCursor(Cursor cursor) {
@@ -16,25 +18,39 @@ public class MergedCursor implements Cursor {
     
     @Override
     public Row get() {
-        // TODO Auto-generated method stub
-        return null;
+        if (cursor == null) {
+            return null;
+        }
+        return cursor.get();
     }
 
     @Override
     public SearchRow getSearchRow() {
-        // TODO Auto-generated method stub
-        return null;
+        return cursor.getSearchRow();
     }
 
     @Override
     public boolean next() {
-        // TODO Auto-generated method stub
-        return false;
+        while (true) {
+            if (cursor == null) {
+                nextCursor();
+                if (cursor == null) {
+                    return false;
+                }
+            }
+            if (cursor.next()) {
+                return true;
+            }
+            cursor = null;
+        }
     }
 
+    private void nextCursor() {
+        cursor = index < cursors.size() ? cursors.get(index) : null;
+        ++index;
+    }
     @Override
     public boolean previous() {
-        // TODO Auto-generated method stub
         return false;
     }
 

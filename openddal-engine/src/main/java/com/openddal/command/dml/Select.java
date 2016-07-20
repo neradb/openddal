@@ -324,7 +324,6 @@ public class Select extends Query {
     }
 
     private void queryGroupQuick(int columnCount, ResultTarget result) {
-        DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
         ValueHashMap<HashMap<Expression, Object>> groups = ValueHashMap.newInstance();
         int rowNumber = 0;
         setCurrentRowNumber(0);
@@ -332,6 +331,8 @@ public class Select extends Query {
         currentValues = null;
         ValueArray defaultGroup = ValueArray.get(new Value[0]);
         int sampleSize = getSampleSizeValue(session);
+        DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
+        lookupCursor.query(session);
         while (lookupCursor.next()) {
             setCurrentRowNumber(rowNumber + 1);
             Value key;

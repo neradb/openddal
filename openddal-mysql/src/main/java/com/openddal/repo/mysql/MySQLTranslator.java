@@ -133,6 +133,7 @@ public class MySQLTranslator implements SQLTranslator {
                 buff.append(StringUtils.unEnclose(g.getPreparedSQL(select.getSession(), params)));
             }
         }
+        /*不能下发having条件，having条件在内存里进行过滤
         Expression having = select.getHaving();
         int havingIndex = select.getHavingIndex();
         if (having != null) {
@@ -144,7 +145,7 @@ public class MySQLTranslator implements SQLTranslator {
         } else if (havingIndex >= 0) {
             Expression h = exprList[havingIndex];
             buff.append(" HAVING ").append(StringUtils.unEnclose(h.getPreparedSQL(select.getSession(), params)));
-        }
+        }*/
         SortOrder sort = select.getSortOrder();
         if (sort != null) {
             buff.append(" ORDER BY ").append(sort.getSQL(exprList, visibleColumnCount));
@@ -254,14 +255,13 @@ public class MySQLTranslator implements SQLTranslator {
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes,Expression[] selectCols, Integer limit, Integer offset) {
         ObjectNode[] items = node.getItems();
         List<Value> params = New.arrayList(10 * items.length);
-        StatementBuilder sql = new StatementBuilder("SELECT * FROM (");
+        StatementBuilder sql = new StatementBuilder(100 * items.length);
         for (ObjectNode objectNode : items) {
             SQLTranslated translated = translate(select, objectNode, consistencyTableNodes,selectCols, limit, offset);
             sql.appendExceptFirst(" UNION ALL ");
-            sql.append(translated.sql);
+            sql.append(StringUtils.enclose(translated.sql));
             params.addAll(translated.params);
         }
-        sql.append(" ) ");
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
     }
 
@@ -839,14 +839,13 @@ public class MySQLTranslator implements SQLTranslator {
     public SQLTranslated translate(Column[] searchColumns, TableFilter filter, GroupObjectNode node) {
         ObjectNode[] items = node.getItems();
         List<Value> params = New.arrayList(10 * items.length);
-        StatementBuilder sql = new StatementBuilder("SELECT * FROM (");
+        StatementBuilder sql = new StatementBuilder(100 * items.length);
         for (ObjectNode objectNode : items) {
             SQLTranslated translated = translate(searchColumns, filter, objectNode);
             sql.appendExceptFirst(" UNION ALL ");
-            sql.append(translated.sql);
+            sql.append(StringUtils.enclose(translated.sql));
             params.addAll(translated.params);
         }
-        sql.append(" ) ");
         return SQLTranslated.build().sql(sql.toString()).sqlParams(params);
     
     }

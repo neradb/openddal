@@ -608,8 +608,11 @@ public class XmlConfigParser {
         }
         Properties prop = tableNode.getChildrenAsProperties();
         String shardName = prop.getProperty("shard");
-        if (StringUtils.isNullOrEmpty(configuration.publicDB) && StringUtils.isNullOrEmpty(shardName)) {
-            throw new ParsingException("Sequence property 'shard' is required if no public shard.");
+        if ("hilo".equals(strategy) 
+                && StringUtils.isNullOrEmpty(configuration.publicDB) 
+                && StringUtils.isNullOrEmpty(shardName)) {
+            throw new ParsingException("Hilo sequence " + name
+                    + " requires 'shard' property if no public shard.");
         }
         SequenceRule seq = new SequenceRule(name);
         seq.setStrategy(strategy);

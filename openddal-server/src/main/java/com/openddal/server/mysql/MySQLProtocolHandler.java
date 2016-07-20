@@ -18,6 +18,7 @@ package com.openddal.server.mysql;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.jdbc.JdbcSQLException;
 import com.openddal.server.ProcessorFactory;
 import com.openddal.server.ProtocolHandler;
 import com.openddal.server.ProtocolProcessException;
@@ -78,7 +79,9 @@ public class MySQLProtocolHandler extends ProtocolHandler {
                 ProtocolProcessor processor = processorFactory.getProcessor(transport);
                 processor.process(transport);
             } catch (Throwable e) {
-                logger.error("an exception happen when process request", e);
+                if(!(e.getCause() instanceof JdbcSQLException)) {
+                    logger.error("an exception happen when process request", e);
+                }
                 handleThrowable(e);
             } finally {
                 ctx.writeAndFlush(transport.out);
@@ -87,8 +90,8 @@ public class MySQLProtocolHandler extends ProtocolHandler {
         }
         
         public void handleThrowable(Throwable e) {
-            transport.out.clear();
             ProtocolProcessException convert = ProtocolProcessException.convert(e);
+            transport.out.clear();
             ERR err = new ERR();
             err.errorCode = convert.getErrorCode();
             err.errorMessage = convert.getMessage();

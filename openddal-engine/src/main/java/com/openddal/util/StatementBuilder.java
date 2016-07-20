@@ -39,14 +39,21 @@ package com.openddal.util;
  */
 public class StatementBuilder {
 
-    private final StringBuilder builder = new StringBuilder();
+    private final StringBuilder builder;
     private int index;
 
     /**
      * Create a new builder.
      */
     public StatementBuilder() {
-        // nothing to do
+        builder = new StringBuilder();
+    }
+    
+    /**
+     * Create a new builder.
+     */
+    public StatementBuilder(int capacity) {
+        builder = new StringBuilder(capacity);
     }
 
     /**
@@ -55,7 +62,7 @@ public class StatementBuilder {
      * @param string the initial string
      */
     public StatementBuilder(String string) {
-        builder.append(string);
+        builder = new StringBuilder(string);
     }
 
     /**

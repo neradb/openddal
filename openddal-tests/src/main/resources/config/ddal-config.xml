@@ -64,6 +64,16 @@
 			<property name="shard" value="shard0" />
 			<property name="cacheSize" value="1" />
 		</sequence>
+		
+		<sequence name="order_seq" strategy="hilo">
+			<property name="shard" value="shard0" />
+			<property name="cacheSize" value="1" />
+		</sequence>
+		
+		<sequence name="address_seq" strategy="snowflake">
+			<property name="sequenceId" value="1" />
+			<property name="instanceId" value="1" />
+		</sequence>
 
 	</schema>
 

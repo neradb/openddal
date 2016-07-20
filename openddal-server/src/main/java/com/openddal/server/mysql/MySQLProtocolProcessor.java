@@ -14,12 +14,15 @@ import org.slf4j.LoggerFactory;
 import com.openddal.server.ProtocolProcessException;
 import com.openddal.server.ProtocolTransport;
 import com.openddal.server.TraceableProcessor;
+import com.openddal.server.mysql.auth.Privilege;
+import com.openddal.server.mysql.auth.PrivilegeDefault;
 import com.openddal.server.mysql.parser.ServerParse;
 import com.openddal.server.mysql.parser.ServerParseSelect;
 import com.openddal.server.mysql.parser.ServerParseSet;
 import com.openddal.server.mysql.parser.ServerParseShow;
 import com.openddal.server.mysql.parser.ServerParseStart;
 import com.openddal.server.mysql.proto.ColumnPacket;
+import com.openddal.server.mysql.proto.Com_Initdb;
 import com.openddal.server.mysql.proto.Com_Query;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
@@ -58,6 +61,9 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
 
         switch (type) {
         case Flags.COM_INIT_DB:
+            String db = Com_Initdb.loadFromPacket(packet).schema;
+            getTrace().protocol("COM_INIT_DB").sql(db);
+            initDB(db);
             sendOk();
             break;
         case Flags.COM_QUERY:
@@ -182,6 +188,30 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         }
     }
 
+    public void initDB(String db) throws Exception {
+        Privilege privilege = PrivilegeDefault.getPrivilege();
+        if (db == null || !privilege.schemaExists(getSession().getUser(), db)) {
+            throw error(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
+        }
+        ResultSet rs = null;
+        List<String> schemas;
+        try {
+            rs = getConnection().getMetaData().getSchemas();
+            schemas = New.arrayList();
+            while (rs.next()) {
+                schemas.add(rs.getString("SCHEMA_NAME"));
+            }
+        } finally {
+            JdbcUtils.closeSilently(rs);
+        }
+        if (!schemas.contains(db)) {
+            throw error(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + db + "'");
+        }
+        execute("SET SCHEMA = " + db, ServerParse.OTHER);
+        sendOk();
+
+    }
+    
     private void processCommit(String sql, int offset) throws Exception {
         try {
             getConnection().commit();
@@ -209,21 +239,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
                 schema = schema.substring(1, length - 1);
             }
         }
-        ResultSet rs = null;
-        List<String> schemas;
-        try {
-            rs = getConnection().getMetaData().getSchemas();
-            schemas = New.arrayList();
-            while (rs.next()) {
-                schemas.add(rs.getString("SCHEMA_NAME"));
-            }
-        } finally {
-            JdbcUtils.closeSilently(rs);
-        }
-        if (schema == null || !schemas.contains(schema)) {
-            throw error(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
-        }
-        sendOk();
+        initDB(schema);
     }
 
     private void processBegin(String sql, int offset) throws Exception {

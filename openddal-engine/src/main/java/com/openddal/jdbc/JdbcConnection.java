@@ -719,13 +719,14 @@ public class JdbcConnection extends TraceObject implements Connection {
         try {
             debugCodeCall("getCatalog");
             checkClosed();
+            /*
             if (catalog == null) {
                 CommandInterface cat = prepareCommand("CALL DATABASE()", Integer.MAX_VALUE);
                 ResultInterface result = cat.executeQuery(0, false);
                 result.next();
                 catalog = result.currentRow()[0].getString();
                 cat.close();
-            }
+            }*/
             return catalog;
         } catch (Exception e) {
             throw logAndConvert(e);
