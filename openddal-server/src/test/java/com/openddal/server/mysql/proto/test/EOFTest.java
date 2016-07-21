@@ -7,12 +7,11 @@ import org.junit.Test;
 
 import com.openddal.server.mysql.proto.EOF;
 import com.openddal.server.mysql.proto.Flags;
-import com.openddal.server.mysql.proto.Proto;
 
 public class EOFTest {
     @Test
     public void test1() {
-        byte[] packet = Proto.packet_string_to_bytes(
+        byte[] packet = ProtoTest.packet_string_to_bytes(
             "05 00 00 05 fe 00 00 02 00"
         );
 

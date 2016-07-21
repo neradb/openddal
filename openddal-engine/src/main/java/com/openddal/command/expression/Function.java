@@ -1826,7 +1826,7 @@ public class Function extends Expression implements FunctionCall {
                 break;
             case EXPAND:
             case DATABASE:
-                result = ValueNull.INSTANCE;
+                result = ValueString.get(session.getCurrentSchemaName());
                 break;
             case DATABASE_PATH:
             case HASH:

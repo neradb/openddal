@@ -7,12 +7,11 @@ import org.junit.Test;
 
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.OK;
-import com.openddal.server.mysql.proto.Proto;
 
 public class OKTest {
     @Test
     public void test1() {
-        byte[] packet = Proto.packet_string_to_bytes(
+        byte[] packet = ProtoTest.packet_string_to_bytes(
             "07 00 00 02 00 00 00 02    00 00 00"
         );
 

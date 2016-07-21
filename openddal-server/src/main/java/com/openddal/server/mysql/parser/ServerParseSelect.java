@@ -385,7 +385,7 @@ public final class ServerParseSelect {
                 case 'S':
                     return sessionVarCheck(stmt, offset);
                 default:
-                    return OTHER;
+                    return SELECT_SESSION_VARIABLES;
                 }
             }
         }
@@ -466,6 +466,4 @@ public final class ServerParseSelect {
         }
         return OTHER;
     }
-
-
 }

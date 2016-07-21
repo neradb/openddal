@@ -2,8 +2,8 @@ DROP TABLE IF EXISTS customers,address,order_items,order_status,orders,product,p
 
 
 CREATE TABLE IF NOT EXISTS `customers` (
-  `id` int(32) NOT NULL,
-  `rand_id` int(32) DEFAULT NULL,
+  `id` BIGINT NOT NULL,
+  `rand_id` BIGINT DEFAULT NULL,
   `name` varchar(20) DEFAULT NULL,
   `customer_info` varchar(100) DEFAULT NULL,
   `birthdate` date DEFAULT NULL,
@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS `customers` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `address` (
-  `address_id` int(32) NOT NULL,
-  `customer_id` int(32) DEFAULT NULL,
+  `address_id` BIGINT NOT NULL,
+  `customer_id` BIGINT DEFAULT NULL,
   `address_info` varchar(512) DEFAULT NULL,
   `zip_code` varchar(16) DEFAULT NULL,
   `phone_num` varchar(16) DEFAULT NULL,
@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS `address` (
 
 
 CREATE TABLE IF NOT EXISTS `orders` (
-  `order_id` int(32) NOT NULL,
-  `customer_id` int(32) NOT NULL,
+  `order_id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
   `order_info` varchar(218) DEFAULT NULL,
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`order_id`),
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS `orders` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `order_items` (
-  `item_id` int(32) NOT NULL,
-  `order_id` int(32) NOT NULL,
+  `item_id` BIGINT NOT NULL,
+  `order_id` BIGINT NOT NULL,
   `item_info` varchar(218) DEFAULT NULL,
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`order_id`),
@@ -42,8 +42,8 @@ CREATE TABLE IF NOT EXISTS `order_items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `order_status` (
-  `status_id` int(32) NOT NULL,
-  `order_id` int(32) NOT NULL,
+  `status_id` BIGINT NOT NULL,
+  `order_id` BIGINT NOT NULL,
   `order_status` int(2) DEFAULT NULL,
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`order_id`),
@@ -52,17 +52,17 @@ CREATE TABLE IF NOT EXISTS `order_status` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `product_category` (
-  `product_category_id` int(11) NOT NULL,
-  `category_info` int(2) DEFAULT NULL,
+  `product_category_id` BIGINT NOT NULL,
+  `category_info` varchar(218) DEFAULT NULL,
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`product_category_id`),
   KEY (`create_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `product` (
-  `product_id` int(32) NOT NULL,
-  `product_category_id` int(32) NOT NULL,
-  `product_name` int(2) DEFAULT NULL,
+  `product_id` BIGINT NOT NULL,
+  `product_category_id` BIGINT NOT NULL,
+  `product_name` varchar(218) DEFAULT NULL,
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`product_id`),
   KEY (`create_date`),
@@ -71,8 +71,8 @@ CREATE TABLE IF NOT EXISTS `product` (
 
 
 CREATE TABLE IF NOT EXISTS `customer_login_log` (
-  `id` int(32) NOT NULL,
-  `customer_id` int(32) NOT NULL,
+  `id` BIGINT NOT NULL,
+  `customer_id` BIGINT NOT NULL,
   `logintime` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -90,7 +90,7 @@ insert into address(address_id,customer_id,address_info,zip_code,phone_num) valu
 insert into customers(id,rand_id,name,customer_info,birthdate) values (customer_seq.nextval, customer_seq.currval,'吴用','银牌会员','1970-06-01');
 insert into address(address_id,customer_id,address_info,zip_code,phone_num) values (address_seq.nextval, customer_seq.currval,'甘孜州·丹巴','5422','69355356');
 
-insert into customers(id,rand_id,name,customer_info,birthdate) values (customer_seq.nextval, customer_seq.currval,'公孙胜','	银牌会员','1980-07-01');
+insert into customers(id,rand_id,name,customer_info,birthdate) values (customer_seq.nextval, customer_seq.currval,'公孙胜','银牌会员','1980-07-01');
 insert into address(address_id,customer_id,address_info,zip_code,phone_num) values (address_seq.nextval, customer_seq.currval,'浙江·磐安','54475','6332474');
 
 insert into customers(id,rand_id,name,customer_info,birthdate) values (customer_seq.nextval, customer_seq.currval,'关胜','铜牌会员','1932-03-01');

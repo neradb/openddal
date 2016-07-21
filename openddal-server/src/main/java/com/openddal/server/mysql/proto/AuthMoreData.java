@@ -9,7 +9,7 @@ public class AuthMoreData extends Packet {
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
         
         payload.add(Proto.build_byte((byte)0x01));
-        payload.add(Proto.build_eop_str(this.pluginData, true));
+        payload.add(Proto.build_eop_str(this.pluginData));
         
         return payload;
     }
@@ -20,7 +20,7 @@ public class AuthMoreData extends Packet {
         
         obj.sequenceId = proto.get_fixed_int(1);
         proto.get_filler(1);
-        obj.pluginData = proto.get_eop_str(true);
+        obj.pluginData = proto.get_eop_str();
         
         return obj;
     }

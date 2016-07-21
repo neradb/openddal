@@ -5,12 +5,11 @@ import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
 
 import com.openddal.server.mysql.proto.Local_Infile_Response;
-import com.openddal.server.mysql.proto.Proto;
 
 public class Local_Infile_ResponseTest {
     @Test
     public void test1() {
-        byte[] packet = Proto.packet_string_to_bytes(""
+        byte[] packet = ProtoTest.packet_string_to_bytes(""
             + "05 00 00 00 00 FF FE FD FC"
         );
 

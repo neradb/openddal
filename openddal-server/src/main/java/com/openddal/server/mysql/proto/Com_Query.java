@@ -9,7 +9,7 @@ public class Com_Query extends Packet {
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
         
         payload.add(Proto.build_byte(Flags.COM_QUERY));
-        payload.add(Proto.build_fixed_str(this.query.length(), this.query));
+        payload.add(Proto.build_eop_str(this.query));
         
         return payload;
     }

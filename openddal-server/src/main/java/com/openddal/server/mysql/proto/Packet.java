@@ -1,19 +1,12 @@
 package com.openddal.server.mysql.proto;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
-import org.apache.commons.io.HexDump;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public abstract class Packet {
-    
-    private static final Logger logger = LoggerFactory.getLogger("MySQL.Packet");
-    
+        
     public long sequenceId = 0;
 
     public abstract ArrayList<byte[]> getPayload();
@@ -52,30 +45,6 @@ public abstract class Packet {
         return new Proto(packet, 3).get_fixed_int(1);
     }
     
-    public static final void dump(byte[] packet) {        
-        if (!logger.isTraceEnabled())
-            return;
-        
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            HexDump.dump(packet, 0, out, 0);
-            logger.trace("Dumping packet\n"+out.toString());
-        }
-        catch (IOException e) {
-            return;
-        }
-    }
-    
-    public static final void dump_stderr(byte[] packet) {
-        try {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            HexDump.dump(packet, 0, out, 0);
-            System.err.println("Dumping packet\n"+out.toString());
-        }
-        catch (IOException e) {
-            return;
-        }
-    }
 
     public static byte[] read_packet(InputStream in) throws IOException {
         int b = 0;

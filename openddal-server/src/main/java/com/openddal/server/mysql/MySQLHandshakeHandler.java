@@ -221,6 +221,7 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
             transport.out.writeBytes(err.toPacket());
             LOGGER.info(msg);
         } 
+        
     }
 
 

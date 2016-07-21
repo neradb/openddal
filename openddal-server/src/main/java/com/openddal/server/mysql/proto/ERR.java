@@ -22,7 +22,7 @@ public class ERR extends Packet {
         payload.add(Proto.build_fixed_int(2, this.errorCode));
         payload.add(Proto.build_byte((byte)'#'));
         payload.add(Proto.build_fixed_str(5, this.sqlState));
-        payload.add(Proto.build_fixed_str(this.errorMessage.length(), this.errorMessage));
+        payload.add(Proto.build_eop_str(this.errorMessage));
         
         return payload;
     }

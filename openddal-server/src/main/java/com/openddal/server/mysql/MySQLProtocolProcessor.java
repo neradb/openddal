@@ -333,10 +333,10 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
                     execute("SHOW TABLES", ServerParse.SHOW);
                     break;
                 case ServerParseShow.CHARSET:
-                    sendResultSet(ShowCharset.getResultSet());
+                    sendQueryResult(ShowCharset.getResultSet());
                     break;
                 case ServerParseShow.COLLATION:
-                    sendResultSet(ShowCharset.getCollationResultSet());
+                    sendQueryResult(ShowCharset.getCollationResultSet());
                     break;
                 case ServerParseShow.CONNECTION:
                     unsupported("CONNECTION");
@@ -348,14 +348,14 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
                     unsupported("PHYSICAL_SLOW");
                     break;
                 case ServerParseShow.VARIABLES:
-                    sendResultSet(ShowVariables.getResultSet());
+                    sendQueryResult(ShowVariables.getResultSet());
                     break;
                 case ServerParseShow.SESSION_STATUS:
                 case ServerParseShow.SESSION_VARIABLES:
-                    sendResultSet(ShowVariables.getShowResultSet(stmt));
+                    sendQueryResult(ShowVariables.getShowResultSet(stmt));
                     break;
                 case ServerParseShow.ENGINES:
-                    sendResultSet(ShowEngines.getResultSet());
+                    sendQueryResult(ShowEngines.getResultSet());
                     break;
                 default:
                     execute(stmt, ServerParse.SHOW);
@@ -368,7 +368,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
     public void processSelect(String stmt, int offs) throws Exception {
         switch (ServerParseSelect.parse(stmt, offs)) {
         case ServerParseSelect.VERSION_COMMENT:
-            sendResultSet(ShowVersion.getCommentResultSet());
+            sendQueryResult(ShowVersion.getCommentResultSet());
             break;
         case ServerParseSelect.DATABASE:
             execute("SELECT SCHEMA()", ServerParse.SELECT);
@@ -380,13 +380,13 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             execute("SELECT USER()", ServerParse.SELECT);
             break;
         case ServerParseSelect.SESSION_TX_READ_ONLY:
-            sendResultSet(TxResultSet.getReadonlyResultSet(getConnection().isReadOnly()));
+            sendQueryResult(TxResultSet.getReadonlyResultSet(getConnection().isReadOnly()));
             break;
         case ServerParseSelect.SESSION_ISOLATION:
-            sendResultSet(TxResultSet.getIsolationResultSet(getConnection().getTransactionIsolation()));
+            sendQueryResult(TxResultSet.getIsolationResultSet(getConnection().getTransactionIsolation()));
             break;
         case ServerParseSelect.VERSION:
-            sendResultSet(ShowVersion.getResultSet());
+            sendQueryResult(ShowVersion.getResultSet());
             break;
         case ServerParseSelect.LAST_INSERT_ID:
             execute("SELECT LAST_INSERT_ID()", ServerParse.SELECT);
@@ -395,7 +395,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
             execute("SELECT SCOPE_IDENTITY()", ServerParse.SELECT);
             break;
         case ServerParseSelect.SELECT_SESSION_VARIABLES:
-            sendResultSet(SelectVariables.getResultSet(stmt));
+            sendQueryResult(SelectVariables.getResultSet(stmt));
             break;
         default:
             execute(stmt, ServerParse.SELECT);
@@ -423,15 +423,12 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         ResultSet rs = null;
         switch (type) {
         case ServerParse.SELECT:
-        // "show" as "select" query
-        // @author little-pan
-        // @since 2016-07-13
         case ServerParse.SHOW:
         case ServerParse.EXPLAIN:
             try {
                 stmt = conn.createStatement();
                 rs = stmt.executeQuery(sql);
-                sendResultSet(rs);
+                sendQueryResult(rs);
             } finally {
                 JdbcUtils.closeSilently(stmt);
                 JdbcUtils.closeSilently(rs);
@@ -442,25 +439,17 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         case ServerParse.DELETE:
         case ServerParse.UPDATE:
         case ServerParse.REPLACE:
+        default:
             try {
                 stmt = conn.createStatement();
                 stmt.execute(sql);
-                sendOk();
+                int rows = stmt.getUpdateCount();
+                sendUpdateResult(rows);
             } finally {
                 JdbcUtils.closeSilently(stmt);
                 JdbcUtils.closeSilently(rs);
             }
             break;
-
-        default:
-            try {
-                stmt = conn.createStatement();
-                stmt.execute(sql);
-                sendOk();
-            } finally {
-                JdbcUtils.closeSilently(stmt);
-                JdbcUtils.closeSilently(rs);
-            };
         }
     }
 
@@ -504,13 +493,20 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         getProtocolTransport().out.writeBytes(err.toPacket());
     }
 
+    public void sendUpdateResult(int rows) {
+        OK ok = new OK();
+        ok.sequenceId = getNextSequenceId();
+        ok.affectedRows = rows;
+        ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
+        getProtocolTransport().out.writeBytes(ok.toPacket());
+    }
     /**
      * @see https://dev.mysql.com/doc/internals/en/com-query-response.html
      * 
      * @param rs
      * @throws Exception
      */
-    public void sendResultSet(ResultSet rs) throws Exception {
+    public void sendQueryResult(ResultSet rs) throws Exception {
         ResultSetMetaData metaData = rs.getMetaData();
         int colunmCount = metaData.getColumnCount();
 

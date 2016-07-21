@@ -41,12 +41,12 @@ public class HandshakeResponse extends Packet {
             payload.add( Proto.build_null_str(this.username));
             if (this.hasCapabilityFlag(Flags.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
                 payload.add( Proto.build_lenenc_int(this.authResponseLen));
-                payload.add( Proto.build_fixed_str(this.authResponseLen, this.authResponse, true));
+                payload.add( Proto.build_fixed_str(this.authResponseLen, this.authResponse));
             }
             else {
                 if (this.hasCapabilityFlag(Flags.CLIENT_SECURE_CONNECTION)) {
                     payload.add( Proto.build_fixed_int(1, this.authResponseLen));
-                    payload.add( Proto.build_fixed_str(this.authResponseLen, this.authResponse, true));
+                    payload.add( Proto.build_fixed_str(this.authResponseLen, this.authResponse));
                 }
                 else
                     payload.add( Proto.build_null_str(this.authResponse));
@@ -97,11 +97,11 @@ public class HandshakeResponse extends Packet {
 
             if (obj.hasCapabilityFlag(Flags.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)) {
                 obj.authResponseLen = proto.get_lenenc_int();
-                obj.authResponse = proto.get_fixed_str(obj.authResponseLen, true);
+                obj.authResponse = proto.get_fixed_str(obj.authResponseLen);
             } else {
                 if (obj.hasCapabilityFlag(Flags.CLIENT_SECURE_CONNECTION)) {
                     obj.authResponseLen = proto.get_fixed_int(1);
-                    obj.authResponse = proto.get_fixed_str(obj.authResponseLen, true);
+                    obj.authResponse = proto.get_fixed_str(obj.authResponseLen);
                 } else {
                     obj.authResponse = proto.get_null_str();
                 }

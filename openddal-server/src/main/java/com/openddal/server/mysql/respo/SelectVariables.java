@@ -17,7 +17,8 @@ public final class SelectVariables {
 
         SimpleResultSet result = new SimpleResultSet();
 
-        String subSql = sql.substring(sql.indexOf("SELECT") + 6);
+        String subSql = sql.substring(sql.indexOf("SELECT") + 7);
+        subSql = subSql.replaceAll("\\s+limit\\s+\\d+", "");
         List<String> splitVar = Splitter.on(",").omitEmptyStrings().trimResults().splitToList(subSql);
         splitVar = convert(splitVar);
         int conut = splitVar.size();
@@ -58,6 +59,7 @@ public final class SelectVariables {
         variables.put("@@character_set_connection", "utf8");
         variables.put("@@character_set_results", "utf8");
         variables.put("@@character_set_server", "utf8");
+        variables.put("@@character_set_database", "utf8");
         variables.put("@@init_connect", "");
         variables.put("@@interactive_timeout", "172800");
         variables.put("@@license", "GPL");

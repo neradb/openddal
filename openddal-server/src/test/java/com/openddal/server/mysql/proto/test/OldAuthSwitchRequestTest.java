@@ -5,12 +5,11 @@ import static org.junit.Assert.assertArrayEquals;
 import org.junit.Test;
 
 import com.openddal.server.mysql.proto.OldAuthSwitchRequest;
-import com.openddal.server.mysql.proto.Proto;
 
 public class OldAuthSwitchRequestTest {
     @Test
     public void test1() {
-        byte[] packet = Proto.packet_string_to_bytes(""
+        byte[] packet = ProtoTest.packet_string_to_bytes(""
             + "01 00 00 02 fe"
         );
 

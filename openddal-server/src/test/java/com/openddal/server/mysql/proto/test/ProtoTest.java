@@ -2,13 +2,55 @@ package com.openddal.server.mysql.proto.test;
 
 import static org.junit.Assert.assertArrayEquals;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.HexDump;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.openddal.server.mysql.proto.Proto;
 
 public class ProtoTest {
+    private static final Logger logger = LoggerFactory.getLogger("MySQL.Packet");
+
+    public static byte[] packet_string_to_bytes(String str) {
+        byte[] res = null;
+        str = str.replaceAll("\\s","").toUpperCase();
+        try {
+            res = Hex.decodeHex(str.toCharArray());
+        } catch (DecoderException e) {}
+        return res;
+    }
+    
+    public static final void dump(byte[] packet) {        
+        if (!logger.isTraceEnabled())
+            return;
+        
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            HexDump.dump(packet, 0, out, 0);
+            logger.trace("Dumping packet\n"+out.toString());
+        }
+        catch (IOException e) {
+            return;
+        }
+    }
+    
+    public static final void dump_stderr(byte[] packet) {
+        try {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            HexDump.dump(packet, 0, out, 0);
+            System.err.println("Dumping packet\n"+out.toString());
+        }
+        catch (IOException e) {
+            return;
+        }
+    }
 
     @Test
     public void test_all_byte_values() {
@@ -31,7 +73,7 @@ public class ProtoTest {
 
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
 
-        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length, true), true));
+        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length)));
 
         assertArrayEquals(packet, Proto.arraylist_to_array(payload));
     }
@@ -359,7 +401,7 @@ public class ProtoTest {
 
         Proto proto = new Proto(packet);
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
-        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length, true), true));
+        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length)));
         assertArrayEquals(packet, Proto.arraylist_to_array(payload));
     }
 
@@ -371,7 +413,7 @@ public class ProtoTest {
 
         Proto proto = new Proto(packet);
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
-        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length, true), true));
+        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length)));
         assertArrayEquals(packet, Proto.arraylist_to_array(payload));
     }
 
@@ -383,7 +425,7 @@ public class ProtoTest {
 
         Proto proto = new Proto(packet);
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
-        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length, true), true));
+        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length)));
         assertArrayEquals(packet, Proto.arraylist_to_array(payload));
     }
 
@@ -395,7 +437,7 @@ public class ProtoTest {
 
         Proto proto = new Proto(packet);
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
-        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length, true), true));
+        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length)));
         assertArrayEquals(packet, Proto.arraylist_to_array(payload));
     }
 
@@ -407,16 +449,16 @@ public class ProtoTest {
 
         Proto proto = new Proto(packet);
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
-        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length, true), true));
+        payload.add( Proto.build_fixed_str(packet.length, proto.get_fixed_str(packet.length)));
         assertArrayEquals(packet, Proto.arraylist_to_array(payload));
     }
 
     @Test
     public void test36() {
-        byte[] packet = Proto.packet_string_to_bytes("5C 49 4D 5E 4E 58 4F 47 00");
+        byte[] packet = ProtoTest.packet_string_to_bytes("5C 49 4D 5E 4E 58 4F 47 00");
         Proto proto = new Proto(packet);
         ArrayList<byte[]> payload = new ArrayList<byte[]>();
-        payload.add( Proto.build_eop_str(proto.get_eop_str(true), true));
+        payload.add( Proto.build_eop_str(proto.get_eop_str()));
         assertArrayEquals(packet, Proto.arraylist_to_array(payload));
     }
 }

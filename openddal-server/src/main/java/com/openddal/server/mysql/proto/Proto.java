@@ -1,14 +1,14 @@
 package com.openddal.server.mysql.proto;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.codec.binary.Hex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Proto {
+    
+    public static final Charset CHARSET = Charset.forName("UTF-8");
     
     private static final Logger logger = LoggerFactory.getLogger("MySQL.Proto");
     
@@ -111,60 +111,39 @@ public class Proto {
     }
 
     public static byte[] build_lenenc_str(String str) {
-        return Proto.build_lenenc_str(str, false);
-    }
-
-    public static byte[] build_lenenc_str(String str, boolean base64) {
         if (str.equals("")) {
             byte[] packet = new byte[1];
             packet[0] = 0x00;
             return packet;
         }
-
-        int strsize = str.length();
-        if (base64)
-            strsize = Base64.decodeBase64(str).length;
+        byte[] strByte = str.getBytes(CHARSET);
+        int strsize = strByte.length;
 
         byte[] size = Proto.build_lenenc_int(strsize);
-        byte[] strByte = Proto.build_fixed_str(strsize, str, base64);
         byte[] packet = new byte[size.length + strByte.length];
         System.arraycopy(size, 0, packet, 0, size.length);
         System.arraycopy(strByte, 0, packet, size.length, strByte.length);
         return packet;
+    
     }
 
     public static byte[] build_null_str(String str) {
-        return Proto.build_null_str(str, false);
-    }
-
-    public static byte[] build_null_str(String str, boolean base64) {
-        int size = str.length() + 1;
-        if (base64)
-            size = Base64.decodeBase64(str).length + 1;
-        return Proto.build_fixed_str(size, str, base64);
+        byte[] strByte = str.getBytes(CHARSET);
+        int size = strByte.length + 1; 
+        byte[] packet = new byte[size];
+        if (strByte.length < packet.length)
+            size = strByte.length;
+        System.arraycopy(strByte, 0, packet, 0, size);
+        return packet;
     }
 
     public static byte[] build_fixed_str(long size, String str) {
-        return Proto.build_fixed_str((int)size, str);
+        return build_fixed_str((int) size, str);
     }
-
-    public static byte[] build_fixed_str(long size, String str, boolean base64) {
-        return Proto.build_fixed_str((int)size, str, base64);
-    }
-
+    
     public static byte[] build_fixed_str(int size, String str) {
-        return Proto.build_fixed_str(size, str, false);
-    }
-
-    public static byte[] build_fixed_str(int size, String str, boolean base64) {
         byte[] packet = new byte[size];
-        byte[] strByte = null;
-
-        if (base64)
-            strByte = Base64.decodeBase64(str);
-        else
-            strByte = str.getBytes();
-
+        byte[] strByte = str.getBytes(CHARSET);
         if (strByte.length < packet.length)
             size = strByte.length;
         System.arraycopy(strByte, 0, packet, 0, size);
@@ -172,15 +151,10 @@ public class Proto {
     }
 
     public static byte[] build_eop_str(String str) {
-        return Proto.build_eop_str(str, false);
+        byte[] packet = str.getBytes(CHARSET);
+        return packet;
     }
 
-    public static byte[] build_eop_str(String str, boolean base64) {
-        int size = str.length();
-        if (base64)
-            size = Base64.decodeBase64(str).length;
-        return Proto.build_fixed_str(size, str, base64);
-    }
 
     public static byte[] build_filler(int len) {
         return Proto.build_filler(len, (byte)0x00);
@@ -274,9 +248,6 @@ public class Proto {
         return this.get_fixed_str((int)len);
     }
 
-    public String get_fixed_str(long len, boolean base64) {
-        return this.get_fixed_str((int)len, base64);
-    }
 
     public String get_fixed_str(int len) {
         int start = this.offset;
@@ -286,70 +257,40 @@ public class Proto {
             end = this.packet.length;
             len = end - start;
         }
-
-        StringBuilder str = new StringBuilder(len);
-
-        for (int i = start; i < end; i++) {
-            str.append(Proto.int2char(packet[i]));
-            this.offset += 1;
-        }
-
+        String str = new String(packet, start, len, CHARSET);
+        this.offset += len;
+        
         return str.toString();
     }
 
-    public String get_fixed_str(int len, boolean base64) {
-        int start = this.offset;
-        int end = this.offset+len;
-
-        if (end > this.packet.length) {
-            end = this.packet.length;
-            len = end - start;
-        }
-
-        if (!base64)
-            return this.get_fixed_str(len);
-
-        byte[] chunk = new byte[len];
-        System.arraycopy(this.packet, start, chunk, 0, len);
-        this.offset += len;
-        return Base64.encodeBase64String(chunk);
-    }
 
     public String get_null_str() {
-        return this.get_null_str(false);
-    }
-
-    public String get_null_str(boolean base64) {
         int len = 0;
-
         for (int i = this.offset; i < this.packet.length; i++) {
             if (packet[i] == 0x00)
                 break;
             len += 1;
         }
-
-        String str = this.get_fixed_str(len, base64);
+        String str = this.get_fixed_str(len);
         this.offset += 1;
         return str;
+    
     }
+
 
     public String get_eop_str() {
-        return this.get_eop_str(false);
+        int len = this.packet.length - this.offset;
+        return this.get_fixed_str(len);
+    
     }
 
-    public String get_eop_str(boolean base64) {
-        int len = this.packet.length - this.offset;
-        return this.get_fixed_str(len, base64);
-    }
 
     public String get_lenenc_str() {
-        return this.get_lenenc_str(false);
+        int len = (int)this.get_lenenc_int();
+        return this.get_fixed_str(len);
+    
     }
 
-    public String get_lenenc_str(boolean base64) {
-        int len = (int)this.get_lenenc_int();
-        return this.get_fixed_str(len, base64);
-    }
 
     public static byte[] arraylist_to_array(ArrayList<byte[]> input) {
         int size = 0;
@@ -365,14 +306,5 @@ public class Proto {
         }
 
         return result;
-    }
-
-    public static byte[] packet_string_to_bytes(String str) {
-        byte[] res = null;
-        str = str.replaceAll("\\s","").toUpperCase();
-        try {
-            res = Hex.decodeHex(str.toCharArray());
-        } catch (DecoderException e) {}
-        return res;
     }
 }

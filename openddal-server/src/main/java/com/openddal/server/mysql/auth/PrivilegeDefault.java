@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +72,8 @@ public class PrivilegeDefault implements Privilege {
             if(StringUtil.isEmpty(localPass) && StringUtil.isEmpty(password)){
                 return true;
             }
-            String encryptPass411 = Base64.encodeBase64String(SecurityUtil.scramble411(localPass, salt));
+            byte[] scramble411 = SecurityUtil.scramble411(localPass, salt);
+            String encryptPass411 = new String(scramble411);
             if(encryptPass411.equals(password)){
                 return true;
             }

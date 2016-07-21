@@ -36,7 +36,9 @@ public class SnowflakeGenerator extends Sequence {
 
     @Override
     public synchronized long getNext(Session session) {
-        return idWorker.getId();
+        long id = idWorker.getId();
+        currentValue = id;
+        return id;
     }
 
     @Override
