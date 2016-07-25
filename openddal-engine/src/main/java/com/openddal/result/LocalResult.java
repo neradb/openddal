@@ -324,7 +324,9 @@ public class LocalResult implements ResultInterface, ResultTarget {
 
     @Override
     public void close() {
-        
+        rows = null;
+        closed = true;
+    
     }
 
     @Override

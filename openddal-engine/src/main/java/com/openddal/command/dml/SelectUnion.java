@@ -15,8 +15,15 @@
  */
 package com.openddal.command.dml;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+
 import com.openddal.command.CommandInterface;
-import com.openddal.command.expression.*;
+import com.openddal.command.expression.Expression;
+import com.openddal.command.expression.ExpressionColumn;
+import com.openddal.command.expression.ExpressionVisitor;
+import com.openddal.command.expression.Parameter;
+import com.openddal.command.expression.ValueExpression;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.ColumnResolver;
 import com.openddal.dbobject.table.Table;
@@ -34,9 +41,6 @@ import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 import com.openddal.value.ValueInt;
 import com.openddal.value.ValueNull;
-
-import java.util.ArrayList;
-import java.util.HashSet;
 
 /**
  * Represents a union SELECT statement.
@@ -382,25 +386,30 @@ public class SelectUnion extends Query {
 
     @Override
     public String explainPlan() {
+        return null;
+    }
+    
+    @Override
+    public String getPlanSQL() {
         StringBuilder buff = new StringBuilder();
-        buff.append('(').append(left.explainPlan()).append(')');
+        buff.append('(').append(left.getPlanSQL()).append(')');
         switch (unionType) {
-            case UNION_ALL:
-                buff.append("\nUNION ALL\n");
-                break;
-            case UNION:
-                buff.append("\nUNION\n");
-                break;
-            case INTERSECT:
-                buff.append("\nINTERSECT\n");
-                break;
-            case EXCEPT:
-                buff.append("\nEXCEPT\n");
-                break;
-            default:
-                DbException.throwInternalError("type=" + unionType);
+        case UNION_ALL:
+            buff.append("\nUNION ALL\n");
+            break;
+        case UNION:
+            buff.append("\nUNION\n");
+            break;
+        case INTERSECT:
+            buff.append("\nINTERSECT\n");
+            break;
+        case EXCEPT:
+            buff.append("\nEXCEPT\n");
+            break;
+        default:
+            DbException.throwInternalError("type=" + unionType);
         }
-        buff.append('(').append(right.explainPlan()).append(')');
+        buff.append('(').append(right.getPlanSQL()).append(')');
         Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
         if (sort != null) {
             buff.append("\nORDER BY ").append(sort.getSQL(exprList, exprList.length));

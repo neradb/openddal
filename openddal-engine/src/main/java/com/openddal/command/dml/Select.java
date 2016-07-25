@@ -32,6 +32,8 @@ import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
 import com.openddal.result.SortOrder;
 import com.openddal.util.New;
+import com.openddal.util.StatementBuilder;
+import com.openddal.util.StringUtils;
 import com.openddal.util.ValueHashMap;
 import com.openddal.value.Value;
 import com.openddal.value.ValueArray;
@@ -760,6 +762,107 @@ public class Select extends Query {
             return lookupCursor.explain(session);
         }
         return "cross node join";
+    }
+    
+    @Override
+    public String getPlanSQL() {
+        // can not use the field sqlStatement because the parameter
+        // indexes may be incorrect: ? may be in fact ?2 for a subquery
+        // but indexes may be set manually as well
+        Expression[] exprList = expressions.toArray(
+                new Expression[expressions.size()]);
+        StatementBuilder buff = new StatementBuilder("SELECT");
+        if (distinct) {
+            buff.append(" DISTINCT");
+        }
+        for (int i = 0; i < visibleColumnCount; i++) {
+            buff.appendExceptFirst(",");
+            buff.append('\n');
+            buff.append(StringUtils.indent(exprList[i].getSQL(), 4, false));
+        }
+        buff.append("\nFROM ");
+        TableFilter filter = topTableFilter;
+        if (filter != null) {
+            buff.resetCount();
+            int i = 0;
+            do {
+                buff.appendExceptFirst("\n");
+                buff.append(filter.getPlanSQL(i++ > 0));
+                filter = filter.getJoin();
+            } while (filter != null);
+        } else {
+            buff.resetCount();
+            int i = 0;
+            for (TableFilter f : topFilters) {
+                do {
+                    buff.appendExceptFirst("\n");
+                    buff.append(f.getPlanSQL(i++ > 0));
+                    f = f.getJoin();
+                } while (f != null);
+            }
+        }
+        if (condition != null) {
+            buff.append("\nWHERE ").append(
+                    StringUtils.unEnclose(condition.getSQL()));
+        }
+        if (groupIndex != null) {
+            buff.append("\nGROUP BY ");
+            buff.resetCount();
+            for (int gi : groupIndex) {
+                Expression g = exprList[gi];
+                g = g.getNonAliasExpression();
+                buff.appendExceptFirst(", ");
+                buff.append(StringUtils.unEnclose(g.getSQL()));
+            }
+        }
+        if (group != null) {
+            buff.append("\nGROUP BY ");
+            buff.resetCount();
+            for (Expression g : group) {
+                buff.appendExceptFirst(", ");
+                buff.append(StringUtils.unEnclose(g.getSQL()));
+            }
+        }
+        if (having != null) {
+            // could be set in addGlobalCondition
+            // in this case the query is not run directly, just getPlanSQL is
+            // called
+            Expression h = having;
+            buff.append("\nHAVING ").append(
+                    StringUtils.unEnclose(h.getSQL()));
+        } else if (havingIndex >= 0) {
+            Expression h = exprList[havingIndex];
+            buff.append("\nHAVING ").append(
+                    StringUtils.unEnclose(h.getSQL()));
+        }
+        if (sort != null) {
+            buff.append("\nORDER BY ").append(
+                    sort.getSQL(exprList, visibleColumnCount));
+        }
+        if (orderList != null) {
+            buff.append("\nORDER BY ");
+            buff.resetCount();
+            for (SelectOrderBy o : orderList) {
+                buff.appendExceptFirst(", ");
+                buff.append(StringUtils.unEnclose(o.getSQL()));
+            }
+        }
+        if (limitExpr != null) {
+            buff.append("\nLIMIT ").append(
+                    StringUtils.unEnclose(limitExpr.getSQL()));
+            if (offsetExpr != null) {
+                buff.append(" OFFSET ").append(
+                        StringUtils.unEnclose(offsetExpr.getSQL()));
+            }
+        }
+        if (sampleSizeExpr != null) {
+            buff.append("\nSAMPLE_SIZE ").append(
+                    StringUtils.unEnclose(sampleSizeExpr.getSQL()));
+        }
+        if (isForUpdate) {
+            buff.append("\nFOR UPDATE");
+        }
+        return buff.toString();
     }
 
     public void setHaving(Expression having) {

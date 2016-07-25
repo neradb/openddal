@@ -21,6 +21,7 @@ import java.util.HashSet;
 import com.openddal.command.Prepared;
 import com.openddal.command.dml.Query;
 import com.openddal.command.expression.Alias;
+import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionColumn;
 import com.openddal.command.expression.ExpressionVisitor;
@@ -28,13 +29,14 @@ import com.openddal.command.expression.Parameter;
 import com.openddal.dbobject.DbObject;
 import com.openddal.dbobject.User;
 import com.openddal.dbobject.index.Index;
+import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.result.LocalResult;
+import com.openddal.util.IntArray;
 import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 
@@ -85,7 +87,7 @@ public class TableView extends Table {
      */
     public static TableView createTempView(Session session, User owner, String name, Query query, Query topQuery) {
         Schema mainSchema = session.getDatabase().getSchema(Constants.SCHEMA_MAIN);
-        String querySQL = query.getSQL();
+        String querySQL = query.getPlanSQL();
         TableView v = new TableView(mainSchema, 0, name, querySQL, query.getParameters(), null, session, false);
         if (v.createException != null) {
             throw v.createException;
@@ -181,6 +183,50 @@ public class TableView extends Table {
     public boolean isInvalid() {
         return createException != null;
     }
+    
+    @Override
+    public PlanItem getBestPlanItem(Session session, int[] masks,
+            TableFilter filter) {
+        PlanItem item = new PlanItem(); 
+        if (recursive) {
+            item.cost = 1000;
+            return item;
+        }        
+        Query q = (Query) session.prepare(querySQL, true);
+        if (masks != null) {
+            IntArray paramIndex = new IntArray();
+            for (int i = 0; i < masks.length; i++) {
+                int mask = masks[i];
+                if (mask == 0) {
+                    continue;
+                }
+                paramIndex.add(i);
+            }
+            int len = paramIndex.size();
+            for (int i = 0; i < len; i++) {
+                int idx = paramIndex.get(i);
+                int mask = masks[idx];
+                int nextParamIndex = q.getParameters().size() + getParameterOffset();
+                if ((mask & IndexCondition.EQUALITY) != 0) {
+                    Parameter param = new Parameter(nextParamIndex);
+                    q.addGlobalCondition(param, idx, Comparison.EQUAL_NULL_SAFE);
+                } else {
+                    if ((mask & IndexCondition.START) != 0) {
+                        Parameter param = new Parameter(nextParamIndex);
+                        q.addGlobalCondition(param, idx, Comparison.BIGGER_EQUAL);
+                    }
+                    if ((mask & IndexCondition.END) != 0) {
+                        Parameter param = new Parameter(nextParamIndex);
+                        q.addGlobalCondition(param, idx, Comparison.SMALLER_EQUAL);
+                    }
+                }
+            }
+            String sql = q.getPlanSQL();
+            q = (Query) session.prepare(sql, true);
+        }
+        item.cost = q.getCost();
+        return item;
+    }
 
     @Override
     public boolean isQueryComparable() {
@@ -193,45 +239,6 @@ public class TableView extends Table {
             }
         }
         return !(topQuery != null && !topQuery.isEverything(ExpressionVisitor.QUERY_COMPARABLE_VISITOR));
-    }
-
-    /**
-     * Generate "CREATE" SQL statement for the view.
-     *
-     * @param orReplace if true, then include the OR REPLACE clause
-     * @param force if true, then include the FORCE clause
-     * @return the SQL statement
-     */
-    public String getCreateSQL(boolean orReplace, boolean force) {
-        return getCreateSQL(orReplace, force, getSQL());
-    }
-
-    private String getCreateSQL(boolean orReplace, boolean force, String quotedName) {
-        StatementBuilder buff = new StatementBuilder("CREATE ");
-        if (orReplace) {
-            buff.append("OR REPLACE ");
-        }
-        if (force) {
-            buff.append("FORCE ");
-        }
-        buff.append("VIEW ");
-        buff.append(quotedName);
-        if (columns != null && columns.length > 0) {
-            buff.append('(');
-            for (Column c : columns) {
-                buff.appendExceptFirst(", ");
-                buff.append(c.getSQL());
-            }
-            buff.append(')');
-        } else if (columnNames != null) {
-            buff.append('(');
-            for (String n : columnNames) {
-                buff.appendExceptFirst(", ");
-                buff.append(n);
-            }
-            buff.append(')');
-        }
-        return buff.append(" AS\n").append(querySQL).toString();
     }
 
     @Override
@@ -325,5 +332,4 @@ public class TableView extends Table {
             }
         }
     }
-
 }

@@ -17,6 +17,7 @@ package com.openddal.dbobject.table;
 
 import java.util.ArrayList;
 
+import com.openddal.command.Parser;
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.Comparison;
 import com.openddal.command.expression.ConditionAndOr;
@@ -30,6 +31,7 @@ import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.util.New;
+import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 import com.openddal.value.ValueLong;
 import com.openddal.value.ValueNull;
@@ -160,7 +162,7 @@ public class TableFilter implements ColumnResolver {
                 }
             }
         }
-        PlanItem item = table.getBestPlanItem(s, masks, filters, filter);
+        PlanItem item = table.getBestPlanItem(s, masks, this);
         if (nestedJoin != null) {
             setEvaluatable(nestedJoin);
             item.setNestedJoinPlan(nestedJoin.getBestPlanItem(s, filters, filter));
@@ -584,6 +586,77 @@ public class TableFilter implements ColumnResolver {
      */
     public boolean isJoinOuterIndirect() {
         return joinOuterIndirect;
+    }
+    
+    /**
+     * Get the query execution plan text to use for this table filter.
+     *
+     * @param isJoin if this is a joined table
+     * @return the SQL statement snippet
+     */
+    public String getPlanSQL(boolean isJoin) {
+        StringBuilder buff = new StringBuilder();
+        if (isJoin) {
+            if (joinOuter) {
+                buff.append("LEFT OUTER JOIN ");
+            } else {
+                buff.append("INNER JOIN ");
+            }
+        }
+        if (nestedJoin != null) {
+            StringBuffer buffNested = new StringBuffer();
+            TableFilter n = nestedJoin;
+            do {
+                buffNested.append(n.getPlanSQL(n != nestedJoin));
+                buffNested.append('\n');
+                n = n.getJoin();
+            } while (n != null);
+            String nested = buffNested.toString();
+            boolean enclose = !nested.startsWith("(");
+            if (enclose) {
+                buff.append("(\n");
+            }
+            buff.append(StringUtils.indent(nested, 4, false));
+            if (enclose) {
+                buff.append(')');
+            }
+            if (isJoin) {
+                buff.append(" ON ");
+                if (joinCondition == null) {
+                    // need to have a ON expression,
+                    // otherwise the nesting is unclear
+                    buff.append("1=1");
+                } else {
+                    buff.append(StringUtils.unEnclose(joinCondition.getSQL()));
+                }
+            }
+            return buff.toString();
+        }
+        buff.append(table.getSQL());
+        if (alias != null) {
+            buff.append(' ').append(Parser.quoteIdentifier(alias));
+        }
+        if (isJoin) {
+            buff.append("\n    ON ");
+            if (joinCondition == null) {
+                // need to have a ON expression, otherwise the nesting is
+                // unclear
+                buff.append("1=1");
+            } else {
+                buff.append(StringUtils.unEnclose(joinCondition.getSQL()));
+            }
+        }
+        if (filterCondition != null) {
+            buff.append('\n');
+            String condition = StringUtils.unEnclose(filterCondition.getSQL());
+            condition = "/* WHERE " + StringUtils.quoteRemarkSQL(condition) + "\n*/";
+            buff.append(StringUtils.indent(condition, 4, false));
+        }
+        if (scanCount > 0) {
+            buff.append("\n    /* scanCount: ").append(scanCount).append(" */");
+        }
+        return buff.toString();
+    
     }
 
     /**

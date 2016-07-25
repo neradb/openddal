@@ -286,6 +286,15 @@ public abstract class Prepared {
         this.objectId = i;
         this.create = false;
     }
+    
+    /**
+     * Get the SQL statement with the execution plan.
+     *
+     * @return the execution plan
+     */
+    public String getPlanSQL() {
+        return null;
+    }
 
     /**
      * Get the SQL statement with the execution plan.

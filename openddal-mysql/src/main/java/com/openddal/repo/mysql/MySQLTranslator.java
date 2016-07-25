@@ -67,9 +67,6 @@ public class MySQLTranslator implements SQLTranslator {
     public SQLTranslated translate(Select select, ObjectNode executionOn,
             Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes, Expression[] selectCols, Integer limit, Integer offset) {
 
-        // can not use the field sqlStatement because the parameter
-        // indexes may be incorrect: ? may be in fact ?2 for a subquery
-        // but indexes may be set manually as well
         if (executionOn instanceof GroupObjectNode) {
             return translate(select, (GroupObjectNode) executionOn, consistencyTableNodes, selectCols, limit, offset);
         }

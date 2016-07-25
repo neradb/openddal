@@ -300,7 +300,7 @@ public abstract class Table extends SchemaObject {
      * @return the plan item
      */
     public PlanItem getBestPlanItem(Session session, int[] masks,
-            TableFilter[] filters, int filter) {
+            TableFilter filter) {
         PlanItem item = new PlanItem();
         item.cost = 1;
         return item;

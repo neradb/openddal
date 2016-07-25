@@ -106,7 +106,7 @@ public class Subquery extends Expression {
 
     @Override
     public String getSQL() {
-        return "(" + query.getSQL() + ")";
+        return "(" + query.getPlanSQL() + ")";
     }
 
     @Override
