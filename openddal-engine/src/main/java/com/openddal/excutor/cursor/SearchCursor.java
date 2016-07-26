@@ -143,7 +143,7 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     }
 
     private Cursor find(TableView tableView) {
-        throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, "subquery not supported yet.");
+        return tableView.getViewCursor(session, tableFilter);
     }
 
     protected Cursor doQuery() {

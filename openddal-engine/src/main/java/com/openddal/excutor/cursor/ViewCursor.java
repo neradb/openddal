@@ -15,36 +15,64 @@
  */
 package com.openddal.excutor.cursor;
 
+import com.openddal.dbobject.table.TableView;
+import com.openddal.message.DbException;
+import com.openddal.result.LocalResult;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
+import com.openddal.value.Value;
+import com.openddal.value.ValueNull;
 
 /**
  * The cursor implementation of a view index.
  */
 public class ViewCursor implements Cursor {
 
+    private final LocalResult result;
+    private Row current;
+    private TableView view;
+
+    public ViewCursor(TableView view, LocalResult result) {
+        this.view = view;
+        this.result = result;
+    }
+
     @Override
     public Row get() {
-        // TODO Auto-generated method stub
-        return null;
+        return current;
     }
 
     @Override
     public SearchRow getSearchRow() {
-        // TODO Auto-generated method stub
-        return null;
+        return current;
     }
 
     @Override
     public boolean next() {
-        // TODO Auto-generated method stub
-        return false;
+        while (true) {
+            boolean res = result.next();
+            if (!res) {
+                if (view.isRecursive()) {
+                    result.reset();
+                } else {
+                    result.close();
+                }
+                current = null;
+                return false;
+            }
+            current = view.getTemplateRow();
+            Value[] values = result.currentRow();
+            for (int i = 0, len = current.getColumnCount(); i < len; i++) {
+                Value v = i < values.length ? values[i] : ValueNull.INSTANCE;
+                current.setValue(i, v);
+            }
+            return true;
+        }
     }
 
     @Override
     public boolean previous() {
-        // TODO Auto-generated method stub
-        return false;
+        throw DbException.throwInternalError();
     }
-    
+
 }

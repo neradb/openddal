@@ -16,6 +16,7 @@
 package com.openddal.dbobject.table;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 
 import com.openddal.command.Prepared;
@@ -33,10 +34,12 @@ import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
+import com.openddal.excutor.cursor.ViewCursor;
 import com.openddal.message.DbException;
 import com.openddal.result.LocalResult;
 import com.openddal.util.IntArray;
 import com.openddal.util.New;
+import com.openddal.util.SmallLRUCache;
 import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 
@@ -56,6 +59,8 @@ public class TableView extends Table {
     private Query viewQuery;
     private boolean recursive;
     private DbException createException;
+    private final SmallLRUCache<CacheKey, Query> queryCache =
+            SmallLRUCache.newInstance(Constants.VIEW_INDEX_CACHE_SIZE);
     private User owner;
     private Query topQuery;
     private LocalResult recursiveResult;
@@ -108,7 +113,6 @@ public class TableView extends Table {
 
     private void initColumnsAndTables(Session session) {
         Column[] cols;
-        // removeViewFromTables();
         try {
             Query query = compileViewQuery(session, querySQL);
             this.querySQL = query.getSQL();
@@ -170,9 +174,6 @@ public class TableView extends Table {
             }
         }
         setColumns(cols);
-        if (getId() != 0) {
-            // addViewToTables();
-        }
     }
 
     /**
@@ -187,46 +188,62 @@ public class TableView extends Table {
     @Override
     public PlanItem getBestPlanItem(Session session, int[] masks,
             TableFilter filter) {
-        PlanItem item = new PlanItem(); 
-        if (recursive) {
-            item.cost = 1000;
-            return item;
-        }        
-        Query q = (Query) session.prepare(querySQL, true);
-        if (masks != null) {
-            IntArray paramIndex = new IntArray();
-            for (int i = 0; i < masks.length; i++) {
-                int mask = masks[i];
-                if (mask == 0) {
-                    continue;
-                }
-                paramIndex.add(i);
-            }
-            int len = paramIndex.size();
-            for (int i = 0; i < len; i++) {
-                int idx = paramIndex.get(i);
-                int mask = masks[idx];
-                int nextParamIndex = q.getParameters().size() + getParameterOffset();
-                if ((mask & IndexCondition.EQUALITY) != 0) {
-                    Parameter param = new Parameter(nextParamIndex);
-                    q.addGlobalCondition(param, idx, Comparison.EQUAL_NULL_SAFE);
-                } else {
-                    if ((mask & IndexCondition.START) != 0) {
-                        Parameter param = new Parameter(nextParamIndex);
-                        q.addGlobalCondition(param, idx, Comparison.BIGGER_EQUAL);
-                    }
-                    if ((mask & IndexCondition.END) != 0) {
-                        Parameter param = new Parameter(nextParamIndex);
-                        q.addGlobalCondition(param, idx, Comparison.SMALLER_EQUAL);
-                    }
-                }
-            }
-            String sql = q.getPlanSQL();
-            q = (Query) session.prepare(sql, true);
-        }
-        item.cost = q.getCost();
+        PlanItem item = new PlanItem();
+        Query q = getCachedQuery(session, masks);
+        item.cost = q.getCost();            
         return item;
     }
+    
+    public ViewCursor getViewCursor(Session session, TableFilter filter) {
+        int len = getColumns().length;
+        int[] masks = new int[len];
+        ArrayList<IndexCondition> indexConditions = filter.getIndexConditions();
+        for (IndexCondition condition : indexConditions) {
+            if (condition.isAlwaysFalse()) {
+                masks = null;
+                break;
+            }
+            int id = condition.getColumn().getColumnId();
+            if (id >= 0) {
+                masks[id] |= condition.getMask(indexConditions);
+            }
+        }
+        
+        Query q = getCachedQuery(session, masks);
+        ArrayList<Parameter> paramList = q.getParameters();
+        ArrayList<Parameter> originalParameters = viewQuery.getParameters();
+        if (originalParameters != null) {
+            for (int i = 0, size = originalParameters.size(); i < size; i++) {
+                Parameter orig = originalParameters.get(i);
+                int idx = orig.getIndex();
+                Value value = orig.getValue(session);
+                setParameter(paramList, idx, value);
+            }
+        }
+        
+        int idx = originalParameters == null ? 0 : originalParameters.size();
+        idx += getParameterOffset();
+        for (IndexCondition condition : indexConditions) {
+            int id = condition.getColumn().getColumnId();
+            if (id >= 0) {
+                int mask = masks[id];
+                Value value = condition.getCurrentValue(session);
+                if ((mask & IndexCondition.EQUALITY) != 0) {
+                    setParameter(paramList, idx++, value);
+                }
+                if ((mask & IndexCondition.START) != 0) {
+                    setParameter(paramList, idx++, value);
+                }
+                if ((mask & IndexCondition.END) != 0) {
+                    setParameter(paramList, idx++, value);
+                }
+            }
+        }
+        LocalResult result = q.query(0);
+        return new ViewCursor(this, result);
+    }
+
+
 
     @Override
     public boolean isQueryComparable() {
@@ -320,6 +337,11 @@ public class TableView extends Table {
     public void setTableExpression(boolean tableExpression) {
         this.tableExpression = tableExpression;
     }
+    
+
+    public boolean isRecursive() {
+        return recursive;
+    }
 
     @Override
     public void addDependencies(HashSet<DbObject> dependencies) {
@@ -330,6 +352,122 @@ public class TableView extends Table {
                     t.addDependencies(dependencies);
                 }
             }
+        }
+    }
+    
+    private Query getCachedQuery(Session session, int[] masks) {
+        final CacheKey cacheKey = new CacheKey(masks, session);
+        synchronized (this) {
+            Query q = queryCache.get(cacheKey);
+            if (q == null) {
+                q = getQuery(session, masks);
+                queryCache.put(cacheKey, q);
+            }
+            return q;
+        }
+    }
+    
+    private Query getQuery(Session session, int[] masks) {
+        Query q = (Query) session.prepare(querySQL, true);
+        if (masks == null) {
+            return q;
+        }
+        if (!q.allowGlobalConditions()) {
+            return q;
+        }
+        int firstIndexParam = q.getParameters() == null ?
+                0 : q.getParameters().size();
+        firstIndexParam += getParameterOffset();
+        IntArray paramIndex = new IntArray();
+        for (int i = 0; i < masks.length; i++) {
+            int mask = masks[i];
+            if (mask == 0) {
+                continue;
+            }
+            paramIndex.add(i);
+            if (Integer.bitCount(mask) > 1) {
+                // two parameters for range queries: >= x AND <= y
+                paramIndex.add(i);
+            }
+        }
+        int len = paramIndex.size();
+        for (int i = 0; i < len;) {
+            int idx = paramIndex.get(i);
+            int mask = masks[idx];
+            if ((mask & IndexCondition.EQUALITY) != 0) {
+                Parameter param = new Parameter(firstIndexParam + i);
+                q.addGlobalCondition(param, idx, Comparison.EQUAL_NULL_SAFE);
+                i++;
+            }
+            if ((mask & IndexCondition.START) != 0) {
+                Parameter param = new Parameter(firstIndexParam + i);
+                q.addGlobalCondition(param, idx, Comparison.BIGGER_EQUAL);
+                i++;
+            }
+            if ((mask & IndexCondition.END) != 0) {
+                Parameter param = new Parameter(firstIndexParam + i);
+                q.addGlobalCondition(param, idx, Comparison.SMALLER_EQUAL);
+                i++;
+            }
+        }
+
+        String sql = q.getPlanSQL();
+        q = (Query) session.prepare(sql, true);
+        return q;
+    }
+    
+    private static void setParameter(ArrayList<Parameter> paramList, int x,
+            Value v) {
+        if (x >= paramList.size()) {
+            // the parameter may be optimized away as in
+            // select * from (select null as x) where x=1;
+            return;
+        }
+        Parameter param = paramList.get(x);
+        param.setValue(v);
+    }
+    
+    /**
+     * The key of the index cache for views.
+     */
+    private static final class CacheKey {
+
+        private final int[] masks;
+        private final Session session;
+
+        public CacheKey(int[] masks, Session session) {
+            this.masks = masks;
+            this.session = session;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + Arrays.hashCode(masks);
+            result = prime * result + session.hashCode();
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            CacheKey other = (CacheKey) obj;
+            if (session != other.session) {
+                return false;
+            }
+            if (!Arrays.equals(masks, other.masks)) {
+                return false;
+            }
+            return true;
         }
     }
 }
