@@ -78,23 +78,30 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         if (offsetExpr != null) {
             offset = offsetExpr.getValue(session).getInt();
         }
-        RoutingResult rr = doRoute(prepared);
-        if (rr.isMultipleNode() && offset != null) {
-            if (offset > database.getSettings().analyzeSample) {
-                throw DbException.get(ErrorCode.INVALID_VALUE_2, "offset", offset + ", the max support offset "
-                        + database.getSettings().analyzeSample + " is defined by analyzeSample.");
+        
+        
+        try {
+            setEvaluatable(prepared.getTopTableFilter(), false);
+            RoutingResult rr = doRoute(prepared);
+            if (rr.isMultipleNode() && offset != null) {
+                if (offset > database.getSettings().analyzeSample) {
+                    throw DbException.get(ErrorCode.INVALID_VALUE_2, "offset", offset + ", the max support offset "
+                            + database.getSettings().analyzeSample + " is defined by analyzeSample.");
+                }
+                offset = offset != null ? 0 : offset;
             }
-            offset = offset != null ? 0 : offset;
-        }
-        ObjectNode[] selectNodes = rr.getSelectNodes();
-        if (session.getDatabase().getSettings().optimizeMerging) {
-            selectNodes = rr.group();
-        }
-        workers = New.arrayList(selectNodes.length);
-        for (ObjectNode node : selectNodes) {
-            QueryWorker queryHandler = queryHandlerFactory.createQueryWorker(prepared, node, consistencyTableNodes,
-                    exprList, limit, offset);
-            workers.add(queryHandler);
+            ObjectNode[] selectNodes = rr.getSelectNodes();
+            if (session.getDatabase().getSettings().optimizeMerging) {
+                selectNodes = rr.group();
+            }
+            workers = New.arrayList(selectNodes.length);
+            for (ObjectNode node : selectNodes) {
+                QueryWorker queryHandler = queryHandlerFactory.createQueryWorker(prepared, node, consistencyTableNodes,
+                        exprList, limit, offset);
+                workers.add(queryHandler);
+            } 
+        } finally {
+            setEvaluatable(prepared.getTopTableFilter(), true);
         }
     }
 
@@ -133,7 +140,6 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         RoutingResult result = null;
         if (!shards.isEmpty()) {
             for (TableFilter f : shards) {
-                f.setEvaluatable(f, false);
                 if (f.isJoinOuter() || f.isJoinOuterIndirect()) {
                     prepare.getCondition().createIndexConditions(session, f);
                 }
@@ -142,10 +148,6 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
                 RoutingResult r = routingHandler.doRoute(table, extractor.getStart(), extractor.getEnd(),
                         extractor.getInColumns());
                 result = (result == null || r.compareTo(result) < 0) ? r : result;
-            
-            }
-            for (TableFilter f : shards) {
-                f.setEvaluatable(f, true);
             }
         } else if (!fixeds.isEmpty()) {
             for (TableFilter tf : shards) {
@@ -217,7 +219,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
     @Override
     public boolean previous() {
-        throw DbException.throwInternalError();
+        return false;
     }
 
     public HashMap<Expression, Value> getCurrentValues() {
@@ -232,6 +234,16 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
 
     public double getCost() {
         return workers.size() * Constants.COST_ROW_OFFSET;
+    }
+    
+    private void setEvaluatable(TableFilter f, boolean evaluateable) {
+        for (; f != null; f = f.getJoin()) {
+            f.setEvaluatable(f, evaluateable);
+            TableFilter n = f.getNestedJoin();
+            if (n != null) {
+                setEvaluatable(n, evaluateable);
+            }
+        }
     }
 
     public static boolean isDirectLookupQuery(Select select) {

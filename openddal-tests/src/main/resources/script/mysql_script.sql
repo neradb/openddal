@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `order_items` (
   `create_date` datetime NOT NULL,
   PRIMARY KEY (`item_id`),
   KEY (`create_date`),
-  FOREIGN KEY (`item_id`) REFERENCES `orders` (`order_id`)
+  FOREIGN KEY (`order_id`) REFERENCES `orders` (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `order_status` (
@@ -99,8 +99,8 @@ insert into address(address_id,customer_id,address_info,zip_code,phone_num) valu
 insert into address(address_id,customer_id,address_info,zip_code,phone_num) values (address_seq.nextval, customer_seq.currval,'阿坝州·四姑娘山','455475','65465465');
 
 insert into orders(order_id,customer_id,order_info,create_date)values(order_seq.nextval,customer_seq.currval,'宋江定单01',CURRENT_DATE);
-insert into order_items(item_id,order_id,product_id,create_date)values(address_seq.nextval,order_seq.curravl,5,CURRENT_DATE);
-insert into order_status(status_id,order_id,order_status,create_date)values(address_seq.nextval,order_seq.curravl,'0',CURRENT_DATE);
+insert into order_items(item_id,order_id,product_id,create_date)values(address_seq.nextval,order_seq.currval,5,CURRENT_DATE);
+insert into order_status(status_id,order_id,order_status,create_date)values(address_seq.nextval,order_seq.currval,'0',CURRENT_DATE);
 
 insert into orders(order_id,customer_id,order_info,create_date)values(order_seq.nextval,customer_seq.currval,'宋江定单02',CURRENT_DATE);
 insert into order_items(item_id,order_id,product_id,create_date)values(address_seq.nextval,order_seq.currval,4,CURRENT_DATE);

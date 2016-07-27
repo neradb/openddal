@@ -16,9 +16,10 @@
 package com.openddal.route.algorithm;
 
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.route.rule.RuleEvaluateException;
 import com.openddal.util.MurmurHash;
 import com.openddal.value.Value;
+import com.openddal.value.ValueLong;
+import com.openddal.value.ValueTimestamp;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -27,11 +28,9 @@ public class HashBucketPartitioner extends CommonPartitioner {
 
     private static final int HASH_BUCKET_SIZE = 1024;
 
-
     private int[] count;
     private int[] length;
     private PartitionUtil partitionUtil;
-
 
     public void setPartitionCount(String partitionCount) {
         this.count = toIntArray(partitionCount);
@@ -53,18 +52,44 @@ public class HashBucketPartitioner extends CommonPartitioner {
         if (isNull) {
             return getDefaultNodeIndex();
         }
-        int type = value.getType();
-        switch (type) {
-            case Value.BLOB:
-            case Value.CLOB:
-            case Value.ARRAY:
-            case Value.RESULT_SET:
-                throw new RuleEvaluateException("Invalid type for " + getClass().getName());
-        }
-        byte[] bytes = value.getBytes();
+        byte[] bytes = toBytes(value);
         long hash64 = MurmurHash.hash64(bytes, bytes.length);
         return partitionUtil.partition(hash64);
     }
+    
+    
+    private byte[] toBytes(Value value) {
+        byte[] bytes;
+        switch (value.getType()) {
 
+        case Value.BYTE:
+        case Value.SHORT:
+        case Value.INT:
+        case Value.LONG:
+        case Value.FLOAT:
+        case Value.DECIMAL:
+        case Value.DOUBLE:
+            long valueLong = value.getLong();
+            bytes = ValueLong.get(valueLong).getBytes();
+            break;
+        case Value.DATE:
+        case Value.TIME:
+        case Value.TIMESTAMP:
+            ValueTimestamp v = (ValueTimestamp) value.convertTo(Value.TIMESTAMP);
+            long toLong = v.getTimestamp().getTime();
+            bytes = ValueLong.get(toLong).getBytes();
+            break;
+        case Value.STRING:
+        case Value.STRING_FIXED:
+        case Value.STRING_IGNORECASE:
+            String string = value.getString();
+            bytes = string.getBytes();
+        default:
+            bytes = value.getBytes(); 
+        }
+        
+        
+        return bytes;
+    }
 
 }

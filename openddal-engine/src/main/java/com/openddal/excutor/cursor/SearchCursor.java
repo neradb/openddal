@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.List;
 
 import com.openddal.command.dml.Select;
-import com.openddal.command.expression.Expression;
 import com.openddal.command.expression.ExpressionVisitor;
 import com.openddal.dbobject.index.ConditionExtractor;
 import com.openddal.dbobject.table.Column;
@@ -50,6 +49,8 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     private Cursor cursor;
     private boolean alwaysFalse;
     private Column[] searchColumns;
+    private Row current;
+
 
     public SearchCursor(TableFilter tableFilter) {
         this.tableFilter = tableFilter;
@@ -67,15 +68,22 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
 
     @Override
     public Row get() {
-        if (cursor == null) {
-            return null;
+        Row searchRow = cursor.get();
+        if (searchColumns == table.getColumns()) {
+            return searchRow;
         }
-        return cursor.get();
+        current = table.getTemplateRow();
+        for (int i = 0; i < searchColumns.length; i++) {
+            int idx = searchColumns[i].getColumnId();
+            current.setValue(idx, searchRow.getValue(i));
+        }
+        return current;
+    
     }
 
     @Override
     public SearchRow getSearchRow() {
-        return cursor.getSearchRow();
+        return get();
     }
 
     @Override
@@ -115,31 +123,28 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     }
 
     private Cursor find(TableMate tableMate) {
-        Expression filter = tableFilter.getFilterCondition();
-        if (filter != null) {
-            filter = filter.optimize(session);
+        try {
+            tableFilter.setEvaluatable(false);
+            ConditionExtractor extractor = new ConditionExtractor(tableFilter);
+            this.alwaysFalse = extractor.isAlwaysFalse();
+            if (extractor.isAlwaysFalse()) {
+                return this;
+            }
+            RoutingResult result = routingHandler.doRoute(tableMate, extractor.getStart(), extractor.getStart(),
+                    extractor.getInColumns());
+            ObjectNode[] selectNodes = result.getSelectNodes();
+            if (session.getDatabase().getSettings().optimizeMerging) {
+                selectNodes = result.group();
+            }
+            List<QueryWorker> workers = New.arrayList(selectNodes.length);
+            for (ObjectNode objectNode : selectNodes) {
+                QueryWorker worker = queryHandlerFactory.createQueryWorker(searchColumns, tableFilter, objectNode);
+                workers.add(worker);
+            }
+            return invokeQueryWorker(workers);
+        } finally {
+            tableFilter.setEvaluatable(true);
         }
-        Expression join = tableFilter.getJoinCondition();
-        if (join != null) {
-            join = join.optimize(session);
-        }
-        ConditionExtractor extractor = new ConditionExtractor(tableFilter);
-        this.alwaysFalse = extractor.isAlwaysFalse();
-        if (extractor.isAlwaysFalse()) {
-            return this;
-        }
-        RoutingResult result = routingHandler.doRoute(tableMate, 
-                extractor.getStart(), extractor.getStart(), extractor.getInColumns());
-        ObjectNode[] selectNodes = result.getSelectNodes();
-        if (session.getDatabase().getSettings().optimizeMerging) {
-            selectNodes = result.group();
-        }
-        List<QueryWorker> workers = New.arrayList(selectNodes.length);
-        for (ObjectNode objectNode : selectNodes) {
-            QueryWorker worker = queryHandlerFactory.createQueryWorker(searchColumns, tableFilter, objectNode);
-            workers.add(worker);
-        }
-        return invokeQueryWorker(workers);
     }
 
     private Cursor find(TableView tableView) {
@@ -167,7 +172,7 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
 
     protected void doPrepare() {
         Select select = tableFilter.getSelect();
-        if(select != null) {
+        if(select != null && tableFilter.isFromTableMate()) {
             HashSet<Column> columns = New.linkedHashSet();
             select.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
             ArrayList<Column> selected = New.arrayList(10);

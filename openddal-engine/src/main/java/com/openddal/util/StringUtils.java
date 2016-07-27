@@ -153,11 +153,11 @@ public class StringUtils {
             char c = s.charAt(i);
             if (c == '\'') {
                 buff.append(c);
-            } else if (c < ' ' || c > 127) {
+            } /*else if (c < ' ' || c > 127) {
                 // need to start from the beginning because maybe there was a \
                 // that was not quoted
                 return "STRINGDECODE(" + quoteStringSQL(javaEncode(s)) + ")";
-            }
+            }*/
             buff.append(c);
         }
         buff.append('\'');

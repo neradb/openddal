@@ -326,10 +326,10 @@ public class ExpressionColumn extends Expression {
 
     @Override
     public String getPreparedSQL(Session session, List<Value> parameters) {
-        Value value = columnResolver == null ? null : columnResolver.getValue(column);
-        if (value == null) {
+        if (!isEverything(ExpressionVisitor.EVALUATABLE_VISITOR)) {
             return getSQL();
         }
+        Value value = getValue(session);
         parameters.add(value);
         return "?";
     }

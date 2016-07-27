@@ -18,6 +18,7 @@
 
 package com.openddal.route;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -88,6 +89,7 @@ public class RoutingHandlerImpl implements RoutingHandler {
         List<RoutingArgument> args = New.arrayList(ruleCols.length);
         for (Column ruleCol : ruleCols) {
             Value v = row.getValue(ruleCol.getColumnId());
+            v = ruleCol.convert(v);
             RoutingArgument arg = new RoutingArgument(ruleCol.getName(), v);
             args.add(arg);
         }
@@ -122,18 +124,25 @@ public class RoutingHandlerImpl implements RoutingHandler {
                         if(database.compare(startV, endV) == 0) {
                             // an X=? condition will produce less rows than
                             // an X IN(..) condition
+                            startV = ruleCol.convert(startV);
                             arg = new RoutingArgument(ruleColName, startV);
                         } else if(inColumns.get(ruleCol) != null) {
                             Set<Value> values = inColumns.get(ruleCol);
-                            arg = new RoutingArgument(ruleColName, New.arrayList(values));
+                            ArrayList<Value> arrayList = convertValues(ruleCol, values);
+                            arg = new RoutingArgument(ruleColName, arrayList);
                         } else {
+                            startV = ruleCol.convert(startV);
+                            endV = ruleCol.convert(endV);
                             arg = new RoutingArgument(ruleColName, startV, endV);
                         }
                         
                     } else if(inColumns.get(ruleCol) != null) {
                         Set<Value> values = inColumns.get(ruleCol);
-                        arg = new RoutingArgument(ruleColName, New.arrayList(values));
+                        ArrayList<Value> arrayList = convertValues(ruleCol, values);
+                        arg = new RoutingArgument(ruleColName, arrayList);
                     } else if(startV != null || endV != null){
+                        startV = startV == null ? null : ruleCol.convert(startV);
+                        endV = endV == null ? null : ruleCol.convert(endV);
                         arg = new RoutingArgument(ruleColName, startV, endV);
                     } else {
                         arg = new RoutingArgument(ruleColName);
@@ -161,6 +170,14 @@ public class RoutingHandlerImpl implements RoutingHandler {
     private RoutingResult fixedRoutingResult(ObjectNode... tableNode) {
         RoutingResult result = RoutingResult.fixedResult(tableNode);
         return result;
+    }
+    
+    private ArrayList<Value> convertValues(Column ruleCol, Set<Value> values) {
+        ArrayList<Value> arrayList = New.arrayList(values.size());
+        for (Value value : values) {
+            arrayList.add(ruleCol.convert(value));
+        }
+        return arrayList;
     }
 
 }
