@@ -21,6 +21,8 @@ import java.util.List;
 
 import com.openddal.command.dml.Select;
 import com.openddal.command.expression.ExpressionVisitor;
+import com.openddal.config.GlobalTableRule;
+import com.openddal.config.TableRule;
 import com.openddal.dbobject.index.ConditionExtractor;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.MetaTable;
@@ -51,7 +53,6 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     private Column[] searchColumns;
     private Row current;
 
-
     public SearchCursor(TableFilter tableFilter) {
         this.tableFilter = tableFilter;
         this.table = tableFilter.getTable();
@@ -78,7 +79,7 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
             current.setValue(idx, searchRow.getValue(i));
         }
         return current;
-    
+
     }
 
     @Override
@@ -130,8 +131,7 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
             if (extractor.isAlwaysFalse()) {
                 return this;
             }
-            RoutingResult result = routingHandler.doRoute(tableMate, extractor.getStart(), extractor.getStart(),
-                    extractor.getInColumns());
+            RoutingResult result = doRoute(tableMate, extractor);
             ObjectNode[] selectNodes = result.getSelectNodes();
             if (session.getDatabase().getSettings().optimizeMerging) {
                 selectNodes = result.group();
@@ -145,6 +145,27 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
         } finally {
             tableFilter.setEvaluatable(true);
         }
+    }
+
+    private RoutingResult doRoute(TableMate tableMate, ConditionExtractor extractor) {
+        RoutingResult result;
+        TableRule tableRule = tableMate.getTableRule();
+        switch (tableRule.getType()) {
+        case TableRule.FIXED_NODE_TABLE:
+            result = RoutingResult.fixedResult(tableRule.getMetadataNode());
+            break;
+        case TableRule.GLOBAL_NODE_TABLE:
+            GlobalTableRule gt = (GlobalTableRule) tableRule;
+            result = gt.getRandomRoutingResult();
+            break;
+        case TableRule.SHARDED_NODE_TABLE:
+            result = routingHandler.doRoute(tableMate, extractor.getStart(), extractor.getStart(),
+                    extractor.getInColumns());
+            break;
+        default:
+            throw DbException.throwInternalError("table type:" + tableRule.getType());
+        }
+        return result;
     }
 
     private Cursor find(TableView tableView) {
@@ -171,8 +192,9 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
     }
 
     protected void doPrepare() {
+        searchColumns = tableFilter.getTable().getColumns();
         Select select = tableFilter.getSelect();
-        if(select != null && tableFilter.isFromTableMate()) {
+        if (select != null && tableFilter.isFromTableMate()) {
             HashSet<Column> columns = New.linkedHashSet();
             select.isEverything(ExpressionVisitor.getColumnsVisitor(columns));
             ArrayList<Column> selected = New.arrayList(10);
@@ -181,9 +203,12 @@ public class SearchCursor extends ExecutionFramework implements Cursor {
                     selected.add(column);
                 }
             }
-            searchColumns = selected.toArray(new Column[selected.size()]);
-        } else {
-            searchColumns = tableFilter.getTable().getColumns();
+            //product_category columns is empty null where visitor this sql
+            //SELECT count(*) FROM product_category a LEFT JOIN (SELECT product_category_id, count(*) 
+            //c FROM product GROUP BY product_category_id) b ON a.product_category_id = b.product_category_id;
+            if(!selected.isEmpty()) {
+                searchColumns = selected.toArray(new Column[selected.size()]);
+            }
         }
     }
 

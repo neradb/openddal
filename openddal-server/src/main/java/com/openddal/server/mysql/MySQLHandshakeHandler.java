@@ -216,6 +216,7 @@ public class MySQLHandshakeHandler extends ProtocolHandler {
         public void error(int errno, String msg) {
             transport.out.clear();
             ERR err = new ERR();
+            err.sequenceId = 2;
             err.errorCode = errno;
             err.errorMessage = msg;
             transport.out.writeBytes(err.toPacket());

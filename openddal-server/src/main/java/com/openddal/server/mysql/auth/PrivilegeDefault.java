@@ -73,7 +73,7 @@ public class PrivilegeDefault implements Privilege {
                 return true;
             }
             byte[] scramble411 = SecurityUtil.scramble411(localPass, salt);
-            String encryptPass411 = new String(scramble411);
+            String encryptPass411 = new String(scramble411,"UTF-8");
             if(encryptPass411.equals(password)){
                 return true;
             }

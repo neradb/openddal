@@ -396,7 +396,7 @@ public class TableView extends Table {
             int mask = masks[idx];
             if ((mask & IndexCondition.EQUALITY) != 0) {
                 Parameter param = new Parameter(firstIndexParam + i);
-                q.addGlobalCondition(param, idx, Comparison.EQUAL_NULL_SAFE);
+                q.addGlobalCondition(param, idx, Comparison.EQUAL);
                 i++;
             }
             if ((mask & IndexCondition.START) != 0) {
