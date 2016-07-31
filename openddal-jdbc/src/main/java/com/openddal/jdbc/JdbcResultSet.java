@@ -15,26 +15,55 @@
  */
 package com.openddal.jdbc;
 
+import java.io.InputStream;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.net.URL;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.Date;
+import java.sql.NClob;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.sql.SQLXML;
+import java.sql.Statement;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+
 import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.TraceObject;
 import com.openddal.result.ResultInterface;
-import com.openddal.result.UpdatableRow;
 import com.openddal.util.DateTimeUtils;
 import com.openddal.util.IOUtils;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
-import com.openddal.value.*;
-
-import java.io.InputStream;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.net.URL;
-import java.sql.*;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import com.openddal.value.CompareMode;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueBoolean;
+import com.openddal.value.ValueByte;
+import com.openddal.value.ValueBytes;
+import com.openddal.value.ValueDate;
+import com.openddal.value.ValueDecimal;
+import com.openddal.value.ValueDouble;
+import com.openddal.value.ValueFloat;
+import com.openddal.value.ValueInt;
+import com.openddal.value.ValueLong;
+import com.openddal.value.ValueNull;
+import com.openddal.value.ValueShort;
+import com.openddal.value.ValueString;
+import com.openddal.value.ValueTime;
+import com.openddal.value.ValueTimestamp;
 
 /**
  * <p>
@@ -2518,7 +2547,7 @@ public class JdbcResultSet extends TraceObject implements ResultSet {
             if (!updatable) {
                 return ResultSet.CONCUR_READ_ONLY;
             }
-            UpdatableRow row = new UpdatableRow(conn, result);
+            JdbcUpdatableRow row = new JdbcUpdatableRow(conn, result);
             return row.isUpdatable() ? ResultSet.CONCUR_UPDATABLE
                     : ResultSet.CONCUR_READ_ONLY;
         } catch (Exception e) {
@@ -2976,7 +3005,7 @@ public class JdbcResultSet extends TraceObject implements ResultSet {
             }
             checkOnValidRow();
             if (updateRow != null) {
-                UpdatableRow row = getUpdatableRow();
+                JdbcUpdatableRow row = getUpdatableRow();
                 Value[] current = new Value[columnCount];
                 for (int i = 0; i < updateRow.length; i++) {
                     current[i] = get(i + 1);
@@ -3064,8 +3093,8 @@ public class JdbcResultSet extends TraceObject implements ResultSet {
         }
     }
 
-    private UpdatableRow getUpdatableRow() throws SQLException {
-        UpdatableRow row = new UpdatableRow(conn, result);
+    private JdbcUpdatableRow getUpdatableRow() throws SQLException {
+        JdbcUpdatableRow row = new JdbcUpdatableRow(conn, result);
         if (!row.isUpdatable()) {
             throw DbException.get(ErrorCode.RESULT_SET_NOT_UPDATABLE);
         }
@@ -3700,7 +3729,7 @@ public class JdbcResultSet extends TraceObject implements ResultSet {
 
     private Value convertToUnknownValue(Object x) {
         checkClosed();
-        return DataType.convertToValue(conn.getSession(), x, Value.UNKNOWN);
+        return DataType.convertToValue(x, Value.UNKNOWN);
     }
 
     private void checkUpdatable() {

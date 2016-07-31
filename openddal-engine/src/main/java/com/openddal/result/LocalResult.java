@@ -99,7 +99,7 @@ public class LocalResult implements ResultInterface, ResultTarget {
                 Value[] list = new Value[columnCount];
                 for (int j = 0; j < columnCount; j++) {
                     int type = result.getColumnType(j);
-                    list[j] = DataType.readValue(session, rs, j + 1, type);
+                    list[j] = DataType.readValue(rs, j + 1, type);
                 }
                 result.addRow(list);
             }

@@ -15,7 +15,8 @@
  */
 package com.openddal.server;
 
-import com.openddal.jdbc.JdbcSQLException;
+import java.sql.SQLException;
+
 import com.openddal.message.DbException;
 import com.openddal.server.util.ErrorCode;
 
@@ -34,8 +35,8 @@ public class ProtocolProcessException extends Exception {
         } else if (e instanceof DbException) {
             DbException dbe = (DbException) e;
             return new ProtocolProcessException(dbe.getErrorCode(), dbe.getMessage(), e);
-        } else if (e instanceof JdbcSQLException) {
-            JdbcSQLException sqle = (JdbcSQLException) e;
+        } else if (e instanceof SQLException) {
+            SQLException sqle = (SQLException) e;
             return new ProtocolProcessException(sqle.getErrorCode(), sqle.getMessage(), e);
         } else if (e instanceof OutOfMemoryError) {
             return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY, "ER_OUTOFMEMORY", e);

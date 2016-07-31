@@ -13,13 +13,11 @@ import com.openddal.value.Value;
 
 public class ResultCursor implements Cursor {
 
-    private Session session;
     private Row current;
     private final ResultSet rs;
     private final Expression[] cols;
 
     public ResultCursor(Session session, ResultSet rs) {
-        this.session = session;
         this.rs = rs;
         this.cols = Expression.getExpressionColumns(session, rs);
     }
@@ -48,7 +46,7 @@ public class ResultCursor implements Cursor {
         }
         current = createRow();
         for (int i = 0; i < current.getColumnCount(); i++) {
-            Value v = DataType.readValue(session, rs, i + 1, cols[i].getType());
+            Value v = DataType.readValue(rs, i + 1, cols[i].getType());
             current.setValue(i, v);
         }
         return true;

@@ -468,7 +468,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
                 setParameter(parameterIndex, ValueNull.INSTANCE);
             } else {
                 setParameter(parameterIndex,
-                        DataType.convertToValue(session, x, Value.UNKNOWN));
+                        DataType.convertToValue(x, Value.UNKNOWN));
             }
         } catch (Exception e) {
             throw logAndConvert(e);
@@ -496,7 +496,7 @@ public class JdbcPreparedStatement extends JdbcStatement implements
             if (x == null) {
                 setParameter(parameterIndex, ValueNull.INSTANCE);
             } else {
-                Value v = DataType.convertToValue(conn.getSession(), x, type);
+                Value v = DataType.convertToValue(x, type);
                 setParameter(parameterIndex, v.convertTo(type));
             }
         } catch (Exception e) {

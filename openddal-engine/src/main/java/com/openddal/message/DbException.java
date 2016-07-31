@@ -15,12 +15,6 @@
  */
 package com.openddal.message;
 
-import com.openddal.engine.Constants;
-import com.openddal.jdbc.JdbcSQLException;
-import com.openddal.util.SortedProperties;
-import com.openddal.util.StringUtils;
-import com.openddal.util.Utils;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -31,6 +25,11 @@ import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Properties;
+
+import com.openddal.engine.Constants;
+import com.openddal.util.SortedProperties;
+import com.openddal.util.StringUtils;
+import com.openddal.util.Utils;
 
 /**
  * This exception wraps a checked exception.

@@ -15,11 +15,11 @@
  */
 package com.openddal.message;
 
-import com.openddal.util.StringUtils;
-
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Map;
+
+import com.openddal.util.StringUtils;
 
 /**
  * The base class for objects that can print trace information about themselves.
@@ -197,7 +197,7 @@ public class TraceObject {
         if (x == null) {
             return "null";
         }
-        return "org.h2.util.StringUtils.convertHexToBytes(\"" +
+        return "com.openddal.util.StringUtils.convertHexToBytes(\"" +
                 StringUtils.convertBytesToHex(x) + "\")";
     }
 

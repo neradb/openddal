@@ -15,14 +15,14 @@
  */
 package com.openddal.value;
 
-import com.openddal.message.DbException;
-import com.openddal.result.SimpleResultSet;
-import com.openddal.util.StatementBuilder;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+
+import com.openddal.message.DbException;
+import com.openddal.result.SimpleResultSet;
+import com.openddal.util.StatementBuilder;
 
 /**
  * Implementation of the RESULT_SET data type.
@@ -115,7 +115,7 @@ public class ValueResultSet extends Value {
                 for (int j = 0; j < columnCount; j++) {
                     buff.appendExceptFirst(", ");
                     int t = DataType.getValueTypeFromResultSet(meta, j + 1);
-                    Value v = DataType.readValue(null, result, j + 1, t);
+                    Value v = DataType.readValue(result, j + 1, t);
                     buff.append(v.getString());
                 }
                 buff.append(')');

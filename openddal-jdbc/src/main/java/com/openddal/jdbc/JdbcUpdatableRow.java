@@ -13,17 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.result;
-
-import com.openddal.jdbc.JdbcConnection;
-import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
-import com.openddal.util.New;
-import com.openddal.util.StatementBuilder;
-import com.openddal.util.StringUtils;
-import com.openddal.value.DataType;
-import com.openddal.value.Value;
-import com.openddal.value.ValueNull;
+package com.openddal.jdbc;
 
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
@@ -31,11 +21,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import com.openddal.message.DbException;
+import com.openddal.message.ErrorCode;
+import com.openddal.result.ResultInterface;
+import com.openddal.util.New;
+import com.openddal.util.StatementBuilder;
+import com.openddal.util.StringUtils;
+import com.openddal.value.DataType;
+import com.openddal.value.Value;
+import com.openddal.value.ValueNull;
+
 /**
  * This class is used for updatable result sets. An updatable row provides
  * functions to update the current row in a result set.
  */
-public class UpdatableRow {
+public class JdbcUpdatableRow {
 
     private final JdbcConnection conn;
     private final ResultInterface result;
@@ -52,7 +52,7 @@ public class UpdatableRow {
      * @param conn   the database connection
      * @param result the result
      */
-    public UpdatableRow(JdbcConnection conn, ResultInterface result)
+    public JdbcUpdatableRow(JdbcConnection conn, ResultInterface result)
             throws SQLException {
         this.conn = conn;
         this.result = result;
@@ -242,7 +242,7 @@ public class UpdatableRow {
         Value[] newRow = new Value[columnCount];
         for (int i = 0; i < columnCount; i++) {
             int type = result.getColumnType(i);
-            newRow[i] = DataType.readValue(conn.getSession(), rs, i + 1, type);
+            newRow[i] = DataType.readValue(rs, i + 1, type);
         }
         return newRow;
     }

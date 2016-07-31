@@ -20,8 +20,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -33,12 +31,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
 
-import com.openddal.engine.Constants;
-import com.openddal.engine.SessionInterface;
 import com.openddal.engine.SysProperties;
-import com.openddal.jdbc.JdbcBlob;
-import com.openddal.jdbc.JdbcClob;
-import com.openddal.jdbc.JdbcConnection;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.SimpleResultSet;
@@ -453,7 +446,7 @@ public class DataType {
      * @param type        the data type
      * @return the value
      */
-    public static Value readValue(SessionInterface session, ResultSet rs,
+    public static Value readValue(ResultSet rs,
                                   int columnIndex, int type) {
         try {
             Value v;
@@ -558,28 +551,17 @@ public class DataType {
                     break;
                 }
                 case Value.CLOB: {
-                    if (session == null) {
-                        v = ValueLobDb.createSmallLob(
-                                Value.CLOB, rs.getString(columnIndex).getBytes(Constants.UTF8));
+                    Reader in = rs.getCharacterStream(columnIndex);
+                    if (in == null) {
+                        v = ValueNull.INSTANCE;
                     } else {
-                        Reader in = rs.getCharacterStream(columnIndex);
-                        if (in == null) {
-                            v = ValueNull.INSTANCE;
-                        } else {
-                            v = ValueLobDb.createTempClob(new BufferedReader(in), -1);
-                        }
+                        v = ValueLobDb.createTempClob(new BufferedReader(in), -1);
                     }
                     break;
                 }
                 case Value.BLOB: {
-                    if (session == null) {
-                        v = ValueLobDb.createSmallLob(
-                                Value.BLOB, rs.getBytes(columnIndex));
-                    } else {
-                        InputStream in = rs.getBinaryStream(columnIndex);
-                        v = (in == null) ? (Value) ValueNull.INSTANCE :
-                                ValueLobDb.createTempBlob(in, -1);
-                    }
+                    InputStream in = rs.getBinaryStream(columnIndex);
+                    v = (in == null) ? (Value) ValueNull.INSTANCE : ValueLobDb.createTempBlob(in, -1);
                     break;
                 }
                 case Value.JAVA_OBJECT: {
@@ -606,7 +588,7 @@ public class DataType {
                     int len = list.length;
                     Value[] values = new Value[len];
                     for (int i = 0; i < len; i++) {
-                        values[i] = DataType.convertToValue(session, list[i], Value.NULL);
+                        values[i] = DataType.convertToValue(list[i], Value.NULL);
                     }
                     v = ValueArray.get(values);
                     break;
@@ -898,8 +880,7 @@ public class DataType {
      * @param type    the value type
      * @return the value
      */
-    public static Value convertToValue(SessionInterface session, Object x,
-                                       int type) {
+    public static Value convertToValue(Object x, int type) {
         if (x == null) {
             return ValueNull.INSTANCE;
         }
@@ -970,7 +951,7 @@ public class DataType {
             int len = o.length;
             Value[] v = new Value[len];
             for (int i = 0; i < len; i++) {
-                v[i] = convertToValue(session, o[i], type);
+                v[i] = convertToValue(o[i], type);
             }
             return ValueArray.get(x.getClass().getComponentType(), v);
         } else if (x instanceof Character) {
@@ -1083,30 +1064,6 @@ public class DataType {
         }
         throw DbException.throwInternalError(
                 "primitive=" + clazz.toString());
-    }
-
-    /**
-     * Convert a value to the specified class.
-     *
-     * @param conn       the database connection
-     * @param v          the value
-     * @param paramClass the target class
-     * @return the converted object
-     */
-    public static Object convertTo(JdbcConnection conn, Value v,
-                                   Class<?> paramClass) {
-        if (paramClass == Blob.class) {
-            return new JdbcBlob(conn, v, 0);
-        } else if (paramClass == Clob.class) {
-            return new JdbcClob(conn, v, 0);
-        }
-        if (v.getType() == Value.JAVA_OBJECT) {
-            Object o = v.getObject();
-            if (paramClass.isAssignableFrom(o.getClass())) {
-                return o;
-            }
-        }
-        throw DbException.getUnsupportedException(paramClass.getName());
     }
 
 }
