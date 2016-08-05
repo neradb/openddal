@@ -9,8 +9,8 @@ public class TxResultSet {
     
     public static ResultSet getReadonlyResultSet(boolean readOnly) {
         SimpleResultSet result = new SimpleResultSet();
-        result.addColumn("@@SESSION.TX_READ_ONLY", Types.BOOLEAN, Integer.MAX_VALUE, 0);
-        result.addRow(readOnly);
+        result.addColumn("@@SESSION.TX_READ_ONLY", Types.INTEGER, Integer.MAX_VALUE, 0);
+        result.addRow(readOnly ? 1 : 0);
         return result;
     }
     

@@ -514,6 +514,7 @@ public class MySQLTranslator implements SQLTranslator {
     public SQLTranslated translate(AlterTableAlterColumn prepared, ObjectNode node) {
 
         Column oldColumn = prepared.getOldColumn();
+        Column newColumn = prepared.getNewColumn();
         String forTable = node.getCompositeObjectName();
         int type = prepared.getType();
         switch (type) {
@@ -544,12 +545,13 @@ public class MySQLTranslator implements SQLTranslator {
             return SQLTranslated.build().sql(buff.toString());
         }
         case CommandInterface.ALTER_TABLE_ALTER_COLUMN_CHANGE_TYPE: {
+                // ALTER TABLE `ddal_db1`.`ADDRESS_01` CHANGE COLUMN
+                // `ADDRESS_ID` `ADDRESS_ID` VARCHAR(128) NOT NULL ;
             StringBuilder buff = new StringBuilder("ALTER TABLE ");
             buff.append(identifier(forTable));
-            buff.append(" ALTER COLUMN ");
-            buff.append(prepared.getOldColumn().getSQL());
-            buff.append(" SET DEFAULT ");
-            buff.append(prepared.getDefaultExpression().getSQL());
+                buff.append(" CHANGE COLUMN ");
+                buff.append(oldColumn.getSQL()).append(' ');
+                buff.append(newColumn.getCreateSQL());
             return SQLTranslated.build().sql(buff.toString());
         }
         case CommandInterface.ALTER_TABLE_ADD_COLUMN: {

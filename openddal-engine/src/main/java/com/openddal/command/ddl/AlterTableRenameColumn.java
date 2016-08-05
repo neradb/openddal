@@ -19,7 +19,6 @@ import com.openddal.command.CommandInterface;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.Table;
 import com.openddal.engine.Session;
-import com.openddal.message.DbException;
 
 /**
  * This class represents the statement
@@ -57,11 +56,6 @@ public class AlterTableRenameColumn extends DefineCommand {
 
     public void setNewColumnName(String newName) {
         this.newName = newName;
-    }
-
-    @Override
-    public int update() {
-        throw DbException.getUnsupportedException("TODO");
     }
 
     @Override
