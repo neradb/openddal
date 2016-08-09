@@ -40,6 +40,7 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
 
     @Override
     public int executeUpdate() {
+        beforeExecute();
         try {
             Options optional = Options.build().shardName(shardName).readOnly(false);
             if (trace.isDebugEnabled()) {
@@ -78,8 +79,6 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
                 buff.append('}');
             }
             throw wrapException("executeUpdate", shardName, buff.toString(), e);
-        } finally {
-            close();
         }
     }
 }

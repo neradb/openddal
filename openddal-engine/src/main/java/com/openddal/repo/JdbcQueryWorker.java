@@ -22,8 +22,6 @@ import com.openddal.engine.Session;
 import com.openddal.excutor.cursor.Cursor;
 import com.openddal.excutor.cursor.ResultCursor;
 import com.openddal.excutor.works.QueryWorker;
-import com.openddal.result.Row;
-import com.openddal.result.SearchRow;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -44,6 +42,7 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
 
     @Override
     public Cursor executeQuery() {
+        beforeExecute();
         try {
             Options optional = Options.build().shardName(shardName).readOnly(true);
             if (trace.isDebugEnabled()) {
@@ -66,7 +65,7 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
                 }
             }
             opendResultSet = opendStatement.executeQuery();
-            return new AutoCloseCursor(new ResultCursor(session, opendResultSet), this);
+            return new ResultCursor(session, opendResultSet);
         } catch (SQLException e) {
             close();
             StatementBuilder buff = new StatementBuilder();
@@ -85,36 +84,5 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
 
     }
 
-    private static class AutoCloseCursor implements Cursor {
-        private final JdbcQueryWorker worker;
-        private ResultCursor target;
-
-        private AutoCloseCursor(ResultCursor target, JdbcQueryWorker worker) {
-            super();
-            this.target = target;
-            this.worker = worker;
-        }
-
-        public Row get() {
-            return target.get();
-        }
-
-        public SearchRow getSearchRow() {
-            return target.getSearchRow();
-        }
-
-        public boolean next() {
-            boolean next = target.next();
-            if (!next) {
-                worker.close();
-            }
-            return next;
-        }
-
-        public boolean previous() {
-            return target.previous();
-        }
-
-    }
 
 }

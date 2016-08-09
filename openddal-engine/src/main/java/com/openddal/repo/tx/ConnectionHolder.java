@@ -79,8 +79,13 @@ public class ConnectionHolder implements ConnectionProvider {
 
     @Override
     public synchronized void closeConnection(Connection connection, Options options) {
-        if (!connectionMap.containsKey(options.shardName)) {
+        if (session.getAutoCommit()) {
             target.closeConnection(connection, options);
+        } else {
+            Connection contains = connectionMap.get(options.shardName);
+            if (connection != contains) {
+                target.closeConnection(connection, options);
+            }
         }
     }
 

@@ -102,8 +102,6 @@ public class JdbcBatchUpdateWorker extends JdbcWorker implements BatchUpdateWork
                 }
             }
             throw wrapException("executeBatchUpdate", shardName, buff.toString(), e);
-        } finally {
-            close();
         }
     }
 

@@ -169,4 +169,8 @@ public abstract class JdbcWorker {
             stmt.setQueryTimeout(seconds);
         }
     }
+
+    protected void beforeExecute() {
+        close();
+    }
 }
