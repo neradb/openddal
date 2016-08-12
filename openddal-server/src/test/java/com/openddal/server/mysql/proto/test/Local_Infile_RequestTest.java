@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.openddal.server.mysql.proto.Local_Infile_Request;
+import com.openddal.server.mysql.proto.LocalInfileRequest;
 
 public class Local_Infile_RequestTest {
     @Test
@@ -14,7 +14,7 @@ public class Local_Infile_RequestTest {
             + "0c 00 00 01 fb 2f 65 74    63 2f 70 61 73 73 77 64"
         );
 
-        Local_Infile_Request pkt = Local_Infile_Request.loadFromPacket(packet);
+        LocalInfileRequest pkt = LocalInfileRequest.loadFromPacket(packet);
         assertArrayEquals(packet, pkt.toPacket());
         assertEquals(pkt.filename, "/etc/passwd");
     }

@@ -15,14 +15,14 @@
  */
 package com.openddal.server;
 
-import java.util.Properties;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openddal.engine.Engine;
+import com.openddal.engine.SessionFactory;
+import com.openddal.engine.SessionFactoryBuilder;
 import com.openddal.engine.SysProperties;
 import com.openddal.util.ExtendableThreadPoolExecutor;
 import com.openddal.util.ExtendableThreadPoolExecutor.TaskQueue;
@@ -55,14 +55,18 @@ public abstract class NettyServer {
     private EventLoopGroup workerGroup;
     private ThreadPoolExecutor userExecutor;
     private ChannelFuture f;
-    private Engine ddalEngine;
+    private SessionFactory sessionFactory;
 
     public NettyServer(ServerArgs args) {
         this.args = args;
     }
 
-    public Engine getDdalEngine() {
-        return ddalEngine;
+    public SessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+
+    public ThreadPoolExecutor getUserExecutor() {
+        return userExecutor;
     }
 
     /**
@@ -75,9 +79,7 @@ public abstract class NettyServer {
                 System.setProperty("ddal.engineConfigLocation", args.configFile);
             }
             LOGGER.info("{} server init ddal-engine from {}", getServerName(), SysProperties.ENGINE_CONFIG_LOCATION);
-            Properties prop = new Properties();
-            prop.setProperty(Engine.ENGINE_CONFIG_PROPERTY_NAME, SysProperties.ENGINE_CONFIG_LOCATION);
-            ddalEngine = Engine.getImplicitEngine(prop);
+            sessionFactory = SessionFactoryBuilder.newBuilder().fromXml(SysProperties.ENGINE_CONFIG_LOCATION).build();
             LOGGER.info("{} server ddal-engine inited.", getServerName());
         } catch (Exception e) {
             LOGGER.error("Exception happen when init ddal-engine ", e);

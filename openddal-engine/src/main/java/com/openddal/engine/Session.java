@@ -391,9 +391,11 @@ public class Session implements SessionInterface {
 
     @Override
     public void close() {
+        System.out.println("session close");
         if (!closed) {
             try {
                 if (!getAutoCommit()) {
+                    System.out.println("session rollback");
                     rollback();
                 }
                 transaction.close();

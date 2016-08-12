@@ -21,15 +21,15 @@ import com.openddal.server.mysql.parser.ServerParseSelect;
 import com.openddal.server.mysql.parser.ServerParseSet;
 import com.openddal.server.mysql.parser.ServerParseShow;
 import com.openddal.server.mysql.parser.ServerParseStart;
-import com.openddal.server.mysql.proto.ColumnPacket;
-import com.openddal.server.mysql.proto.Com_Initdb;
-import com.openddal.server.mysql.proto.Com_Query;
+import com.openddal.server.mysql.proto.ColumnDefinition;
+import com.openddal.server.mysql.proto.ComInitdb;
+import com.openddal.server.mysql.proto.ComQuery;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
 import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
-import com.openddal.server.mysql.proto.ResultSetPacket;
-import com.openddal.server.mysql.proto.RowPacket;
+import com.openddal.server.mysql.proto.Resultset;
+import com.openddal.server.mysql.proto.ResultsetRow;
 import com.openddal.server.mysql.respo.CharacterSet;
 import com.openddal.server.mysql.respo.SelectVariables;
 import com.openddal.server.mysql.respo.ShowCharset;
@@ -61,13 +61,13 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
 
         switch (type) {
         case Flags.COM_INIT_DB:
-            String db = Com_Initdb.loadFromPacket(packet).schema;
+            String db = ComInitdb.loadFromPacket(packet).schema;
             getTrace().protocol("COM_INIT_DB").sql(db);
             initDB(db);
             sendOk();
             break;
         case Flags.COM_QUERY:
-            String query = Com_Query.loadFromPacket(packet).query;
+            String query = ComQuery.loadFromPacket(packet).query;
             getTrace().protocol("COM_QUERY").sql(query);
             query(query);
             break;
@@ -510,13 +510,13 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         ResultSetMetaData metaData = rs.getMetaData();
         int colunmCount = metaData.getColumnCount();
 
-        ResultSetPacket resultset = new ResultSetPacket();
+        Resultset resultset = new Resultset();
         resultset.sequenceId = getNextSequenceId();
-        ResultSetPacket.characterSet = getSession().getCharsetIndex();
+        Resultset.characterSet = getSession().getCharsetIndex();
 
         for (int i = 0; i < colunmCount; i++) {
             int j = i + 1;
-            ColumnPacket columnPacket = new ColumnPacket();
+            ColumnDefinition columnPacket = new ColumnDefinition();
             columnPacket.org_name = StringUtil.emptyIfNull(metaData.getColumnName(j));
             columnPacket.name = StringUtil.emptyIfNull(metaData.getColumnLabel(j));
             columnPacket.org_table = StringUtil.emptyIfNull(metaData.getTableName(j));
@@ -531,7 +531,7 @@ public class MySQLProtocolProcessor extends TraceableProcessor {
         }
 
         while (rs.next()) {
-            RowPacket rowPacket = new RowPacket();
+            ResultsetRow rowPacket = new ResultsetRow();
             for (int i = 0; i < colunmCount; i++) {
                 int j = i + 1;
                 rowPacket.data.add(StringUtil.emptyIfNull(rs.getString(j)));

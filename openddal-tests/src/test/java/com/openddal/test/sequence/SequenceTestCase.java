@@ -36,13 +36,15 @@ import com.openddal.util.StatementBuilder;
 public class SequenceTestCase extends BaseTestCase {
 
 
-    @Test
+    //@Test
     public void tesetQuerySeqValue() throws Exception {
         Connection conn = null;
         Statement stmt = null;
         ResultSet rs = null;
         try {
             conn = getConnection();
+            conn.setAutoCommit(false);
+
             stmt = conn.createStatement();
             rs = stmt.executeQuery("select customer_seq.nextval dual");
             rs.next();
@@ -63,15 +65,17 @@ public class SequenceTestCase extends BaseTestCase {
         Statement stmt = null;
         ResultSet rs = null;
         try {
-            conn = getConnection();
-            stmt = conn.createStatement();
             for (int i = 0; i < 1000; i++) {
+                conn = getConnection();
+                conn.setAutoCommit(false);
+                stmt = conn.createStatement();
                 stmt.executeUpdate(
                         "insert into CUSTOMERS values(customer_seq.nextval, 1000, '马云', '大老', '1965-01-20')");
                 rs = stmt.getGeneratedKeys();
                 rs.next();
                 rs.close();
-                conn.commit();
+                //conn.commit();
+                conn.close();
             }
         } catch (Exception e) {
             Assert.fail();
@@ -88,6 +92,7 @@ public class SequenceTestCase extends BaseTestCase {
         ResultSet rs = null;
         try {
             conn = getConnection();
+            conn.setAutoCommit(false);
             stmt = conn.createStatement();
             StatementBuilder sb = new StatementBuilder("insert into CUSTOMERS values");
             for (int i = 0; i < 1000; i++) {

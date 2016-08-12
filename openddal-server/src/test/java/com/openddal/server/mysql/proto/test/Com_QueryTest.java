@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.openddal.server.mysql.proto.Com_Query;
+import com.openddal.server.mysql.proto.ComQuery;
 
 public class Com_QueryTest {
     @Test
@@ -17,7 +17,7 @@ public class Com_QueryTest {
             + "35 22                                             "
         );
 
-        Com_Query pkt = Com_Query.loadFromPacket(packet);
+        ComQuery pkt = ComQuery.loadFromPacket(packet);
         assertArrayEquals(packet, pkt.toPacket());
         assertEquals(pkt.query, "select \"012345678901234567890123456789012345\"");
     }
@@ -28,7 +28,7 @@ public class Com_QueryTest {
             + "09 00 00 00 03 53 45 4c 45 43 54 20 31"
         );
 
-        Com_Query pkt = Com_Query.loadFromPacket(packet);
+        ComQuery pkt = ComQuery.loadFromPacket(packet);
         assertArrayEquals(packet, pkt.toPacket());
         assertEquals(pkt.query, "SELECT 1");
     }
@@ -41,7 +41,7 @@ public class Com_QueryTest {
             + "6d 69 74 20 31                                    "
         );
 
-        Com_Query pkt = Com_Query.loadFromPacket(packet);
+        ComQuery pkt = ComQuery.loadFromPacket(packet);
         assertArrayEquals(packet, pkt.toPacket());
         assertEquals(pkt.query, "select @@version_comment limit 1");
     }

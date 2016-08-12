@@ -4,7 +4,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 import org.junit.Test;
 
-import com.openddal.server.mysql.proto.Com_Quit;
+import com.openddal.server.mysql.proto.ComQuit;
 
 public class Com_QuitTest {
     @Test
@@ -13,7 +13,7 @@ public class Com_QuitTest {
             + "01 00 00 00 01"
         );
 
-        Com_Quit pkt = Com_Quit.loadFromPacket(packet);
+        ComQuit pkt = ComQuit.loadFromPacket(packet);
         assertArrayEquals(packet, pkt.toPacket());
     }
 }

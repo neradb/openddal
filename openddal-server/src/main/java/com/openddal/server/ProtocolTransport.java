@@ -36,11 +36,19 @@ public class ProtocolTransport {
     private final OutputStream output;
     private final Channel channel;
 
+    public ProtocolTransport(Channel channel) {
+        this.channel = channel;
+        this.in = null;
+        this.input = null;
+        this.out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
+        this.output = new ByteBufOutputStream(out);
+    }
+    
     public ProtocolTransport(Channel channel, ByteBuf in) {
         this.channel = channel;
         this.in = in;
-        this.out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
         this.input = new ByteBufInputStream(in);
+        this.out = channel.alloc().buffer(DEFAULT_BUFFER_SIZE);
         this.output = new ByteBufOutputStream(out);
     }
     

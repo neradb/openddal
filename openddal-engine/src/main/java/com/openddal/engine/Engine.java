@@ -15,7 +15,6 @@
  */
 package com.openddal.engine;
 
-import java.sql.SQLException;
 import java.util.Properties;
 
 import com.openddal.dbobject.User;
@@ -62,7 +61,7 @@ public class Engine implements SessionFactory {
     }
 
     @Override
-    public SessionInterface createSession(Properties ci) throws SQLException {
+    public SessionInterface createSession(Properties ci) {
         String userName = ci.getProperty("user");
         String password = ci.getProperty("password");
         if (userName == null) {

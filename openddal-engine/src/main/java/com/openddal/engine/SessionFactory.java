@@ -15,7 +15,6 @@
  */
 package com.openddal.engine;
 
-import java.sql.SQLException;
 import java.util.Properties;
 
 /**
@@ -31,6 +30,6 @@ public interface SessionFactory {
      * @param ci the connection parameters
      * @return the new session
      */
-    SessionInterface createSession(Properties ci) throws SQLException;
+    SessionInterface createSession(Properties ci);
 
 }

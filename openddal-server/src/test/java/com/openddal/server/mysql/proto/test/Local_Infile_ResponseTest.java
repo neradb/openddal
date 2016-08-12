@@ -4,7 +4,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 import org.junit.Test;
 
-import com.openddal.server.mysql.proto.Local_Infile_Response;
+import com.openddal.server.mysql.proto.LocalInfileResponse;
 
 public class Local_Infile_ResponseTest {
     @Test
@@ -13,7 +13,7 @@ public class Local_Infile_ResponseTest {
             + "05 00 00 00 00 FF FE FD FC"
         );
 
-        Local_Infile_Response pkt = Local_Infile_Response.loadFromPacket(packet);
+        LocalInfileResponse pkt = LocalInfileResponse.loadFromPacket(packet);
         
         assertArrayEquals(packet, pkt.toPacket());
     }

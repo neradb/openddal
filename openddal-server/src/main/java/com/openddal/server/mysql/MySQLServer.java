@@ -45,6 +45,6 @@ public class MySQLServer extends NettyServer {
     
     @Override
     protected ProtocolHandler createHandshakeHandler() {
-        return new MySQLHandshakeHandler();
+        return new AuthHandler();
     }
 }

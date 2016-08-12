@@ -15,7 +15,8 @@
  */
 package com.openddal.server;
 
-import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import io.netty.util.AttributeKey;
 
@@ -26,13 +27,11 @@ import io.netty.util.AttributeKey;
  */
 public interface Session {
     
-    AttributeKey<Session> CHANNEL_SESSION_KEY = AttributeKey.valueOf("_PROTOCOL_SESSION_KEY");
+    AttributeKey<Session> CHANNEL_SESSION_KEY = AttributeKey.valueOf("_SESSION_KEY");
 
     <T> T setAttachment(String key, T value);
 
     <T> T getAttachment(String key);
-
-    long getConnectionId();
 
     String getUser();
 
@@ -46,7 +45,9 @@ public interface Session {
     
     boolean setCharsetIndex(int parseInt);
 
-    Connection getEngineConnection();
+    ResultSet executeQuery(String sql) throws SQLException;
+    
+    int executeUpdate(String sql) throws SQLException;
     
     void close();
 

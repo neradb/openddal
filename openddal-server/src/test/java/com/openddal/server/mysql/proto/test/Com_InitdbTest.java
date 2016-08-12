@@ -5,7 +5,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.openddal.server.mysql.proto.Com_Initdb;
+import com.openddal.server.mysql.proto.ComInitdb;
 
 public class Com_InitdbTest {
     @Test
@@ -14,7 +14,7 @@ public class Com_InitdbTest {
             + "05 00 00 00 02 74 65 73    74"
         );
 
-        Com_Initdb pkt = Com_Initdb.loadFromPacket(packet);
+        ComInitdb pkt = ComInitdb.loadFromPacket(packet);
         assertArrayEquals(packet, pkt.toPacket());
         assertEquals(pkt.schema, "test");
     }
