@@ -15,8 +15,6 @@
  */
 package com.openddal.server.core;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 
@@ -34,7 +32,7 @@ import io.netty.util.AttributeKey;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class SessionImpl implements Session {
+public abstract class SessionImpl implements Session {
 
     private static final AttributeKey<SessionImpl> CHANNEL_SESSION_KEY = AttributeKey.valueOf("_CHANNEL_SESSION_KEY");
 
@@ -154,18 +152,6 @@ public class SessionImpl implements Session {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    @Override
-    public ResultSet executeQuery(String sql) throws SQLException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public int executeUpdate(String sql) throws SQLException {
-        // TODO Auto-generated method stub
-        return 0;
     }
 
     public static SessionImpl get(Channel chanel) {

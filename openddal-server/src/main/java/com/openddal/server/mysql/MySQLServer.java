@@ -25,7 +25,7 @@ public class MySQLServer extends NettyServer {
     public static final String VERSION_COMMENT = "OpenDDAL MySQL Protocol Server";
     public static final String SERVER_VERSION = "5.6.31" + VERSION_COMMENT + "-" + Constants.getFullVersion();
 
-    private final MySQLProtocolDecoder decoder = new MySQLProtocolDecoder();
+    private final MySQLServerDecoder decoder = new MySQLServerDecoder();
 
     public MySQLServer(ServerArgs args) {
         super(args);
@@ -44,9 +44,8 @@ public class MySQLServer extends NettyServer {
                 if (logger.isDebugEnabled()) {
                     logger.debug("channel initialized with remote address {}", ch.remoteAddress());
                 }
-                MySQLProtocolHandler handler = new MySQLProtocolHandler(MySQLServer.this);
-                MySQLHandshakeHandler authHandler = new MySQLHandshakeHandler(MySQLServer.this);
-                ch.pipeline().addLast(decoder, authHandler, handler);
+                MySQLServerHandler handler = new MySQLServerHandler(MySQLServer.this);
+                ch.pipeline().addLast(decoder, handler);
             }
         };
     }

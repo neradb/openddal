@@ -15,148 +15,24 @@
  */
 package com.openddal.server.mysql;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import com.openddal.server.core.Session;
+import com.openddal.server.NettyServer;
+import com.openddal.server.core.QueryException;
+import com.openddal.server.core.QueryResult;
+import com.openddal.server.core.SessionImpl;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class MySQLSessionWapper implements Session {
+public class MySQLSessionWapper extends SessionImpl {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#setAttachment(java.lang.String,
-     * java.lang.Object)
-     */
+    public MySQLSessionWapper(NettyServer server) {
+        super(server);
+    }
+
     @Override
-    public <T> T setAttachment(String key, T value) {
-        // TODO Auto-generated method stub
+    public QueryResult executeQuery(String query) throws QueryException {
         return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#getAttachment(java.lang.String)
-     */
-    @Override
-    public <T> T getAttachment(String key) {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#getThreadId()
-     */
-    @Override
-    public long getThreadId() {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#getUser()
-     */
-    @Override
-    public String getUser() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#getSchema()
-     */
-    @Override
-    public String getSchema() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#getCharset()
-     */
-    @Override
-    public String getCharset() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#getCharsetIndex()
-     */
-    @Override
-    public int getCharsetIndex() {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#setCharset(java.lang.String)
-     */
-    @Override
-    public boolean setCharset(String charset) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#setCharsetIndex(int)
-     */
-    @Override
-    public boolean setCharsetIndex(int parseInt) {
-        // TODO Auto-generated method stub
-        return false;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#executeQuery(java.lang.String)
-     */
-    @Override
-    public ResultSet executeQuery(String sql) throws SQLException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#executeUpdate(java.lang.String)
-     */
-    @Override
-    public int executeUpdate(String sql) throws SQLException {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.openddal.server.core.Session#close()
-     */
-    @Override
-    public void close() {
-        // TODO Auto-generated method stub
-
     }
 
 }

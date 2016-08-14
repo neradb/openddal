@@ -27,7 +27,7 @@ import io.netty.handler.codec.ByteToMessageDecoder;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class MySQLProtocolDecoder extends ByteToMessageDecoder {
+public class MySQLServerDecoder extends ByteToMessageDecoder {
 
     private static final int FRAME_LENGTH_FIELD_LENGTH = 4;
 

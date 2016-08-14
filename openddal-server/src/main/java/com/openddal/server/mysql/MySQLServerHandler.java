@@ -28,6 +28,7 @@ import com.openddal.server.NettyServer;
 import com.openddal.server.ServerException;
 import com.openddal.server.core.Session;
 import com.openddal.server.core.SessionImpl;
+import com.openddal.server.mysql.auth.Privilege;
 import com.openddal.server.mysql.parser.ServerParse;
 import com.openddal.server.mysql.proto.ColumnDefinition;
 import com.openddal.server.mysql.proto.ComFieldlist;
@@ -44,10 +45,13 @@ import com.openddal.server.mysql.proto.ComStmtReset;
 import com.openddal.server.mysql.proto.ComStmtSendLongData;
 import com.openddal.server.mysql.proto.ERR;
 import com.openddal.server.mysql.proto.Flags;
+import com.openddal.server.mysql.proto.Handshake;
+import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
 import com.openddal.server.mysql.proto.Resultset;
 import com.openddal.server.mysql.proto.ResultsetRow;
+import com.openddal.server.util.CharsetUtil;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.MysqlDefs;
 import com.openddal.server.util.ResultSetUtil;
@@ -62,26 +66,115 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class MySQLProtocolHandler extends ChannelInboundHandlerAdapter {
+public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLProtocolHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MySQLServerHandler.class);
 
     private long sequenceId;
     private ThreadPoolExecutor userExecutor;
     private NettyServer server;
+    private final long threadId;
     private SessionImpl session;
 
-    public MySQLProtocolHandler(NettyServer server) {
+    public MySQLServerHandler(NettyServer server) {
         this.server = server;
-        this.session = new SessionImpl(server);
         this.userExecutor = server.getUserExecutor();
+        this.threadId = server.generatethreadId();
+        this.session = new MySQLSessionWapper(server);
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        ByteBuf buf = (ByteBuf) msg;
-        userExecutor.execute(new HandleTask(ctx, buf));
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        ByteBuf out = ctx.alloc().buffer();
+        Handshake handshake = new Handshake();
+        handshake.sequenceId = 0;
+        handshake.protocolVersion = MySQLServer.PROTOCOL_VERSION;
+        handshake.serverVersion = MySQLServer.SERVER_VERSION;
+        handshake.connectionId = threadId;
+        handshake.challenge1 = StringUtil.getRandomString(8);
+        handshake.characterSet = CharsetUtil.getIndex(MySQLServer.DEFAULT_CHARSET);
+        handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
+        handshake.challenge2 = StringUtil.getRandomString(12);
+        handshake.authPluginDataLength = 21;
+        handshake.authPluginName = Flags.MYSQL_NATIVE_PASSWORD;
+        handshake.capabilityFlags = Flags.CLIENT_BASIC_FLAGS;
+        handshake.removeCapabilityFlag(Flags.CLIENT_COMPRESS);
+        handshake.removeCapabilityFlag(Flags.CLIENT_SSL);
+        handshake.removeCapabilityFlag(Flags.CLIENT_LOCAL_FILES);
+        session.setCharsetIndex((int) handshake.characterSet);
+        session.setAttachment("seed", handshake.challenge1 + handshake.challenge2);
+        out.writeBytes(handshake.toPacket());
+        ctx.writeAndFlush(out);
     }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (SessionImpl.get(ctx.channel()) == null) {
+            authenticate(ctx, msg);
+        } else {
+            ByteBuf buf = (ByteBuf) msg;
+            userExecutor.execute(new HandleTask(ctx, buf));
+        }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        Session session = SessionImpl.get(ctx.channel());
+        if (session != null) {
+            session.close();
+        }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        LOGGER.warn("exceptionCaught", cause);
+        ctx.close();
+    }
+
+    private void authenticate(ChannelHandlerContext ctx, Object msg) {
+        Privilege privilege = server.getPrivilege();
+        HandshakeResponse authReply = null;
+        ByteBuf buf = (ByteBuf) msg;
+        try {
+            byte[] packet = new byte[buf.readableBytes()];
+            buf.readBytes(packet);
+            authReply = HandshakeResponse.loadFromPacket(packet);
+            this.sequenceId = authReply.sequenceId;
+            if (!authReply.hasCapabilityFlag(Flags.CLIENT_PROTOCOL_41)) {
+                sendError(ctx, ErrorCode.ER_NOT_SUPPORTED_AUTH_MODE, "We do not support Protocols under 4.1");
+                return;
+            }
+            if (!privilege.userExists(authReply.username)) {
+                sendError(ctx, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + authReply.username + "'");
+                return;
+            }
+            if (!StringUtil.isEmpty(authReply.schema)
+                    && !privilege.schemaExists(authReply.username, authReply.schema)) {
+                String s = "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
+                sendError(ctx, ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
+                return;
+            }
+            String seed = session.getAttachment("seed");
+            if (!privilege.checkPassword(authReply.username, authReply.authResponse, seed)) {
+                sendError(ctx, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + authReply.username + "'");
+                return;
+            }
+            session.setUser(authReply.username);
+            session.setSchema(authReply.schema);
+            session.bind(ctx.channel());
+            session.setAttachment("remoteAddress", ctx.channel().remoteAddress().toString());
+            session.setAttachment("localAddress", ctx.channel().localAddress().toString());
+            success(ctx);
+        } catch (Exception e) {
+            String errMsg = authReply == null ? e.getMessage()
+                    : "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
+            LOGGER.error("Authorize failed. " + errMsg, e);
+            sendError(ctx, ErrorCode.ER_DBACCESS_DENIED_ERROR, errMsg);
+        } finally {
+            buf.release();
+        }
+    }
+
 
     private void despatchCommand(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
         byte[] data = new byte[buf.readableBytes()];
@@ -200,7 +293,6 @@ public class MySQLProtocolHandler extends ChannelInboundHandlerAdapter {
         case ServerParse.EXPLAIN:
             break;
         default:
-            session.executeUpdate(sql);
         }
     }
 
@@ -311,7 +403,7 @@ public class MySQLProtocolHandler extends ChannelInboundHandlerAdapter {
         private final ChannelHandlerContext ctx;
         private final ByteBuf buf;
 
-        HandleTask(ChannelHandlerContext ctx, ByteBuf buf) {
+        private HandleTask(ChannelHandlerContext ctx, ByteBuf buf) {
             this.ctx = ctx;
             this.buf = buf;
         }

@@ -15,9 +15,6 @@
  */
 package com.openddal.server.core;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 /**
  * 
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
@@ -43,10 +40,8 @@ public interface Session {
     
     boolean setCharsetIndex(int parseInt);
 
-    ResultSet executeQuery(String sql) throws SQLException;
-    
-    int executeUpdate(String sql) throws SQLException;
-    
+    QueryResult executeQuery(String query) throws QueryException;
+
     void close();
 
 
