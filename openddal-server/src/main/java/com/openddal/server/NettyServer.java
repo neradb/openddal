@@ -15,8 +15,10 @@
  */
 package com.openddal.server;
 
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,8 +26,12 @@ import org.slf4j.LoggerFactory;
 import com.openddal.engine.SessionFactory;
 import com.openddal.engine.SessionFactoryBuilder;
 import com.openddal.engine.SysProperties;
+import com.openddal.server.core.Session;
+import com.openddal.server.mysql.auth.Privilege;
+import com.openddal.server.mysql.auth.PrivilegeDefault;
 import com.openddal.util.ExtendableThreadPoolExecutor;
 import com.openddal.util.ExtendableThreadPoolExecutor.TaskQueue;
+import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 import com.openddal.util.Threads;
 
@@ -33,11 +39,9 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 
@@ -49,6 +53,7 @@ public abstract class NettyServer {
      * The default port to use for the server.
      */
     public static final int DEFAULT_LISTEN_PORT = 6100;
+    private final AtomicLong threadIdGenerator = new AtomicLong(300);
 
     private ServerArgs args;
     private EventLoopGroup bossGroup;
@@ -56,6 +61,8 @@ public abstract class NettyServer {
     private ThreadPoolExecutor userExecutor;
     private ChannelFuture f;
     private SessionFactory sessionFactory;
+    private Privilege privilege = PrivilegeDefault.getPrivilege();
+    private ConcurrentMap<Long, Session> sessions = New.concurrentHashMap();
 
     public NettyServer(ServerArgs args) {
         this.args = args;
@@ -67,6 +74,26 @@ public abstract class NettyServer {
 
     public ThreadPoolExecutor getUserExecutor() {
         return userExecutor;
+    }
+
+    public long generatethreadId() {
+        return threadIdGenerator.incrementAndGet();
+    }
+
+    public Privilege getPrivilege() {
+        return privilege;
+    }
+
+    public void addSession(long threadId, Session session) {
+        sessions.put(threadId, session);
+    }
+
+    public void removeSession(long threadId) {
+        sessions.remove(threadId);
+    }
+
+    public Session getSession(long threadId) {
+        return sessions.get(threadId);
     }
 
     /**
@@ -132,9 +159,6 @@ public abstract class NettyServer {
         bossGroup = new NioEventLoopGroup(args.bossThreads, new DefaultThreadFactory("NettyBossGroup", true));
         workerGroup = new NioEventLoopGroup(args.workerThreads, new DefaultThreadFactory("NettyWorkerGroup", true));
         userExecutor = createUserThreadExecutor();
-        
-        final ProtocolHandler handshakeHandler = newHandshakeHandler(userExecutor);
-        final ProtocolHandler protocolHandler = newProtocolHandler(userExecutor);
 
         ServerBootstrap b = new ServerBootstrap();
         b.group(bossGroup, workerGroup).channel(NioServerSocketChannel.class)
@@ -154,17 +178,10 @@ public abstract class NettyServer {
             b.childOption(ChannelOption.SO_SNDBUF, args.sendBuff);
         }
 
-        b.childHandler(new ChannelInitializer<SocketChannel>() {
-            @Override
-            public void initChannel(SocketChannel ch) throws Exception {
-                ch.pipeline().addLast(createProtocolDecoder(),
-                        /* createProtocolEncoder(), */ handshakeHandler, protocolHandler);
-            }
-        });
+        b.childHandler(newChannelInitializer());
 
         return b;
     }
-
 
     public ThreadPoolExecutor createUserThreadExecutor() {
         TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
@@ -175,27 +192,11 @@ public abstract class NettyServer {
                 TimeUnit.MINUTES, queue, Threads.newThreadFactory("request-processor"));
         return userExecutor;
     }
-    
-    private ProtocolHandler newHandshakeHandler(ThreadPoolExecutor userExecutor) {
-        ProtocolHandler handshakeHandler = createHandshakeHandler();
-        handshakeHandler.setUserExecutor(userExecutor);
-        return handshakeHandler;
-    }
-    
-    private ProtocolHandler newProtocolHandler(ThreadPoolExecutor userExecutor) {
-        ProtocolHandler protocolHandler = createProtocolHandler();
-        protocolHandler.setUserExecutor(userExecutor);
-        return protocolHandler;
-    }
 
 
     protected abstract String getServerName();
 
-    protected abstract ChannelHandler createProtocolDecoder();
-
-    protected abstract ProtocolHandler createHandshakeHandler();
-    
-    protected abstract ProtocolHandler createProtocolHandler();
+    protected abstract ChannelHandler newChannelInitializer();
 
     class ShutdownThread extends Thread {
         @Override

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server;
+package com.openddal.server.core;
 
 import java.sql.SQLException;
 
@@ -25,44 +25,44 @@ import com.openddal.server.util.ErrorCode;
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class ProtocolProcessException extends Exception {
+public class ProcessException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    public static ProtocolProcessException convert(Throwable e) {
-        if (e instanceof ProtocolProcessException) {
-            return (ProtocolProcessException) e;
+    public static ProcessException convert(Throwable e) {
+        if (e instanceof ProcessException) {
+            return (ProcessException) e;
         } else if (e instanceof DbException) {
             DbException dbe = (DbException) e;
-            return new ProtocolProcessException(dbe.getErrorCode(), dbe.getMessage(), e);
+            return new ProcessException(dbe.getErrorCode(), dbe.getMessage(), e);
         } else if (e instanceof SQLException) {
             SQLException sqle = (SQLException) e;
-            return new ProtocolProcessException(sqle.getErrorCode(), sqle.getMessage(), e);
+            return new ProcessException(sqle.getErrorCode(), sqle.getMessage(), e);
         } else if (e instanceof OutOfMemoryError) {
-            return new ProtocolProcessException(ErrorCode.ER_OUTOFMEMORY, "ER_OUTOFMEMORY", e);
+            return new ProcessException(ErrorCode.ER_OUTOFMEMORY, "ER_OUTOFMEMORY", e);
         } else {
-            return new ProtocolProcessException(ErrorCode.ER_UNKNOWN_ERROR, "ERR_GENERAL_EXCEPION", e);
+            return new ProcessException(ErrorCode.ER_UNKNOWN_ERROR, "ERR_GENERAL_EXCEPION", e);
         }
     }
 
-    public static ProtocolProcessException get(int errorCode, String message) {
-        return new ProtocolProcessException(errorCode, message);
+    public static ProcessException get(int errorCode, String message) {
+        return new ProcessException(errorCode, message);
     }
 
     protected int errorCode;
 
-    public ProtocolProcessException(int errorCode, String message) {
+    public ProcessException(int errorCode, String message) {
         super(message);
         this.errorCode = errorCode;
     }
     
-    public ProtocolProcessException(int errorCode, String message, Throwable cause) {
+    public ProcessException(int errorCode, String message, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;
     }
 
 
-    public ProtocolProcessException(int errorCode, Throwable cause) {
+    public ProcessException(int errorCode, Throwable cause) {
         super(cause);
         this.errorCode = errorCode;
     }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server;
+package com.openddal.server.core;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -21,16 +21,23 @@ import java.util.Map;
 import java.util.Properties;
 
 import com.openddal.engine.SessionInterface;
+import com.openddal.server.NettyServer;
+import com.openddal.server.mysql.parser.ServerParse;
 import com.openddal.server.util.CharsetUtil;
+import com.openddal.server.util.StringUtil;
 import com.openddal.util.New;
 
 import io.netty.channel.Channel;
+import io.netty.util.AttributeKey;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
 public class SessionImpl implements Session {
+
+    private static final AttributeKey<SessionImpl> CHANNEL_SESSION_KEY = AttributeKey.valueOf("_CHANNEL_SESSION_KEY");
+
 
     private NettyServer server;
     private Channel channel;
@@ -84,11 +91,11 @@ public class SessionImpl implements Session {
 
     public void bind(Channel channel) {
         this.channel = channel;
-        Session old = channel.attr(Session.CHANNEL_SESSION_KEY).get();
+        Session old = channel.attr(CHANNEL_SESSION_KEY).get();
         if (old != null) {
             throw new IllegalStateException("session is already existing in channel");
         }
-        channel.attr(Session.CHANNEL_SESSION_KEY).set(this);
+        channel.attr(CHANNEL_SESSION_KEY).set(this);
 
         Properties prop = new Properties();
         prop.setProperty("user", this.username);
@@ -100,7 +107,7 @@ public class SessionImpl implements Session {
         dbSession.close();
         attachments.clear();
         if (channel != null && channel.isOpen()) {
-            channel.attr(Session.CHANNEL_SESSION_KEY).remove();
+            channel.attr(CHANNEL_SESSION_KEY).remove();
             channel.close();
         }
     }
@@ -160,5 +167,129 @@ public class SessionImpl implements Session {
         // TODO Auto-generated method stub
         return 0;
     }
+
+    public static SessionImpl get(Channel chanel) {
+        return chanel.attr(CHANNEL_SESSION_KEY).get();
+    }
+
+    /**
+     * @return
+     */
+    public boolean isClosed() {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.openddal.server.core.Session#getThreadId()
+     */
+    @Override
+    public long getThreadId() {
+        // TODO Auto-generated method stub
+        return 0;
+    }
+
+
+    public void query(String sql) throws Exception {
+        int rs = ServerParse.parse(sql);
+        switch (rs & 0xff) {
+        case ServerParse.SET:
+            processSet(sql, rs >>> 8);
+            break;
+        case ServerParse.SHOW:
+            processShow(sql, rs >>> 8);
+            break;
+        case ServerParse.SELECT:
+            processSelect(sql, rs >>> 8);
+            break;
+        case ServerParse.START:
+            processStart(sql, rs >>> 8);
+            break;
+        case ServerParse.BEGIN:
+            processBegin(sql, rs >>> 8);
+            break;
+        case ServerParse.LOAD:
+            processSavepoint(sql, rs >>> 8);
+            break;
+        case ServerParse.SAVEPOINT:
+            processSavepoint(sql, rs >>> 8);
+            break;
+        case ServerParse.USE:
+            processUse(sql, rs >>> 8);
+            break;
+        case ServerParse.COMMIT:
+            processCommit(sql, rs >>> 8);
+            break;
+        case ServerParse.ROLLBACK:
+            processRollback(sql, rs >>> 8);
+            break;
+        case ServerParse.EXPLAIN:
+            execute(sql, ServerParse.EXPLAIN);
+            break;
+        default:
+            execute(sql, rs);
+        }
+    }
+
+    public void initDB(String db) throws Exception {
+    }
+
+    private void processCommit(String sql, int offset) throws Exception {
+
+
+    }
+
+    private void processRollback(String sql, int offset) throws Exception {
+
+    }
+
+    private void processUse(String sql, int offset) throws Exception {
+        String schema = sql.substring(offset).trim();
+        int length = schema.length();
+        if (length > 0) {
+            if (schema.endsWith(";"))
+                schema = schema.substring(0, schema.length() - 1);
+            schema = StringUtil.replaceChars(schema, "`", null);
+            length = schema.length();
+            if (schema.charAt(0) == '\'' && schema.charAt(length - 1) == '\'') {
+                schema = schema.substring(1, length - 1);
+            }
+        }
+        initDB(schema);
+    }
+
+    private void processBegin(String sql, int offset) throws Exception {
+    }
+
+    private void processSavepoint(String sql, int offset) throws Exception {
+
+    }
+
+    private void processStart(String sql, int offset) throws Exception {
+
+    }
+
+    public void processSet(String stmt, int offset) throws Exception {
+
+    }
+
+    public void processShow(String stmt, int offset) throws Exception {
+
+    }
+
+    public void processSelect(String stmt, int offs) throws Exception {
+
+    }
+
+    public void processKill(String stmt, int offset) throws Exception {
+
+    }
+
+    private void execute(String sql, int type) throws Exception {
+
+    }
+
 
 }

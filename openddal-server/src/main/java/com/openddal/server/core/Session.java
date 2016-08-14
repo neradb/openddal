@@ -13,12 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.openddal.server;
+package com.openddal.server.core;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
-import io.netty.util.AttributeKey;
 
 /**
  * 
@@ -27,11 +25,11 @@ import io.netty.util.AttributeKey;
  */
 public interface Session {
     
-    AttributeKey<Session> CHANNEL_SESSION_KEY = AttributeKey.valueOf("_SESSION_KEY");
-
     <T> T setAttachment(String key, T value);
 
     <T> T getAttachment(String key);
+
+    long getThreadId();
 
     String getUser();
 
