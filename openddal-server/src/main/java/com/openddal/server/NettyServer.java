@@ -23,10 +23,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.openddal.engine.SessionFactory;
+import com.openddal.engine.Engine;
 import com.openddal.engine.SessionFactoryBuilder;
 import com.openddal.engine.SysProperties;
-import com.openddal.server.core.Session;
+import com.openddal.server.core.QueryDispatcher;
+import com.openddal.server.core.ServerSession;
 import com.openddal.server.mysql.auth.Privilege;
 import com.openddal.server.mysql.auth.PrivilegeDefault;
 import com.openddal.util.ExtendableThreadPoolExecutor;
@@ -60,23 +61,23 @@ public abstract class NettyServer {
     private EventLoopGroup workerGroup;
     private ThreadPoolExecutor userExecutor;
     private ChannelFuture f;
-    private SessionFactory sessionFactory;
+    private Engine engine;
     private Privilege privilege = PrivilegeDefault.getPrivilege();
-    private ConcurrentMap<Long, Session> sessions = New.concurrentHashMap();
+    private ConcurrentMap<Long, ServerSession> sessions = New.concurrentHashMap();
 
     public NettyServer(ServerArgs args) {
         this.args = args;
     }
 
-    public SessionFactory getSessionFactory() {
-        return sessionFactory;
+    public Engine getEngine() {
+        return engine;
     }
 
     public ThreadPoolExecutor getUserExecutor() {
         return userExecutor;
     }
 
-    public long generatethreadId() {
+    public long generateThreadId() {
         return threadIdGenerator.incrementAndGet();
     }
 
@@ -84,15 +85,15 @@ public abstract class NettyServer {
         return privilege;
     }
 
-    public void addSession(long threadId, Session session) {
-        sessions.put(threadId, session);
+    public void registerSession(ServerSession session) {
+        sessions.put(session.getThreadId(), session);
     }
 
     public void removeSession(long threadId) {
         sessions.remove(threadId);
     }
 
-    public Session getSession(long threadId) {
+    public ServerSession getSession(long threadId) {
         return sessions.get(threadId);
     }
 
@@ -106,7 +107,7 @@ public abstract class NettyServer {
                 System.setProperty("ddal.engineConfigLocation", args.configFile);
             }
             LOGGER.info("{} server init ddal-engine from {}", getServerName(), SysProperties.ENGINE_CONFIG_LOCATION);
-            sessionFactory = SessionFactoryBuilder.newBuilder().fromXml(SysProperties.ENGINE_CONFIG_LOCATION).build();
+            engine = (Engine)SessionFactoryBuilder.newBuilder().fromXml(SysProperties.ENGINE_CONFIG_LOCATION).build();
             LOGGER.info("{} server ddal-engine inited.", getServerName());
         } catch (Exception e) {
             LOGGER.error("Exception happen when init ddal-engine ", e);
@@ -183,7 +184,7 @@ public abstract class NettyServer {
         return b;
     }
 
-    public ThreadPoolExecutor createUserThreadExecutor() {
+    private ThreadPoolExecutor createUserThreadExecutor() {
         TaskQueue queue = new TaskQueue(SysProperties.THREAD_QUEUE_SIZE);
         int poolCoreSize = SysProperties.THREAD_POOL_SIZE_CORE;
         int poolMaxSize = SysProperties.THREAD_POOL_SIZE_MAX;
@@ -197,6 +198,8 @@ public abstract class NettyServer {
     protected abstract String getServerName();
 
     protected abstract ChannelHandler newChannelInitializer();
+    
+    public abstract QueryDispatcher newQueryDispatcher(ServerSession session);
 
     class ShutdownThread extends Thread {
         @Override

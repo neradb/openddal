@@ -17,7 +17,6 @@ package com.openddal.server.mysql;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -26,10 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import com.openddal.server.NettyServer;
 import com.openddal.server.ServerException;
-import com.openddal.server.core.Session;
-import com.openddal.server.core.SessionImpl;
+import com.openddal.server.core.ServerSession;
 import com.openddal.server.mysql.auth.Privilege;
-import com.openddal.server.mysql.parser.ServerParse;
 import com.openddal.server.mysql.proto.ColumnDefinition;
 import com.openddal.server.mysql.proto.ComFieldlist;
 import com.openddal.server.mysql.proto.ComInitdb;
@@ -73,14 +70,12 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
     private long sequenceId;
     private ThreadPoolExecutor userExecutor;
     private NettyServer server;
-    private final long threadId;
-    private SessionImpl session;
+    private ServerSession session;
 
     public MySQLServerHandler(NettyServer server) {
         this.server = server;
         this.userExecutor = server.getUserExecutor();
-        this.threadId = server.generatethreadId();
-        this.session = new MySQLSessionWapper(server);
+        this.session = new ServerSession(server);
     }
 
     @Override
@@ -90,7 +85,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         handshake.sequenceId = 0;
         handshake.protocolVersion = MySQLServer.PROTOCOL_VERSION;
         handshake.serverVersion = MySQLServer.SERVER_VERSION;
-        handshake.connectionId = threadId;
+        handshake.connectionId = session.getThreadId();
         handshake.challenge1 = StringUtil.getRandomString(8);
         handshake.characterSet = CharsetUtil.getIndex(MySQLServer.DEFAULT_CHARSET);
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
@@ -109,7 +104,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (SessionImpl.get(ctx.channel()) == null) {
+        if (ServerSession.get(ctx.channel()) != this.session) {
             authenticate(ctx, msg);
         } else {
             ByteBuf buf = (ByteBuf) msg;
@@ -119,7 +114,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        Session session = SessionImpl.get(ctx.channel());
+        ServerSession session = ServerSession.get(ctx.channel());
         if (session != null) {
             session.close();
         }
@@ -230,27 +225,6 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         case Flags.COM_FIELD_LIST:
             packet = ComFieldlist.loadFromPacket(data);
             break;
-        case Flags.COM_TIME:// deprecated
-        case Flags.COM_DELAYED_INSERT:// deprecated
-        case Flags.COM_TABLE_DUMP:
-        case Flags.COM_REGISTER_SLAVE:
-        case Flags.COM_SET_OPTION:
-        case Flags.COM_STMT_FETCH:
-        case Flags.COM_DAEMON: // deprecated
-        case Flags.COM_BINLOG_DUMP_GTID:
-        case Flags.COM_END:
-        case Flags.COM_SLEEP:// deprecated
-        case Flags.COM_CREATE_DB:
-        case Flags.COM_DROP_DB:
-        case Flags.COM_REFRESH:
-        case Flags.COM_PROCESS_INFO: // deprecated
-        case Flags.COM_CONNECT:// deprecated
-        case Flags.COM_DEBUG:
-        case Flags.COM_CHANGE_USER:
-        case Flags.COM_STATISTICS:
-        case Flags.COM_BINLOG_DUMP:
-        case Flags.COM_CONNECT_OUT:
-            throw new ServerException(ErrorCode.ER_NOT_SUPPORTED_YET, "Command not supported yet");
         default:
             throw new ServerException(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
@@ -278,46 +252,31 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             sendError(ctx, ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
             return;
         }
-        int rs = ServerParse.parse(sql);
-        switch (rs & 0xff) {
-        case ServerParse.SET:
-        case ServerParse.SHOW:
-        case ServerParse.SELECT:
-        case ServerParse.START:
-        case ServerParse.BEGIN:
-        case ServerParse.LOAD:
-        case ServerParse.SAVEPOINT:
-        case ServerParse.USE:
-        case ServerParse.COMMIT:
-        case ServerParse.ROLLBACK:
-        case ServerParse.EXPLAIN:
-            break;
-        default:
-        }
+        
     }
 
     private void close(ChannelHandlerContext ctx, ComQuit request) {
         success(ctx);
     }
 
-    private void stmtPrepare(ChannelHandlerContext ctx, ComStmtPrepare request) throws SQLException {
-
+    private void stmtPrepare(ChannelHandlerContext ctx, ComStmtPrepare request) {
+        sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
-    private void stmtPrepareLongData(ChannelHandlerContext ctx, ComStmtSendLongData request) throws SQLException {
-
+    private void stmtPrepareLongData(ChannelHandlerContext ctx, ComStmtSendLongData request) {
+        sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
-    private void stmtExecute(ChannelHandlerContext ctx, ComStmtExecute request) {
-
+    private void stmtExecute(ChannelHandlerContext ctx, ComStmtExecute request) throws Exception {
+        sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
     private void stmtClose(ChannelHandlerContext ctx, ComStmtClose request) {
-
+        sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
     private void processKill(ChannelHandlerContext ctx, ComProcesskill request) {
-        Session s = server.getSession(request.connectionId);
+        ServerSession s = server.getSession(request.connectionId);
         if (s != null) {
             s.close();
         }

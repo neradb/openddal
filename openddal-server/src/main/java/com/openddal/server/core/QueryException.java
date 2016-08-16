@@ -26,6 +26,20 @@ public class QueryException extends Exception {
         this.sqlState = "HY0000";
 
     }
+    
+    /**
+     * Creates a query exception with a message.
+     *
+     * @param message   the message
+     * @param errorCode the error code
+     * @param sqlState  the sqlstate
+     */
+    public QueryException(final int errorCode,
+                          final String message) {
+        super(message);
+        this.errorCode = errorCode;
+        this.sqlState = "HY0000";
+    }
 
     /**
      * Creates a query exception with a message.
@@ -34,9 +48,9 @@ public class QueryException extends Exception {
      * @param errorCode the error code
      * @param sqlState  the sqlstate
      */
-    public QueryException(final String message,
-                          final short errorCode,
-                          final String sqlState) {
+    public QueryException(final int errorCode,
+                          final String sqlState,
+                          final String message) {
         super(message);
         this.errorCode = errorCode;
         this.sqlState = sqlState;
@@ -50,8 +64,8 @@ public class QueryException extends Exception {
      * @param sqlState  the sql state
      * @param cause     the cause of the exception
      */
-    public QueryException(final String message,
-                          final int errorCode,
+    public QueryException(final int errorCode,
+                          final String message,
                           final String sqlState,
                           final Throwable cause) {
         super(message, cause);

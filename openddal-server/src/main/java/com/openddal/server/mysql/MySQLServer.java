@@ -6,6 +6,9 @@ import org.slf4j.LoggerFactory;
 import com.openddal.engine.Constants;
 import com.openddal.server.NettyServer;
 import com.openddal.server.ServerArgs;
+import com.openddal.server.core.QueryDispatcher;
+import com.openddal.server.core.ServerSession;
+import com.openddal.server.mysql.pcs.QueryDispatcherImpl;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -34,6 +37,11 @@ public class MySQLServer extends NettyServer {
     @Override
     protected String getServerName() {
         return VERSION_COMMENT;
+    }
+    
+    @Override
+    public QueryDispatcher newQueryDispatcher(ServerSession session) {
+        return new QueryDispatcherImpl(session);
     }
 
     @Override

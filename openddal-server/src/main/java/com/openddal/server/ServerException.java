@@ -17,15 +17,14 @@ package com.openddal.server;
 
 import java.sql.SQLException;
 
-import com.openddal.message.DbException;
+import com.openddal.server.core.QueryException;
 import com.openddal.server.util.ErrorCode;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class ServerException extends Exception {
-
+public class ServerException extends QueryException {
     /**
      * 
      */
@@ -34,16 +33,14 @@ public class ServerException extends Exception {
     public static ServerException convert(Throwable e) {
         if (e instanceof ServerException) {
             return (ServerException) e;
-        } else if (e instanceof DbException) {
-            DbException dbe = (DbException) e;
-            return new ServerException(dbe.getErrorCode(), dbe.getMessage(), e);
+        } else if (e instanceof QueryException) {
+            QueryException q = (QueryException) e;
+            return new ServerException(q.getErrorCode(), q.getSqlState(), q.getMessage(), e);
         } else if (e instanceof SQLException) {
             SQLException sqle = (SQLException) e;
-            return new ServerException(sqle.getErrorCode(), sqle.getMessage(), e);
-        } else if (e instanceof OutOfMemoryError) {
-            return new ServerException(ErrorCode.ER_OUTOFMEMORY, "ER_OUTOFMEMORY", e);
+            return new ServerException(sqle.getErrorCode(), sqle.getSQLState(), sqle.getMessage(), e);
         } else {
-            return new ServerException(ErrorCode.ER_UNKNOWN_ERROR, "ERR_GENERAL_EXCEPION", e);
+            return new ServerException(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
         }
     }
 
@@ -51,24 +48,22 @@ public class ServerException extends Exception {
         return new ServerException(errorCode, message);
     }
 
-    protected int errorCode;
+    public ServerException(int errorCode, String message, String sqlState, Throwable cause) {
+        super(errorCode, message, sqlState, cause);
+    }
+
+    public ServerException(int errorCode, String sqlState, String message) {
+        super(errorCode, sqlState, message);
+    }
 
     public ServerException(int errorCode, String message) {
+        super(errorCode, message);
+    }
+
+    public ServerException(String message) {
         super(message);
-        this.errorCode = errorCode;
     }
 
-    public ServerException(int errorCode, String message, Throwable cause) {
-        super(message, cause);
-        this.errorCode = errorCode;
-    }
+    
 
-    public ServerException(int errorCode, Throwable cause) {
-        super(cause);
-        this.errorCode = errorCode;
-    }
-
-    public int getErrorCode() {
-        return errorCode;
-    }
 }

@@ -53,6 +53,13 @@
 		</dependency>
 
 		<dependency>
+			<groupId>com.alibaba</groupId>
+			<artifactId>druid</artifactId>
+			<version>1.0.24</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>com.openddal</groupId>
 			<artifactId>openddal-mysql</artifactId>
 			<version>${project.version}</version>
