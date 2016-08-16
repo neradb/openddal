@@ -15,55 +15,67 @@
  */
 package com.openddal.server;
 
+import java.io.IOException;
 import java.sql.SQLException;
 
-import com.openddal.server.core.QueryException;
+import com.openddal.message.DbException;
 import com.openddal.server.util.ErrorCode;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  *
  */
-public class ServerException extends QueryException {
+public class ServerException extends RuntimeException {
     /**
      * 
      */
     private static final long serialVersionUID = 1L;
 
-    public static ServerException convert(Throwable e) {
-        if (e instanceof ServerException) {
-            return (ServerException) e;
-        } else if (e instanceof QueryException) {
-            QueryException q = (QueryException) e;
-            return new ServerException(q.getErrorCode(), q.getSqlState(), q.getMessage(), e);
-        } else if (e instanceof SQLException) {
-            SQLException sqle = (SQLException) e;
-            return new ServerException(sqle.getErrorCode(), sqle.getSQLState(), sqle.getMessage(), e);
-        } else {
-            return new ServerException(ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
-        }
+    private ServerException(SQLException e) {
+        super(e.getMessage(), e);
+    }
+
+    public static ServerException get(int errorCode, String message, Throwable cause) {
+        return new ServerException(getQueryException(errorCode, "HY0000", message, cause));
     }
 
     public static ServerException get(int errorCode, String message) {
-        return new ServerException(errorCode, message);
+        return new ServerException(getQueryException(errorCode, "HY0000", message, null));
     }
 
-    public ServerException(int errorCode, String message, String sqlState, Throwable cause) {
-        super(errorCode, message, sqlState, cause);
+    public static SQLException toSQLException(Throwable e) {
+        if (e instanceof SQLException) {
+            return (SQLException) e;
+        }
+        return convert(e).getSQLException();
     }
 
-    public ServerException(int errorCode, String sqlState, String message) {
-        super(errorCode, sqlState, message);
+    private static SQLException getQueryException(int errorCode, String sqlstate, String message, Throwable cause) {
+        return new SQLException(message, sqlstate, errorCode, cause);
     }
 
-    public ServerException(int errorCode, String message) {
-        super(errorCode, message);
+    public static ServerException convert(Throwable e) {
+        if (e instanceof ServerException) {
+            return (ServerException) e;
+        } else if (e instanceof SQLException) {
+            return new ServerException((SQLException) e);
+        } else if (e instanceof DbException) {
+            SQLException sqle = ((DbException) e).getSQLException();
+            return new ServerException(sqle);
+        } else if (e instanceof IOException) {
+            return get(ErrorCode.ER_UNKNOWN_ERROR, e.toString(), e);
+        } else if (e instanceof OutOfMemoryError) {
+            return get(ErrorCode.ER_OUTOFMEMORY, e.toString(), e);
+        } else if (e instanceof StackOverflowError || e instanceof LinkageError) {
+            return get(ErrorCode.ER_UNKNOWN_ERROR, e.toString(), e);
+        } else if (e instanceof Error) {
+            throw (Error) e;
+        }
+        return get(ErrorCode.ER_UNKNOWN_ERROR, e.toString(), e);
     }
 
-    public ServerException(String message) {
-        super(message);
+    public SQLException getSQLException() {
+        return (SQLException) getCause();
     }
-
-    
 
 }

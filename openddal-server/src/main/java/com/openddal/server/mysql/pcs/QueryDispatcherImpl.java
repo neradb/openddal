@@ -1,7 +1,6 @@
 package com.openddal.server.mysql.pcs;
 
 import com.openddal.server.core.QueryDispatcher;
-import com.openddal.server.core.QueryException;
 import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.ServerSession;
 import com.openddal.server.mysql.parser.ServerParse;
@@ -18,7 +17,7 @@ public class QueryDispatcherImpl implements QueryDispatcher {
 
 
     @Override
-    public QueryProcessor dispatch(String query) throws QueryException {
+    public QueryProcessor dispatch(String query) {
         int rs = ServerParse.parse(query);
         switch (rs & 0xff) {
         case ServerParse.SET:

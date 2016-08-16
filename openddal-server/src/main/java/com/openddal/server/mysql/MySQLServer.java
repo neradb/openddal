@@ -1,5 +1,8 @@
 package com.openddal.server.mysql;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,11 +25,33 @@ import io.netty.channel.socket.SocketChannel;
 public class MySQLServer extends NettyServer {
 
     private static final Logger logger = LoggerFactory.getLogger(MySQLServer.class);
-
     public static final String DEFAULT_CHARSET = "utf8";
     public static final byte PROTOCOL_VERSION = 10;
     public static final String VERSION_COMMENT = "OpenDDAL MySQL Protocol Server";
     public static final String SERVER_VERSION = "5.6.31" + VERSION_COMMENT + "-" + Constants.getFullVersion();
+
+    private static final Map<String, String> variables = new HashMap<String, String>();
+
+    static {
+        variables.put("character_set_client", "utf8");
+        variables.put("character_set_connection", "utf8");
+        variables.put("character_set_results", "utf8");
+        variables.put("character_set_server", "utf8");
+        variables.put("init_connect", "");
+        variables.put("interactive_timeout", "172800");
+        variables.put("lower_case_table_names", "1");
+        variables.put("max_allowed_packet", "16777216");
+        variables.put("net_buffer_length", "8192");
+        variables.put("net_write_timeout", "60");
+        variables.put("query_cache_size", "0");
+        variables.put("query_cache_type", "OFF");
+        variables.put("sql_mode", "STRICT_TRANS_TABLES");
+        variables.put("system_time_zone", "CST");
+        variables.put("time_zone", "SYSTEM");
+        variables.put("lower_case_table_names", "1");
+        variables.put("tx_isolation", "REPEATABLE-READ");
+        variables.put("wait_timeout", "172800");
+    }
 
     private final MySQLServerDecoder decoder = new MySQLServerDecoder();
 

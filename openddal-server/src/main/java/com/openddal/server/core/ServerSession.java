@@ -20,6 +20,7 @@ import java.util.Properties;
 
 import com.openddal.engine.Session;
 import com.openddal.server.NettyServer;
+import com.openddal.server.ServerException;
 import com.openddal.server.util.CharsetUtil;
 import com.openddal.util.New;
 
@@ -179,7 +180,7 @@ public class ServerSession implements AutoCloseable {
         return threadId;
     }
     
-    public QueryResult executeQuery(String query) throws QueryException {
+    public QueryResult executeQuery(String query) throws ServerException {
         QueryProcessor processor = dispatcher.dispatch(query);
         QueryResult process = processor.process(query);
         return process;

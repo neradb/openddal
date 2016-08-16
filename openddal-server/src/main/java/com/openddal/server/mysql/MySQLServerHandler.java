@@ -15,19 +15,21 @@
  */
 package com.openddal.server.mysql;
 
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.util.ArrayList;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.sql.SQLException;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.openddal.message.JdbcSQLException;
+import com.openddal.result.ResultInterface;
 import com.openddal.server.NettyServer;
 import com.openddal.server.ServerException;
+import com.openddal.server.core.QueryResult;
 import com.openddal.server.core.ServerSession;
 import com.openddal.server.mysql.auth.Privilege;
-import com.openddal.server.mysql.proto.ColumnDefinition;
 import com.openddal.server.mysql.proto.ComFieldlist;
 import com.openddal.server.mysql.proto.ComInitdb;
 import com.openddal.server.mysql.proto.ComPing;
@@ -46,12 +48,8 @@ import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
-import com.openddal.server.mysql.proto.Resultset;
-import com.openddal.server.mysql.proto.ResultsetRow;
 import com.openddal.server.util.CharsetUtil;
 import com.openddal.server.util.ErrorCode;
-import com.openddal.server.util.MysqlDefs;
-import com.openddal.server.util.ResultSetUtil;
 import com.openddal.server.util.StringUtil;
 import com.openddal.util.StringUtils;
 
@@ -226,7 +224,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             packet = ComFieldlist.loadFromPacket(data);
             break;
         default:
-            throw new ServerException(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+            throw ServerException.get(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
         }
     }
 
@@ -303,56 +301,54 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         err.errorCode = errno;
         err.errorMessage = msg;
         out.writeBytes(err.toPacket());
+        ctx.writeAndFlush(out);
+    }
+
+    private void sendError(ChannelHandlerContext ctx, Throwable t) {
+        SQLException e = ServerException.toSQLException(t);
+        StringWriter writer = new StringWriter(500);
+        e.printStackTrace(new PrintWriter(writer));
+        String message = writer.toString();
+        ByteBuf out = ctx.alloc().buffer();
+        ERR err = new ERR();
+        err.sequenceId = nextSequenceId();
+        err.errorCode = e instanceof JdbcSQLException ? ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND : e.getErrorCode();
+        err.sqlState = e.getSQLState();
+        err.errorMessage = message;
+        out.writeBytes(err.toPacket());
+        ctx.writeAndFlush(out);
     }
 
     private void sendUpdateResult(ChannelHandlerContext ctx, int rows) {
         ByteBuf out = ctx.alloc().buffer();
-        OK ok = new OK();
-        ok.sequenceId = nextSequenceId();
-        ok.affectedRows = rows;
-        ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
-        out.writeBytes(ok.toPacket());
-        ctx.writeAndFlush(out);
+
     }
 
-    private void sendQueryResult(ChannelHandlerContext ctx, ResultSet rs) throws Exception {
+    private void sendQueryResult(ChannelHandlerContext ctx, QueryResult rs) throws Exception {
         ByteBuf out = ctx.alloc().buffer();
-        ResultSetMetaData metaData = rs.getMetaData();
-        int colunmCount = metaData.getColumnCount();
-
-        Resultset resultset = new Resultset();
-        resultset.sequenceId = nextSequenceId();
-        Resultset.characterSet = session.getCharsetIndex();
-
-        for (int i = 0; i < colunmCount; i++) {
-            int j = i + 1;
-            ColumnDefinition columnPacket = new ColumnDefinition();
-            columnPacket.org_name = StringUtil.emptyIfNull(metaData.getColumnName(j));
-            columnPacket.name = StringUtil.emptyIfNull(metaData.getColumnLabel(j));
-            columnPacket.org_table = StringUtil.emptyIfNull(metaData.getTableName(j));
-            columnPacket.table = StringUtil.emptyIfNull(metaData.getTableName(j));
-            columnPacket.schema = StringUtil.emptyIfNull(metaData.getSchemaName(j));
-            columnPacket.flags = ResultSetUtil.toFlag(metaData, j);
-            columnPacket.columnLength = metaData.getColumnDisplaySize(j);
-            columnPacket.decimals = metaData.getScale(j);
-            int javaType = MysqlDefs.javaTypeDetect(metaData.getColumnType(j), (int) columnPacket.decimals);
-            columnPacket.type = (byte) (MysqlDefs.javaTypeMysql(javaType) & 0xff);
-            resultset.addColumn(columnPacket);
-        }
-
-        while (rs.next()) {
-            ResultsetRow rowPacket = new ResultsetRow();
-            for (int i = 0; i < colunmCount; i++) {
-                int j = i + 1;
-                rowPacket.data.add(StringUtil.emptyIfNull(rs.getString(j)));
+        try {
+            if (rs.isQuery()) {
+                ResultInterface result = rs.getQueryResult();
+            } else {
+                OK ok = new OK();
+                ok.sequenceId = nextSequenceId();
+                ok.affectedRows = rs.getUpdateResult();
+                ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
+                out.writeBytes(ok.toPacket());
+                ctx.writeAndFlush(out);
             }
-            resultset.addRow(rowPacket);
+        } catch (Exception e) {
+
+        } finally {
+            ctx.writeAndFlush(out);
         }
-        ArrayList<byte[]> packets = resultset.toPackets();
-        for (byte[] bs : packets) {
-            out.writeBytes(bs);
-        }
-        ctx.writeAndFlush(out);
+
+    }
+
+    private SQLException logAndConvert(Throwable t) {
+        SQLException e = ServerException.toSQLException(t);
+        LOGGER.error("an exception happen when process request", e);
+        return e;
     }
 
     /**
@@ -372,9 +368,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             try {
                 despatchCommand(ctx, buf);
             } catch (Throwable e) {
-                LOGGER.error("an exception happen when process request", e);
-                ServerException ex = ServerException.convert(e);
-                sendError(ctx, ex.getErrorCode(), ex.getMessage());
+                sendError(ctx, logAndConvert(e));
             } finally {
                 buf.release();
             }

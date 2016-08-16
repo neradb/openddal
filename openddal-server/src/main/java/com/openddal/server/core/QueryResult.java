@@ -1,39 +1,39 @@
 
 package com.openddal.server.core;
 
-import com.openddal.result.LocalResult;
+import com.openddal.result.ResultInterface;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class QueryResult implements AutoCloseable {
 
-    public static final int UPDATE_RESULT = 1;
-    public static final int SELECT_RESULT = 2;
+    private static final int UPDATE_RESULT = 1;
+    private static final int SELECT_RESULT = 2;
 
     private final int type;
     private int affectedRows;
-    private LocalResult result;
+    private ResultInterface result;
 
-    private QueryResult(int affectedRows) {
+    public QueryResult(int affectedRows) {
         this.type = UPDATE_RESULT;
         this.affectedRows = affectedRows;
     }
 
-    private QueryResult(LocalResult result) {
+    public QueryResult(ResultInterface result) {
         this.type = SELECT_RESULT;
         this.result = result;
     }
 
-    public int getType() {
-        return type;
+    public boolean isQuery() {
+        return type == SELECT_RESULT;
     }
 
     public int getUpdateResult() {
         return affectedRows;
     }
 
-    public LocalResult getSelectResult() {
+    public ResultInterface getQueryResult() {
         return result;
     }
 
