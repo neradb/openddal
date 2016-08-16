@@ -482,7 +482,7 @@ public class JdbcDatabaseMetaData extends TraceObject implements
     public String getURL() throws SQLException {
         try {
             debugCodeCall("getURL");
-            return conn.getClientInfo("url");
+            return conn.getURL();
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -498,7 +498,7 @@ public class JdbcDatabaseMetaData extends TraceObject implements
     public String getUserName() throws SQLException {
         try {
             debugCodeCall("getUserName");
-            return conn.getClientInfo("user");
+            return conn.getUser();
         } catch (Exception e) {
             throw logAndConvert(e);
         }

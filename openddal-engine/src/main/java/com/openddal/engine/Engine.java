@@ -15,53 +15,49 @@
  */
 package com.openddal.engine;
 
+import java.util.HashMap;
 import java.util.Properties;
 
 import com.openddal.dbobject.User;
-import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
-import com.openddal.util.StringUtils;
+import com.openddal.util.New;
 
 /**
  * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
  */
 public class Engine implements SessionFactory {
-
-    public static final String ENGINE_CONFIG_PROPERTY_NAME = "ENGINE_CONFIG_LOCATION";
-    private static Engine implicitInstance;
-    private static String implicitEngineConfig;
+    
+    private static final HashMap<String, SessionFactory> EMBEDDED_ENGINES = New.hashMap();
 
     private Database database = null;
 
-    public Engine(Database database) {
+    Engine(Database database) {
         this.database = database;
         Runtime.getRuntime().addShutdownHook(new Shutdown());
     }
 
-    public synchronized static Engine getImplicitEngine(Properties setting) {  
-        String configLocation = (String) setting.remove(ENGINE_CONFIG_PROPERTY_NAME);
-        if (StringUtils.isNullOrEmpty(configLocation)) {
-            throw DbException.get(ErrorCode.INVALID_ENGINE_CONFIG_1, configLocation);
+    public synchronized static SessionFactory connectEmbedded(String url, Properties prop) {  
+        SessionFactory sessionFactory = EMBEDDED_ENGINES.get(url);
+        if (sessionFactory == null) {
+            String configLocation = getConfigLocation(url);
+            sessionFactory = SessionFactoryBuilder.newBuilder().fromXml(configLocation).applySettings(prop).build();
+            EMBEDDED_ENGINES.put(url, sessionFactory);
         }
-        if (implicitInstance == null) {
-            implicitEngineConfig = configLocation;
-            implicitInstance = (Engine) SessionFactoryBuilder.newBuilder().fromXml(implicitEngineConfig)
-                    .applySettings(setting).build();
-        } else {
-            if (!StringUtils.equals(implicitEngineConfig, configLocation)) {
-                String msg = configLocation + ", The implicit engine was established with " + implicitEngineConfig;
-                throw DbException.get(ErrorCode.INVALID_ENGINE_CONFIG_1, msg);
-            }
-        }
-        return implicitInstance;
+        return sessionFactory;
     }
-
-    public synchronized static boolean implicitEngineExists() {
-        return implicitInstance != null;
+    
+    private static String getConfigLocation(String url) {
+        int idx = url.indexOf(';');
+        String configLocation;
+        if (idx >= 0) {
+            configLocation = url.substring(Constants.START_URL.length(), idx);
+        } else {
+            configLocation = url.substring(Constants.START_URL.length());
+        }
+        return configLocation;
     }
 
     @Override
-    public SessionInterface createSession(Properties ci) {
+    public Session createSession(Properties ci) {
         String userName = ci.getProperty("user");
         String password = ci.getProperty("password");
         if (userName == null) {

@@ -24,8 +24,6 @@ import java.util.logging.Logger;
 
 import com.openddal.engine.Constants;
 import com.openddal.engine.DbSettings;
-import com.openddal.engine.Engine;
-import com.openddal.engine.SessionInterface;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.util.StringUtils;
@@ -111,9 +109,7 @@ public class Driver implements java.sql.Driver {
                 info = new Properties();
             }
             Properties prop = parseUrl(url, info);
-            Engine engine = Engine.getImplicitEngine(prop);
-            SessionInterface session = engine.createSession(info);
-            return new JdbcConnection(session);
+            return new JdbcConnection(url, prop);
         } catch (Exception e) {
             throw DbException.toSQLException(e);
         }
@@ -231,8 +227,6 @@ public class Driver implements java.sql.Driver {
                 prop.setProperty(key, value);
             }
         }
-        String configLocation = url.substring(Constants.START_URL.length());
-        prop.put(Engine.ENGINE_CONFIG_PROPERTY_NAME, configLocation);
         return prop;
     }
     

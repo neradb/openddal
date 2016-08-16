@@ -41,6 +41,7 @@ import java.util.concurrent.Executor;
 
 import com.openddal.command.CommandInterface;
 import com.openddal.engine.Constants;
+import com.openddal.engine.Engine;
 import com.openddal.engine.SessionInterface;
 import com.openddal.engine.SysProperties;
 import com.openddal.message.DbException;
@@ -54,19 +55,14 @@ import com.openddal.value.Value;
 import com.openddal.value.ValueLobDb;
 import com.openddal.value.ValueNull;
 
-/**
- * <p>
- * Represents a connection (session) to a database.
- * </p>
- * <p>
- * Thread safety: the connection is thread-safe, because access is synchronized.
- * However, for compatibility with other databases, a connection should only be
- * used in one thread at any time.
- * </p>
- */
+
 public class JdbcConnection extends TraceObject implements Connection {
 
     private final CompareMode compareMode = CompareMode.getInstance(null, 0);
+    
+    private final String url;
+    private final String user;
+    
     // ResultSet.HOLD_CURSORS_OVER_COMMIT
     private int holdability = 1;
     private SessionInterface session;
@@ -75,14 +71,18 @@ public class JdbcConnection extends TraceObject implements Connection {
     private int savepointId;
     private String catalog;
     private Statement executingStatement;
+    private Properties ci;
 
     /**
      * INTERNAL
      */
-    public JdbcConnection(SessionInterface session) throws SQLException {
-        this.session = session;
-        trace = session.getTrace();
+    public JdbcConnection(String url, Properties ci) throws SQLException {
+        this.ci = ci;
+        this.url = url;
+        this.user = ci.getProperty("user");
+        this.session = Engine.connectEmbedded(url, ci).createSession(ci);
         int id = getNextId(TraceObject.CONNECTION);
+        this.trace = session.getTrace();
         setTrace(trace, TraceObject.CONNECTION, id);
     }
 
@@ -1289,7 +1289,17 @@ public class JdbcConnection extends TraceObject implements Connection {
 
         }
     }
+    
+    String getURL() {
+        checkClosed();
+        return url;
+    }
 
+    String getUser() {
+        checkClosed();
+        return user;
+    }
+    
     private void rollbackInternal() {
         rollback = prepareCommand("ROLLBACK", rollback);
         rollback.executeUpdate();
@@ -1467,8 +1477,7 @@ public class JdbcConnection extends TraceObject implements Connection {
                 debugCode("getClientInfo();");
             }
             checkClosed();
-            Properties p = new Properties();
-            return p;
+            return ci;
         } catch (Exception e) {
             throw logAndConvert(e);
         }
@@ -1508,11 +1517,7 @@ public class JdbcConnection extends TraceObject implements Connection {
             }
             checkClosed();
             Properties p = getClientInfo();
-            String s = p.getProperty(name);
-            if (s == null) {
-                throw new SQLClientInfoException();
-            }
-            return s;
+            return p.getProperty(name);
         } catch (Exception e) {
             throw logAndConvert(e);
         }
