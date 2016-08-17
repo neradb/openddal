@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLAssignItem;
 import com.alibaba.druid.sql.ast.statement.SQLSetStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSetCharSetStatement;
@@ -30,6 +31,7 @@ public final class SetProcessor implements QueryProcessor {
 
     @Override
     public QueryResult process(String query) {
+        QueryResult result = new QueryResult(0);
         List<SQLStatement> stmts = SQLUtils.parseStatements(query, JdbcConstants.MYSQL);
         for (SQLStatement stmt : stmts) {
             if (stmt instanceof MySqlSetTransactionStatement) {
@@ -51,27 +53,45 @@ public final class SetProcessor implements QueryProcessor {
                 String charset = s.getCharSet();
                 setCharset(charset);
             } else if (stmt instanceof MySqlSetPasswordStatement) {
-                MySqlSetPasswordStatement s = (MySqlSetPasswordStatement) stmt;
+                result.setWarnings((short) 1);
+                result.setMessage("Set password statement ignored.");
+                continue;
             } else {
                 SQLSetStatement s = (SQLSetStatement) stmt;
                 List<SQLAssignItem> items = s.getItems();
-                for (SQLAssignItem sqlAssignItem : items) {
-                    String key = SQLUtils.toMySqlString(sqlAssignItem.getTarget());
-                    String value = SQLUtils.toMySqlString(sqlAssignItem.getValue());
+                boolean isGlobal = false;
+                for (int i = 0; i < items.size(); i++) {
+                    SQLAssignItem item = items.get(0);
+                    SQLVariantRefExpr varRef = (SQLVariantRefExpr) item.getTarget();
+                    isGlobal = i == 0 ? varRef.isGlobal() : isGlobal;
+                    String key = varRef.getName();
+                    String value = SQLUtils.toMySqlString(item.getValue());
+                    if ("autocommit".equalsIgnoreCase(key)) {
+                        setAutocommit(value);
+                    } else if ("tx_isolation".equalsIgnoreCase(key)) {
+                        setIsolation(value);
+                    } else if ("tx_read_only".equalsIgnoreCase(key)) {
+                        setReadOnly(value);
+                    }
+                    if (isGlobal) {
+                        target.getSession().getServer().getVariables().put(key, value);
+                    } else {
+                        target.getSession().getVariables().put(key, value);
+                    }
                 }
             }
         }
-        return new QueryResult(0);
+        return result;
 
     }
 
     private void setIsolation(String isolation) {
-        Session session = target.getSession().getDatabaseSession();
-        if ("REPEATABLE READ".equals(isolation)) {
+        Session session = target.getSession().getDbSession();
+        if ("REPEATABLE READ".equalsIgnoreCase(isolation) || "REPEATABLE-READ".equalsIgnoreCase(isolation)) {
             session.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
-        } else if ("READ COMMITTED".equals(isolation)) {
+        } else if ("READ COMMITTED".equalsIgnoreCase(isolation) || "READ-COMMITTED".equalsIgnoreCase(isolation)) {
             session.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        } else if ("READ UNCOMMITTED".equals(isolation)) {
+        } else if ("READ UNCOMMITTED".equalsIgnoreCase(isolation) || "READ-UNCOMMITTED".equalsIgnoreCase(isolation)) {
             session.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
         } else if ("SERIALIZABLE".equals(isolation)) {
             session.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
@@ -81,13 +101,32 @@ public final class SetProcessor implements QueryProcessor {
     }
 
     private void setAccessModel(String accessModel) {
-        Session session = target.getSession().getDatabaseSession();
+        Session session = target.getSession().getDbSession();
         if ("READ WRITE".equals(accessModel)) {
             session.setReadOnly(false);
         } else if ("READ ONLY".equals(accessModel)) {
-            session.setReadOnly(false);
+            session.setReadOnly(true);
         }
         throw ServerException.get(ErrorCode.ER_SYNTAX_ERROR, accessModel);
+    }
+
+    private void setReadOnly(String readOnly) {
+        Session session = target.getSession().getDbSession();
+        if (readOnly.matches("[0|NO|TRUE]")) {
+            session.setReadOnly(true);
+        } else if (readOnly.matches("[1|OFF|FALSE]")) {
+            session.setReadOnly(false);
+        }
+
+    }
+
+    private void setAutocommit(String autocommit) {
+        Session session = target.getSession().getDbSession();
+        if (autocommit.matches("[0|NO|TRUE]")) {
+            session.setAutoCommit(true);
+        } else if (autocommit.matches("[1|OFF|FALSE]")) {
+            session.setAutoCommit(false);
+        }
     }
 
     private void setCharset(String charset) {

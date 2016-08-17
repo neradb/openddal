@@ -15,6 +15,9 @@
  */
 package com.openddal.server;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -62,6 +65,7 @@ public abstract class NettyServer {
     private Engine engine;
     private Privilege privilege = PrivilegeDefault.getPrivilege();
     private ConcurrentMap<Long, ServerSession> sessions = New.concurrentHashMap();
+    private final Map<String, String> variables = Collections.synchronizedMap(New.<String, String> hashMap());
 
     public NettyServer(ServerArgs args) {
         this.args = args;
@@ -89,6 +93,20 @@ public abstract class NettyServer {
 
     public ServerSession getSession(long threadId) {
         return sessions.get(threadId);
+    }
+
+    /**
+     * @return the sessions
+     */
+    public Collection<ServerSession> getSessions() {
+        return sessions.values();
+    }
+
+    /**
+     * @return the variables
+     */
+    public Map<String, String> getVariables() {
+        return variables;
     }
 
     /**

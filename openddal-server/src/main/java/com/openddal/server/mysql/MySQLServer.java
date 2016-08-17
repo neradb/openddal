@@ -1,6 +1,5 @@
 package com.openddal.server.mysql;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -30,9 +29,18 @@ public class MySQLServer extends NettyServer {
     public static final String VERSION_COMMENT = "OpenDDAL MySQL Protocol Server";
     public static final String SERVER_VERSION = "5.6.31" + VERSION_COMMENT + "-" + Constants.getFullVersion();
 
-    private static final Map<String, String> variables = new HashMap<String, String>();
 
-    static {
+
+    private final MySQLServerDecoder decoder = new MySQLServerDecoder();
+
+    public MySQLServer(ServerArgs args) {
+        super(args);
+    }
+
+    @Override
+    public void init() {
+        super.init();
+        Map<String, String> variables = getVariables();
         variables.put("character_set_client", "utf8");
         variables.put("character_set_connection", "utf8");
         variables.put("character_set_results", "utf8");
@@ -51,12 +59,6 @@ public class MySQLServer extends NettyServer {
         variables.put("lower_case_table_names", "1");
         variables.put("tx_isolation", "REPEATABLE-READ");
         variables.put("wait_timeout", "172800");
-    }
-
-    private final MySQLServerDecoder decoder = new MySQLServerDecoder();
-
-    public MySQLServer(ServerArgs args) {
-        super(args);
     }
 
     @Override

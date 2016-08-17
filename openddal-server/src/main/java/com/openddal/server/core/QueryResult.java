@@ -13,6 +13,9 @@ public class QueryResult implements AutoCloseable {
 
     private final int type;
     private int affectedRows;
+    private short warnings;
+    private String message;
+    private long insertId;
     private ResultInterface result;
 
     public QueryResult(int affectedRows) {
@@ -35,6 +38,30 @@ public class QueryResult implements AutoCloseable {
 
     public ResultInterface getQueryResult() {
         return result;
+    }
+
+    public short getWarnings() {
+        return warnings;
+    }
+
+    public void setWarnings(short warnings) {
+        this.warnings = warnings;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public long getInsertId() {
+        return insertId;
+    }
+
+    public void setInsertId(long insertId) {
+        this.insertId = insertId;
     }
 
     @Override

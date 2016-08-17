@@ -46,11 +46,14 @@ public class ServerSession implements AutoCloseable {
     private String schema;
     private Session dbSession;
     private QueryDispatcher dispatcher;
+    private final Map<String, String> variables;
 
 
     public ServerSession(NettyServer server) {
         this.server = server;
+        this.variables = New.hashMap();
         this.dispatcher = server.newQueryDispatcher(this);
+
     }
 
     @SuppressWarnings("unchecked")
@@ -91,8 +94,15 @@ public class ServerSession implements AutoCloseable {
         return server;
     }
     
-    public Session getDatabaseSession() {
+    public Session getDbSession() {
         return dbSession;
+    }
+
+    /**
+     * @return the variables
+     */
+    public Map<String, String> getVariables() {
+        return variables;
     }
 
     public void bind(Channel channel) {

@@ -23,7 +23,7 @@ public class DefaultQueryProcessor implements QueryProcessor {
     @Override
     public QueryResult process(String query) throws ServerException {
         QueryResult result;
-        Session dbSession = session.getDatabaseSession();
+        Session dbSession = session.getDbSession();
         Command command = null;
         try {
             synchronized (dbSession) {
