@@ -19,7 +19,7 @@ import com.openddal.config.parser.GenericTokenParser;
 import com.openddal.config.parser.TokenHandler;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class PartitionHints {
 

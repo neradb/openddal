@@ -23,7 +23,7 @@ import com.openddal.engine.Session;
  * This class represents the statement
  * DROP TABLE
  *
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class DropTable extends SchemaCommand {
 

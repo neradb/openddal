@@ -22,7 +22,7 @@ import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public class ListCursor implements Cursor {

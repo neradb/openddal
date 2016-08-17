@@ -29,7 +29,7 @@ import com.openddal.util.Utils;
 import junit.framework.Assert;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class ScriptRunnerTestCase extends BaseTestCase {
 

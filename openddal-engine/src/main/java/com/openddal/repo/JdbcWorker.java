@@ -31,7 +31,7 @@ import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public abstract class JdbcWorker {
     protected final Session session;

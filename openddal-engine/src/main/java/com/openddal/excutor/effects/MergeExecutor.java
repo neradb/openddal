@@ -36,7 +36,7 @@ import com.openddal.util.StringUtils;
 import com.openddal.value.Value;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class MergeExecutor extends ExecutionFramework{
 

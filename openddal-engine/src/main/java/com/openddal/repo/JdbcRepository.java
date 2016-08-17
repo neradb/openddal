@@ -54,7 +54,7 @@ import com.openddal.util.StringUtils;
 import com.openddal.util.Threads;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public abstract class JdbcRepository implements Repository {
 

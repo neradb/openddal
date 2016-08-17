@@ -30,7 +30,7 @@ import java.sql.SQLException;
  * Small objects are kept in memory and stored in the record.
  * Large objects are either stored in the database, or in temporary files.
  *
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class ValueLobDb extends Value implements Value.ValueClob,
         Value.ValueBlob {

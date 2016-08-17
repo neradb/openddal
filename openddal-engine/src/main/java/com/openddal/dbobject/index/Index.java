@@ -24,7 +24,7 @@ import com.openddal.dbobject.table.IndexColumn;
 import com.openddal.dbobject.table.Table;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class Index extends SchemaObject {
 

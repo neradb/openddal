@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class SmartDataSource implements DataSource, Failover {
 

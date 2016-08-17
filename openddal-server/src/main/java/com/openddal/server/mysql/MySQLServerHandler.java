@@ -30,6 +30,7 @@ import com.openddal.server.ServerException;
 import com.openddal.server.core.QueryResult;
 import com.openddal.server.core.ServerSession;
 import com.openddal.server.mysql.auth.Privilege;
+import com.openddal.server.mysql.proto.ColumnDefinition;
 import com.openddal.server.mysql.proto.ComFieldlist;
 import com.openddal.server.mysql.proto.ComInitdb;
 import com.openddal.server.mysql.proto.ComPing;
@@ -48,17 +49,21 @@ import com.openddal.server.mysql.proto.Handshake;
 import com.openddal.server.mysql.proto.HandshakeResponse;
 import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
+import com.openddal.server.mysql.proto.Resultset;
+import com.openddal.server.mysql.proto.ResultsetRow;
 import com.openddal.server.util.CharsetUtil;
 import com.openddal.server.util.ErrorCode;
+import com.openddal.server.util.ResultColumn;
 import com.openddal.server.util.StringUtil;
 import com.openddal.util.StringUtils;
+import com.openddal.value.Value;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
@@ -244,13 +249,18 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         success(ctx);
     }
 
-    private void query(ChannelHandlerContext ctx, ComQuery request) throws Exception {
-        String sql = request.query;
-        if (StringUtils.isNullOrEmpty(sql)) {
+    private void query(ChannelHandlerContext ctx, ComQuery request) {
+        String query = request.query;
+        if (StringUtils.isNullOrEmpty(query)) {
             sendError(ctx, ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
             return;
         }
-        
+        QueryResult result = session.executeQuery(query);
+        if(result.isQuery()) {
+            sendQueryResult(ctx, result);
+        } else {
+            sendUpdateResult(ctx, result);
+        }
     }
 
     private void close(ChannelHandlerContext ctx, ComQuit request) {
@@ -313,44 +323,56 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         ERR err = new ERR();
         err.sequenceId = nextSequenceId();
         err.errorCode = e instanceof JdbcSQLException ? ErrorCode.ER_ERROR_WHEN_EXECUTING_COMMAND : e.getErrorCode();
-        err.sqlState = e.getSQLState();
         err.errorMessage = message;
         out.writeBytes(err.toPacket());
         ctx.writeAndFlush(out);
     }
 
-    private void sendUpdateResult(ChannelHandlerContext ctx, int rows) {
+    private void sendUpdateResult(ChannelHandlerContext ctx, QueryResult rs) {
         ByteBuf out = ctx.alloc().buffer();
-
+        OK ok = new OK();
+        ok.sequenceId = nextSequenceId();
+        ok.affectedRows = rs.getUpdateResult();
+        ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
+        out.writeBytes(ok.toPacket());
+        ctx.writeAndFlush(out);
     }
+    
 
-    private void sendQueryResult(ChannelHandlerContext ctx, QueryResult rs) throws Exception {
+    private void sendQueryResult(ChannelHandlerContext ctx, QueryResult rs) {
+        Resultset resultset = new Resultset();
         ByteBuf out = ctx.alloc().buffer();
         try {
-            if (rs.isQuery()) {
-                ResultInterface result = rs.getQueryResult();
-            } else {
-                OK ok = new OK();
-                ok.sequenceId = nextSequenceId();
-                ok.affectedRows = rs.getUpdateResult();
-                ok.setStatusFlag(Flags.SERVER_STATUS_AUTOCOMMIT);
-                out.writeBytes(ok.toPacket());
-                ctx.writeAndFlush(out);
+            resultset.sequenceId = nextSequenceId();
+            Resultset.characterSet = session.getCharsetIndex();
+            
+            ResultInterface result = rs.getQueryResult();
+            int columnCount = result.getVisibleColumnCount();
+            for (int i = 0; i < columnCount; i++) {
+                ColumnDefinition columnPacket = ResultColumn.getColumn(result, i);
+                resultset.addColumn(columnPacket);
+            }
+            while (result.next()) {
+                ResultsetRow rowPacket = new ResultsetRow();
+                Value[] v = result.currentRow();
+                for (int i = 0; i < columnCount; i++) {
+                    Value value = v[i];
+                    rowPacket.data.add(value.getString());
+                }
             }
         } catch (Exception e) {
-
+            ERR err = new ERR();
+            err.sequenceId = resultset.sequenceId++;
+            err.errorCode = ErrorCode.ER_UNKNOWN_ERROR;
+            err.errorMessage = "write resultset error:" + e.getMessage();
+            out.writeBytes(err.toPacket());
         } finally {
             ctx.writeAndFlush(out);
         }
 
     }
 
-    private SQLException logAndConvert(Throwable t) {
-        SQLException e = ServerException.toSQLException(t);
-        LOGGER.error("an exception happen when process request", e);
-        return e;
-    }
-
+    
     /**
      * Execute the processor in user threads.
      */
@@ -368,7 +390,9 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             try {
                 despatchCommand(ctx, buf);
             } catch (Throwable e) {
-                sendError(ctx, logAndConvert(e));
+                Throwable t = ServerException.toSQLException(e);
+                LOGGER.error("an exception happen when process request", e);
+                sendError(ctx, t);
             } finally {
                 buf.release();
             }

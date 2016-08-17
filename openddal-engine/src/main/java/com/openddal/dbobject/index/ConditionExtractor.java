@@ -17,7 +17,7 @@ import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public final class ConditionExtractor {
 

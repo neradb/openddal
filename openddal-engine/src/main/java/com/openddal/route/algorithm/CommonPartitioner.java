@@ -28,7 +28,7 @@ import com.openddal.value.ValueLong;
 import com.openddal.value.ValueNull;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public abstract class CommonPartitioner implements Partitioner {
 

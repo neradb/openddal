@@ -27,7 +27,7 @@ import com.openddal.util.New;
 /**
  * This class represents the statement ALTER TABLE ADD CONSTRAINT
  *
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class AlterTableAddConstraint extends SchemaCommand {
 

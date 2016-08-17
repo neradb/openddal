@@ -19,7 +19,7 @@ import com.openddal.command.dml.Call;
 import com.openddal.excutor.ExecutionFramework;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class CallExecutor extends ExecutionFramework {
     /**

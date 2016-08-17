@@ -25,7 +25,7 @@ import java.sql.SQLException;
 import com.openddal.repo.JdbcRepository;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public final class SmartConnection extends SmartSupport implements InvocationHandler {
 

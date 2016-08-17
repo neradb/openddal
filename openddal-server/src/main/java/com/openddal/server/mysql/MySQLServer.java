@@ -19,7 +19,7 @@ import io.netty.channel.socket.SocketChannel;
 
 /**
  * 
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public class MySQLServer extends NettyServer {

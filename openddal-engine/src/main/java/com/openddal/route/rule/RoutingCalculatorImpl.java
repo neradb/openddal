@@ -27,7 +27,7 @@ import com.openddal.util.New;
 import com.openddal.value.Value;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class RoutingCalculatorImpl implements RoutingCalculator {
 

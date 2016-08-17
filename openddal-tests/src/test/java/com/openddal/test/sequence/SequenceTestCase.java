@@ -31,7 +31,7 @@ import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class SequenceTestCase extends BaseTestCase {
 

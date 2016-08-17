@@ -26,7 +26,7 @@ import com.openddal.value.Value;
 import com.openddal.value.ValueTimestamp;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class RollingPartitioner extends CommonPartitioner {
 

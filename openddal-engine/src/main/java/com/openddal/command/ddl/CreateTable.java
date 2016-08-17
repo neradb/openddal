@@ -30,7 +30,7 @@ import com.openddal.util.New;
 /**
  * This class represents the statement CREATE TABLE
  *
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class CreateTable extends SchemaCommand {
 

@@ -30,7 +30,7 @@ import com.openddal.repo.tx.ConnectionHolder.Callback;
 import com.openddal.util.New;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public class JdbcTransaction implements Transaction {

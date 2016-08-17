@@ -22,7 +22,7 @@ import javax.sql.DataSource;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class DataSourceMarker {
 

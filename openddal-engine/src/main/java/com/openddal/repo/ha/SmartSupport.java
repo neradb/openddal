@@ -24,7 +24,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class SmartSupport {
 

@@ -3,17 +3,17 @@ package com.openddal.server.mysql.proto;
 import java.util.ArrayList;
 
 public class ColumnDefinition extends Packet {
-    public String catalog = "def";
-    public String schema = "";
-    public String table = "";
-    public String org_table = "";
-    public String name = "";
-    public String org_name = "";
-    public long characterSet = 0;
-    public long columnLength = 0;
+    public String catalog;
+    public String schema;
+    public String table;
+    public String org_table;
+    public String name;
+    public String org_name;
+    public long characterSet;
+    public long columnLength;
+    public long flags;
+    public long decimals;
     public long type = Flags.MYSQL_TYPE_VAR_STRING;
-    public long flags = 0;
-    public long decimals = 31;
     
     public ColumnDefinition() {}
     

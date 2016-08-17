@@ -111,7 +111,7 @@ public class Proto {
     }
 
     public static byte[] build_lenenc_str(String str) {
-        if (str.equals("")) {
+        if (str == null) {
             byte[] packet = new byte[1];
             packet[0] = 0x00;
             return packet;

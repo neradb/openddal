@@ -5,16 +5,19 @@ import com.openddal.server.core.QueryResult;
 
 public final class SelectProcessor implements QueryProcessor {
 
-    @Override
-    public boolean acceptsQuery(String query) {
-        // TODO Auto-generated method stub
-        return false;
+    private DefaultQueryProcessor target;
+
+    public SelectProcessor(DefaultQueryProcessor target) {
+        this.target = target;
     }
 
     @Override
     public QueryResult process(String query) {
-        // TODO Auto-generated method stub
         return null;
+        
     }
-    
+
+
+
+
 }

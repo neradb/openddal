@@ -18,7 +18,7 @@ package com.openddal.excutor.works;
 import java.util.concurrent.Callable;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public interface UpdateWorker extends Callable<Integer>, Worker {

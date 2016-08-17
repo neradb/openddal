@@ -42,7 +42,7 @@ import com.openddal.util.StringUtils;
 import com.openddal.value.DataType;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class CreateTableExecutor extends ExecutionFramework {
 

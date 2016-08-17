@@ -29,7 +29,7 @@ import io.netty.util.AttributeKey;
 
 /**
  * 
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public class ServerSession implements AutoCloseable {
@@ -44,14 +44,12 @@ public class ServerSession implements AutoCloseable {
     private String username;
     private String password;
     private String schema;
-    private long threadId;
     private Session dbSession;
     private QueryDispatcher dispatcher;
 
 
     public ServerSession(NettyServer server) {
         this.server = server;
-        this.threadId = server.generateThreadId();
         this.dispatcher = server.newQueryDispatcher(this);
     }
 
@@ -177,7 +175,7 @@ public class ServerSession implements AutoCloseable {
 
 
     public long getThreadId() {
-        return threadId;
+        return dbSession.getId();
     }
     
     public QueryResult executeQuery(String query) throws ServerException {

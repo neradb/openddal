@@ -23,7 +23,7 @@ import com.openddal.excutor.cursor.Cursor;
 import com.openddal.message.DbException;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public interface Executor {
     /**

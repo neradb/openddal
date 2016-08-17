@@ -54,7 +54,7 @@ import com.openddal.value.ValueTime;
 import com.openddal.value.ValueTimestamp;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class TableMate extends Table {
 

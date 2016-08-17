@@ -18,7 +18,6 @@ package com.openddal.server;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,6 @@ public abstract class NettyServer {
      * The default port to use for the server.
      */
     public static final int DEFAULT_LISTEN_PORT = 6100;
-    private final AtomicLong threadIdGenerator = new AtomicLong(300);
 
     private ServerArgs args;
     private EventLoopGroup bossGroup;
@@ -75,10 +73,6 @@ public abstract class NettyServer {
 
     public ThreadPoolExecutor getUserExecutor() {
         return userExecutor;
-    }
-
-    public long generateThreadId() {
-        return threadIdGenerator.incrementAndGet();
     }
 
     public Privilege getPrivilege() {

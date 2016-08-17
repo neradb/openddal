@@ -1,4 +1,4 @@
-package com.openddal.server.mysql.parser;
+package com.openddal.server.mysql.pcs;
 
 import com.openddal.server.util.ParseUtil;
 

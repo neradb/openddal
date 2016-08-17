@@ -23,7 +23,7 @@ import java.io.Serializable;
 import com.openddal.util.StringUtils;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class ObjectNode implements Serializable {
 

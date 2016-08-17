@@ -23,7 +23,7 @@ import java.util.List;
 import com.openddal.config.ShardedTableRule;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public interface RoutingCalculator {
 

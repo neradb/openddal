@@ -42,7 +42,7 @@ import com.openddal.result.Row;
 import com.openddal.route.rule.ObjectNode;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public interface WorkerFactory {

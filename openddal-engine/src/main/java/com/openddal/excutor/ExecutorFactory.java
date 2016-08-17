@@ -18,7 +18,7 @@ package com.openddal.excutor;
 import com.openddal.command.Prepared;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public interface ExecutorFactory {

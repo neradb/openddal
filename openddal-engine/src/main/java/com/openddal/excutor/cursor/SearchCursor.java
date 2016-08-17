@@ -42,7 +42,7 @@ import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class SearchCursor extends ExecutionFramework implements Cursor {
 

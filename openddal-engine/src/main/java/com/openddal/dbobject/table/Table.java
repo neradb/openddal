@@ -43,7 +43,7 @@ import com.openddal.value.ValueNull;
  * This is the base class for most tables. A table contains a list of columns
  * and a list of rows.
  *
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public abstract class Table extends SchemaObject {
 

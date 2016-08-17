@@ -27,7 +27,7 @@ import java.io.UnsupportedEncodingException;
 import java.sql.*;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class ScriptRunner {
     private static final String LINE_SEPARATOR = System.getProperty("line.separator", "\n");

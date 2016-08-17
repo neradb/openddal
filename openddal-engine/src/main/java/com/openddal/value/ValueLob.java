@@ -39,7 +39,7 @@ import java.sql.SQLException;
  * <p>
  * Data compression is supported.
  *
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class ValueLob extends Value {
 

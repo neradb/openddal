@@ -4,7 +4,7 @@ package com.openddal.server.core;
 import com.openddal.result.ResultInterface;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class QueryResult implements AutoCloseable {
 

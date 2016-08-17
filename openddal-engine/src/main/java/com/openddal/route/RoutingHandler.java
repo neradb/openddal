@@ -28,7 +28,7 @@ import com.openddal.route.rule.RoutingResult;
 import com.openddal.value.Value;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public interface RoutingHandler {
     

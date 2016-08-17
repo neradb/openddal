@@ -42,7 +42,7 @@ import com.openddal.util.New;
  * ALTER TABLE ALTER COLUMN SET NULL,
  * ALTER TABLE DROP COLUMN
  *
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class AlterTableAlterColumnExecutor extends ExecutionFramework {
 

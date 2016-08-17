@@ -28,7 +28,7 @@ import com.openddal.test.BaseTestCase;
 import com.openddal.util.JdbcUtils;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class ExplainTestCase extends BaseTestCase {
 

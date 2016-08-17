@@ -29,7 +29,7 @@ import com.openddal.message.ErrorCode;
 import com.openddal.util.StringUtils;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class Driver implements java.sql.Driver {
 

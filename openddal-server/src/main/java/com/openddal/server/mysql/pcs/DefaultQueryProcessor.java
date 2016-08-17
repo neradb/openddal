@@ -4,21 +4,22 @@ import com.openddal.command.Command;
 import com.openddal.engine.Session;
 import com.openddal.result.ResultInterface;
 import com.openddal.server.ServerException;
+import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
 import com.openddal.server.core.ServerSession;
-import com.openddal.server.core.SessionQueryProcessor;
 
-public class DefaultQueryProcessor extends SessionQueryProcessor {
+public class DefaultQueryProcessor implements QueryProcessor {
+    
+    private final ServerSession session;
 
     public DefaultQueryProcessor(ServerSession session) {
-        super(session);
+        this.session = session;
     }
 
-    @Override
-    public boolean acceptsQuery(String query) {
-        return true;
+    public ServerSession getSession() {
+        return session;
     }
-
+    
     @Override
     public QueryResult process(String query) throws ServerException {
         QueryResult result;

@@ -25,7 +25,7 @@ import com.openddal.engine.Session;
 import com.openddal.excutor.works.WorkerFactory;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public interface Repository {

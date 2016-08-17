@@ -22,7 +22,7 @@ import com.openddal.value.ValueNull;
 import com.openddal.value.ValueTimestamp;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class RangePartitioner extends CommonPartitioner {
 

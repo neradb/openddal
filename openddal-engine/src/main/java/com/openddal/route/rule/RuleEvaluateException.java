@@ -19,7 +19,7 @@
 package com.openddal.route.rule;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class RuleEvaluateException extends RuntimeException {
 

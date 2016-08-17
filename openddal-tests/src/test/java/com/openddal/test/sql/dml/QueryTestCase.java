@@ -31,7 +31,7 @@ import com.openddal.test.BaseTestCase;
 import junit.framework.Assert;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class QueryTestCase extends BaseTestCase {
 

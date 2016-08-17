@@ -57,7 +57,7 @@ import com.openddal.value.CompareMode;
 import com.openddal.value.Value;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class Database {
 

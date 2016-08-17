@@ -10,11 +10,11 @@ import com.alibaba.druid.util.JdbcConstants;
 import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
 
-public final class UseProcessor implements QueryProcessor {
+public final class TransactionProcessor implements QueryProcessor {
 
     private DefaultQueryProcessor target;
 
-    public UseProcessor(DefaultQueryProcessor target) {
+    public TransactionProcessor(DefaultQueryProcessor target) {
         this.target = target;
     }
 

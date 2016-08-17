@@ -38,7 +38,7 @@ import com.openddal.route.rule.GroupObjectNode;
 import com.openddal.route.rule.ObjectNode;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public interface SQLTranslator {

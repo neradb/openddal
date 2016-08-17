@@ -27,7 +27,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  */
 public class ValueLob {
     @Test

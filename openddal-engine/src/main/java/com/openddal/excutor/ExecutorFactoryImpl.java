@@ -45,7 +45,7 @@ import com.openddal.excutor.effects.TruncateTableExecutor;
 import com.openddal.excutor.effects.UpdateExecutor;
 
 /**
- * @author <a href="mailto:jorgie.mail@gmail.com">jorgie li</a>
+ * @author jorgie.li
  *
  */
 public class ExecutorFactoryImpl implements ExecutorFactory {
