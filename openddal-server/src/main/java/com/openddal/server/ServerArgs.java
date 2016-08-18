@@ -15,6 +15,7 @@
  */
 package com.openddal.server;
 
+import com.openddal.util.StringUtils;
 
 public class ServerArgs {
 
@@ -100,7 +101,10 @@ public class ServerArgs {
 	
 	public void validate() {
         if (port < 0) {
-            throw new IllegalArgumentException("port " + port + " is wrong.");
+            throw ServerException.get("port " + port + " is wrong.");
+        }
+        if (StringUtils.isNullOrEmpty(configFile)) {
+            throw ServerException.get("Do not specify a engine config file. Please use -configFile option to specify engine config file.");
         }
     }
 

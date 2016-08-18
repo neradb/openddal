@@ -64,6 +64,9 @@ public class TransactionCommand extends Prepared {
         case CommandInterface.ROLLBACK_TO_SAVEPOINT:
             session.rollbackToSavepoint(savepointName);
             break;
+        case CommandInterface.RELEASE_SAVEPOINT:
+            session.releaseSavepoint(savepointName);
+            break;
         default:
             DbException.throwInternalError("type=" + type);
         }

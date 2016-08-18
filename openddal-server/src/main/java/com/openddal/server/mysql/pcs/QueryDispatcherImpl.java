@@ -1,29 +1,28 @@
 package com.openddal.server.mysql.pcs;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
+import java.util.Map;
+
 import com.openddal.server.core.QueryDispatcher;
 import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.ServerSession;
+import com.openddal.util.New;
 
 /**
  * 
  * @author jorgie.li
  *
  */
-public class QueryDispatcherImpl extends CacheLoader<Integer, QueryProcessor> implements QueryDispatcher {
+public class QueryDispatcherImpl implements QueryDispatcher {
 
     private final DefaultQueryProcessor defaultProcessor;
-    private LoadingCache<Integer, QueryProcessor> processors;
+    private final Map<Integer, QueryProcessor> cacheProcessor;
 
     public QueryDispatcherImpl(ServerSession session) {
         this.defaultProcessor = new DefaultQueryProcessor(session);
-        this.processors = CacheBuilder.newBuilder().build(this);
+        this.cacheProcessor = New.hashMap();
     }
 
-    @Override
-    public QueryProcessor load(Integer type) throws Exception {
+    public QueryProcessor getQueryProcessor(Integer type) {
         QueryProcessor processor;
         switch (type) {
         case ServerParse.SET:
@@ -59,9 +58,14 @@ public class QueryDispatcherImpl extends CacheLoader<Integer, QueryProcessor> im
 
     @Override
     public QueryProcessor dispatch(String query) {
-        int type = ServerParse.parse(query);
-        QueryProcessor queryProcessor = processors.getUnchecked(type);
-        return queryProcessor;
+        int rs = ServerParse.parse(query);
+        int type = rs & 0xff;
+        QueryProcessor processor = cacheProcessor.get(type);
+        if (processor == null) {
+            processor = getQueryProcessor(type);
+            cacheProcessor.put(type, processor);
+        }
+        return processor;
     }
 
 }

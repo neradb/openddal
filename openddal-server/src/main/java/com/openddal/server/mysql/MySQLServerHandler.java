@@ -18,6 +18,7 @@ package com.openddal.server.mysql;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.slf4j.Logger;
@@ -159,6 +160,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             }
             session.setUser(authReply.username);
             session.setSchema(authReply.schema);
+            session.setPassword(authReply.authResponse);
             session.bind(ctx.channel());
             session.setAttachment("remoteAddress", ctx.channel().remoteAddress().toString());
             session.setAttachment("localAddress", ctx.channel().localAddress().toString());
@@ -359,6 +361,10 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                     Value value = v[i];
                     rowPacket.data.add(value.getString());
                 }
+            }
+            List<byte[]> packets = resultset.toPackets();
+            for (byte[] bs : packets) {
+                out.writeBytes(bs);
             }
         } catch (Exception e) {
             ERR err = new ERR();

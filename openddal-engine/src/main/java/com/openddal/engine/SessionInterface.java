@@ -117,7 +117,7 @@ public interface SessionInterface extends Closeable {
      *
      * @return the isolation level.
      */
-    void setTransactionIsolation(int level);
+    void setIsolation(int level);
 
     /**
      * Gets the current query timeout in millisecond. This method will return 0

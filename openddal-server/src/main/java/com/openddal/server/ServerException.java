@@ -42,6 +42,10 @@ public class ServerException extends RuntimeException {
     public static ServerException get(int errorCode, String message) {
         return new ServerException(getQueryException(errorCode, "HY0000", message, null));
     }
+    
+    public static ServerException get(String message) {
+        return new ServerException(getQueryException(-1, "HY0000", message, null));
+    }
 
     public static SQLException toSQLException(Throwable e) {
         if (e instanceof SQLException) {

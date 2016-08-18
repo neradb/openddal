@@ -38,10 +38,10 @@ public final class SetProcessor implements QueryProcessor {
                 MySqlSetTransactionStatement s = (MySqlSetTransactionStatement) stmt;
                 String isolationLevel = s.getIsolationLevel();
                 String accessModel = s.getAccessModel();
-                if (StringUtil.isEmpty(isolationLevel)) {
+                if (!StringUtil.isEmpty(isolationLevel)) {
                     setIsolation(isolationLevel);
                 }
-                if (StringUtil.isEmpty(accessModel)) {
+                if (!StringUtil.isEmpty(accessModel)) {
                     setAccessModel(accessModel);
                 }
             } else if (stmt instanceof MySqlSetNamesStatement) {
@@ -72,12 +72,11 @@ public final class SetProcessor implements QueryProcessor {
                         setIsolation(value);
                     } else if ("tx_read_only".equalsIgnoreCase(key)) {
                         setReadOnly(value);
-                    }
-                    if (isGlobal) {
-                        target.getSession().getServer().getVariables().put(key, value);
                     } else {
-                        target.getSession().getVariables().put(key, value);
+                        result.setWarnings((short) 1);
+                        result.setMessage(query + " ignored.");
                     }
+                    
                 }
             }
         }
@@ -85,18 +84,20 @@ public final class SetProcessor implements QueryProcessor {
 
     }
 
+
     private void setIsolation(String isolation) {
         Session session = target.getSession().getDbSession();
-        if ("REPEATABLE READ".equalsIgnoreCase(isolation) || "REPEATABLE-READ".equalsIgnoreCase(isolation)) {
-            session.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
-        } else if ("READ COMMITTED".equalsIgnoreCase(isolation) || "READ-COMMITTED".equalsIgnoreCase(isolation)) {
-            session.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        } else if ("READ UNCOMMITTED".equalsIgnoreCase(isolation) || "READ-UNCOMMITTED".equalsIgnoreCase(isolation)) {
-            session.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-        } else if ("SERIALIZABLE".equals(isolation)) {
-            session.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        if (isolation.matches("REPEATABLE[\\s|\\-]READ")) {
+            session.setIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+        } else if (isolation.matches("READ[\\s|\\-]COMMITTED")) {
+            session.setIsolation(Connection.TRANSACTION_READ_COMMITTED);
+        } else if (isolation.matches("READ[\\s|\\-]UNCOMMITTED")) {
+            session.setIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+        } else if ("SERIALIZABLE".equalsIgnoreCase(isolation)) {
+            session.setIsolation(Connection.TRANSACTION_SERIALIZABLE);
+        } else {
+            throw ServerException.get(ErrorCode.ER_SYNTAX_ERROR, isolation);
         }
-        throw ServerException.get(ErrorCode.ER_SYNTAX_ERROR, isolation);
 
     }
 
@@ -106,8 +107,9 @@ public final class SetProcessor implements QueryProcessor {
             session.setReadOnly(false);
         } else if ("READ ONLY".equals(accessModel)) {
             session.setReadOnly(true);
+        } else {
+            throw ServerException.get(ErrorCode.ER_SYNTAX_ERROR, accessModel);
         }
-        throw ServerException.get(ErrorCode.ER_SYNTAX_ERROR, accessModel);
     }
 
     private void setReadOnly(String readOnly) {

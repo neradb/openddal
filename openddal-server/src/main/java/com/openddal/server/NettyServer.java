@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +36,6 @@ import com.openddal.server.mysql.auth.PrivilegeDefault;
 import com.openddal.util.ExtendableThreadPoolExecutor;
 import com.openddal.util.ExtendableThreadPoolExecutor.TaskQueue;
 import com.openddal.util.New;
-import com.openddal.util.StringUtils;
 import com.openddal.util.Threads;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -52,6 +52,7 @@ public abstract class NettyServer {
 
     private static Logger LOGGER = LoggerFactory.getLogger(NettyServer.class);
 
+    private final AtomicLong threadIdGenerator = new AtomicLong(300);
     /**
      * The default port to use for the server.
      */
@@ -81,6 +82,10 @@ public abstract class NettyServer {
 
     public Privilege getPrivilege() {
         return privilege;
+    }
+    
+    public long generateThreadId() {
+        return threadIdGenerator.incrementAndGet();
     }
 
     public void registerSession(ServerSession session) {
@@ -113,20 +118,14 @@ public abstract class NettyServer {
      * Listen for incoming connections.
      */
     public void init() {
-
         try {
-            if (!StringUtils.isNullOrEmpty(args.configFile)) {
-                System.setProperty("ddal.engineConfigLocation", args.configFile);
-            }
-            LOGGER.info("{} server init ddal-engine from {}", getServerName(), SysProperties.ENGINE_CONFIG_LOCATION);
-            engine = (Engine)SessionFactoryBuilder.newBuilder().fromXml(SysProperties.ENGINE_CONFIG_LOCATION).build();
+            LOGGER.info("{} server init ddal-engine from {}", getServerName(), args.configFile);
+            engine = (Engine)SessionFactoryBuilder.newBuilder().fromXml(args.configFile).build();
             LOGGER.info("{} server ddal-engine inited.", getServerName());
         } catch (Exception e) {
             LOGGER.error("Exception happen when init ddal-engine ", e);
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            }
-            throw new RuntimeException(e);
+            ServerException convert = ServerException.convert(e);
+            throw convert;
         }
     }
 

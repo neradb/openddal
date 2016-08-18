@@ -33,6 +33,8 @@ public interface Transaction {
 
     void rollbackToSavepoint(String name);
     
+    void releaseSavepoint(String name);
+    
     boolean isClosed();
 
     void close();

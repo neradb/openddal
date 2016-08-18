@@ -517,8 +517,6 @@ public class Parser {
                         c = parseCreate();
                     } else if (readIf("CALL")) {
                         c = parseCall();
-                    } else if (readIf("CHECKPOINT")) {
-                        c = parseCheckpoint();
                     }
                     break;
                 case 'd':
@@ -760,9 +758,10 @@ public class Parser {
     }
 
     private Prepared parseReleaseSavepoint() {
-        Prepared command = new NoOperation(session);
+        TransactionCommand command = new TransactionCommand(session,
+                CommandInterface.RELEASE_SAVEPOINT);
         readIf("SAVEPOINT");
-        readUniqueIdentifier();
+        command.setSavepointName(readUniqueIdentifier());
         return command;
     }
 
@@ -4331,18 +4330,6 @@ public class Parser {
             } else {
                 throw e;
             }
-        }
-        return command;
-    }
-
-    private TransactionCommand parseCheckpoint() {
-        TransactionCommand command;
-        if (readIf("SYNC")) {
-            command = new TransactionCommand(session,
-                    CommandInterface.CHECKPOINT_SYNC);
-        } else {
-            command = new TransactionCommand(session,
-                    CommandInterface.CHECKPOINT);
         }
         return command;
     }

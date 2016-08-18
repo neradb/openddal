@@ -4,11 +4,14 @@ import java.util.List;
 
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlCommitStatement;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlRollbackStatement;
+import com.alibaba.druid.sql.ast.statement.SQLUseStatement;
 import com.alibaba.druid.util.JdbcConstants;
+import com.openddal.dbobject.schema.Schema;
+import com.openddal.engine.Session;
+import com.openddal.server.ServerException;
 import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
+import com.openddal.server.util.ErrorCode;
 
 public final class UseProcessor implements QueryProcessor {
 
@@ -20,16 +23,25 @@ public final class UseProcessor implements QueryProcessor {
 
     @Override
     public QueryResult process(String query) {
+        Session session = target.getSession().getDbSession();
+        QueryResult result = new QueryResult(0);
         List<SQLStatement> stmts = SQLUtils.parseStatements(query, JdbcConstants.MYSQL);
         for (SQLStatement stmt : stmts) {
-            if (stmt instanceof MySqlRollbackStatement) {
-                MySqlRollbackStatement s = (MySqlRollbackStatement) stmts.get(0);
-            } else if (stmt instanceof MySqlCommitStatement) {
-                MySqlCommitStatement s = (MySqlCommitStatement) stmt;
+            if (stmt instanceof SQLUseStatement) {
+                SQLUseStatement s = (SQLUseStatement) stmt;
+                String database = SQLUtils.toMySqlString(s.getDatabase());
+                Schema schema = session.getDatabase().findSchema(database);
+                if(schema == null) {
+                    throw ServerException.get(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
+                }
+                result.setWarnings((short)1);
+                result.setMessage("The database is immutable, there is no need to use the 'use' command");
+            } else {
+                throw ServerException.get(ErrorCode.ER_NOT_ALLOWED_COMMAND, "not allowed command:" + query);
+
             }
         }
-
-        return null;
+        return result;
     }
 
 }

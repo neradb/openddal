@@ -403,39 +403,34 @@ public interface CommandInterface {
     int ROLLBACK = 72;
 
     /**
-     * The type of a CHECKPOINT statement.
-     */
-    int CHECKPOINT = 73;
-
-    /**
      * The type of a SAVEPOINT statement.
      */
-    int SAVEPOINT = 74;
+    int SAVEPOINT = 73;
 
     /**
      * The type of a ROLLBACK TO SAVEPOINT statement.
      */
-    int ROLLBACK_TO_SAVEPOINT = 75;
+    int ROLLBACK_TO_SAVEPOINT = 74;
 
     /**
-     * The type of a CHECKPOINT SYNC statement.
+     * The type of a RELEASE_SAVEPOINT statement.
      */
-    int CHECKPOINT_SYNC = 76;
+    int RELEASE_SAVEPOINT = 75;
 
     /**
      * The type of a PREPARE COMMIT statement.
      */
-    int PREPARE_COMMIT = 77;
+    int PREPARE_COMMIT = 76;
 
     /**
      * The type of a COMMIT TRANSACTION statement.
      */
-    int COMMIT_TRANSACTION = 78;
+    int COMMIT_TRANSACTION = 77;
 
     /**
      * The type of a ROLLBACK TRANSACTION statement.
      */
-    int ROLLBACK_TRANSACTION = 79;
+    int ROLLBACK_TRANSACTION = 78;
     /**
      * The type of a BEGIN {WORK|TRANSACTION} statement.
      */

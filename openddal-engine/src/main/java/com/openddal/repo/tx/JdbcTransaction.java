@@ -121,6 +121,24 @@ public class JdbcTransaction implements Transaction {
     }
 
     @Override
+    public void releaseSavepoint(String name) {
+        checkClosed();
+        if (savepoints == null) {
+            throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
+        }
+        final CombinedSavepoint savepoint = savepoints.get(name);
+        if (savepoint == null) {
+            throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
+        }
+        connHolder.foreach(savepoint.combined.keySet(), new Callback<String>() {
+            public String handle(String shardName, Connection connection) throws SQLException {
+                connection.releaseSavepoint(savepoint.combined.get(shardName));
+                return shardName;
+            }
+        });
+        savepoints.remove(savepoint);
+    }
+    @Override
     public void rollbackToSavepoint(String name) {
         checkClosed();
         if (savepoints == null) {

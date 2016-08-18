@@ -900,7 +900,7 @@ public class JdbcConnection extends TraceObject implements Connection {
                 default:
                     throw DbException.getInvalidValueException("transaction isolation", level);
             }
-            session.setTransactionIsolation(level);
+            session.setIsolation(level);
         } catch (Exception e) {
             throw logAndConvert(e);
         }

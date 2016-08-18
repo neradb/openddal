@@ -6,7 +6,7 @@ import com.openddal.result.ResultInterface;
 /**
  * @author jorgie.li
  */
-public class QueryResult implements AutoCloseable {
+public class QueryResult {
 
     private static final int UPDATE_RESULT = 1;
     private static final int SELECT_RESULT = 2;
@@ -64,8 +64,7 @@ public class QueryResult implements AutoCloseable {
         this.insertId = insertId;
     }
 
-    @Override
-    public void close() throws Exception {
+    public void close() {
         if (result != null) {
             result.close();
         }

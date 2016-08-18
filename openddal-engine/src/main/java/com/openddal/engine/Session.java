@@ -391,11 +391,9 @@ public class Session implements SessionInterface {
 
     @Override
     public void close() {
-        System.out.println("session close");
         if (!closed) {
             try {
                 if (!getAutoCommit()) {
-                    System.out.println("session rollback");
                     rollback();
                 }
                 transaction.close();
@@ -454,7 +452,27 @@ public class Session implements SessionInterface {
         }
         Savepoint sp = new Savepoint();
         sp.savepointName = name;
+        transaction.addSavepoint(name);
         savepoints.put(name, sp);
+    }
+    
+    /**
+     * Releases a savepoint.
+     *
+     * @param savepoint the savepoint to release
+     */
+    public void releaseSavepoint(String name) {
+        if (savepoints == null) {
+            throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
+        }
+        final Savepoint savepoint = savepoints.get(name);
+        if (savepoint == null) {
+            throw DbException.get(ErrorCode.SAVEPOINT_IS_INVALID_1, name);
+        }
+        if(transaction != null) {
+            transaction.rollbackToSavepoint(name);
+        }
+        savepoints.remove(name);
     }
 
     /**
@@ -691,7 +709,7 @@ public class Session implements SessionInterface {
         return transactionIsolation;
     }
 
-    public void setTransactionIsolation(int level) {
+    public void setIsolation(int level) {
         if(transactionIsolation == level) {
             return;
         }

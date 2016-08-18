@@ -92,8 +92,6 @@ public class SysProperties {
     
     public static boolean serializeJavaObject = Utils.getProperty("ddal.serializeJavaObject", true);
 
-    public static final String ENGINE_CONFIG_LOCATION = Utils.getProperty("ddal.engineConfigLocation", "ddal-engine.xml");
-
     public static final String SERVERUSER_CONFIG_LOCATION = Utils.getProperty("ddal.serverUserConfigLocation", "users.properties");
 
     private SysProperties() {

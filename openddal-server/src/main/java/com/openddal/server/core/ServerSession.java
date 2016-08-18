@@ -44,14 +44,14 @@ public class ServerSession implements AutoCloseable {
     private String username;
     private String password;
     private String schema;
+    private final long threadId;
     private Session dbSession;
     private QueryDispatcher dispatcher;
-    private final Map<String, String> variables;
 
 
     public ServerSession(NettyServer server) {
         this.server = server;
-        this.variables = New.hashMap();
+        this.threadId = server.generateThreadId();
         this.dispatcher = server.newQueryDispatcher(this);
 
     }
@@ -98,13 +98,6 @@ public class ServerSession implements AutoCloseable {
         return dbSession;
     }
 
-    /**
-     * @return the variables
-     */
-    public Map<String, String> getVariables() {
-        return variables;
-    }
-
     public void bind(Channel channel) {
         this.channel = channel;
         ServerSession old = channel.attr(CHANNEL_SESSION_KEY).get();
@@ -114,8 +107,12 @@ public class ServerSession implements AutoCloseable {
         channel.attr(CHANNEL_SESSION_KEY).set(this);
 
         Properties prop = new Properties();
-        prop.setProperty("user", this.username);
-        prop.setProperty("password", this.password);
+        if(this.username != null) {
+            prop.setProperty("user", this.username);
+        }
+        if(this.password != null) {
+            prop.setProperty("password", this.password);
+        }
         dbSession = server.getEngine().createSession(prop);
         server.registerSession(this);
     }
@@ -185,7 +182,7 @@ public class ServerSession implements AutoCloseable {
 
 
     public long getThreadId() {
-        return dbSession.getId();
+        return threadId;
     }
     
     public QueryResult executeQuery(String query) throws ServerException {

@@ -105,7 +105,7 @@ public class ServerLauncher {
         System.out.println("The options include:");
         System.out.println("\t" + "--help: some helpful informations.");
         System.out.println("\t" + "-port: Integer, the port of server, default port is 6100.");
-        System.out.println("\t" + "-ssl: True or false, if true, the server will use ssl protocol.");
+        System.out.println("\t" + "-configFile: engine config file.");
         System.out.println("\t" + "-bossThreads: Integer, set the netty bossThreads size.");
         System.out.println("\t" + "-maxThreads: Integer, set the netty workerThreads size.");
         System.out.println("\t" + "-userThreads: Integer, set size of the user thread pool that handle client request.");

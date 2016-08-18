@@ -15,14 +15,14 @@
  */
 package com.openddal.jdbc;
 
+import java.sql.SQLException;
+import java.sql.Savepoint;
+
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.message.TraceObject;
 import com.openddal.util.StringUtils;
-
-import java.sql.SQLException;
-import java.sql.Savepoint;
 
 /**
  * A savepoint is a point inside a transaction to where a transaction can be
@@ -65,6 +65,10 @@ public class JdbcSavepoint extends TraceObject implements Savepoint {
      * does not execute a statement.
      */
     void release() {
+        checkValid();
+        conn.prepareCommand(
+                "RELEASE TO SAVEPOINT " + getName(name, savepointId),
+                Integer.MAX_VALUE).executeUpdate();
         this.conn = null;
     }
 

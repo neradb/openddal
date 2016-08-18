@@ -4,6 +4,7 @@ import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
 
 public final class SelectProcessor implements QueryProcessor {
+    
 
     private DefaultQueryProcessor target;
 
