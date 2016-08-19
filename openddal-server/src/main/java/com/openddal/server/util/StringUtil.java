@@ -696,19 +696,7 @@ public final class StringUtil {
         return list.toArray(new String[list.size()]);
     }
 
-    public static byte[] encode(String src, String charset) {
-        if (src == null) {
-            return null;
-        }
-
-        charset = CharsetUtil.getJavaCharset(charset);
-        try {
-            return src.getBytes(charset);
-        } catch (UnsupportedEncodingException e) {
-            return src.getBytes();
-        }
-    }
-
+    
     public static String decode(byte[] src, String charset) {
         return decode(src, 0, src.length, charset);
     }

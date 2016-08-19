@@ -853,7 +853,7 @@ public class JdbcConnection extends TraceObject implements Connection {
                 debugCode("getTransactionIsolation");
             }
             checkClosed();
-            return session.getTransactionIsolation();
+            return session.getIsolation();
         } catch (Exception e) {
             throw logAndConvert(e);
         }

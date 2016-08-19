@@ -705,7 +705,7 @@ public class Session implements SessionInterface {
         temporaryLobs.add(v);
     }
 
-    public int getTransactionIsolation() {
+    public int getIsolation() {
         return transactionIsolation;
     }
 

@@ -115,9 +115,9 @@ public final class SetProcessor implements QueryProcessor {
     private void setReadOnly(String readOnly) {
         Session session = target.getSession().getDbSession();
         if (readOnly.matches("[0|NO|TRUE]")) {
-            session.setReadOnly(true);
-        } else if (readOnly.matches("[1|OFF|FALSE]")) {
             session.setReadOnly(false);
+        } else if (readOnly.matches("[1|OFF|FALSE]")) {
+            session.setReadOnly(true);
         }
 
     }
@@ -125,9 +125,9 @@ public final class SetProcessor implements QueryProcessor {
     private void setAutocommit(String autocommit) {
         Session session = target.getSession().getDbSession();
         if (autocommit.matches("[0|NO|TRUE]")) {
-            session.setAutoCommit(true);
-        } else if (autocommit.matches("[1|OFF|FALSE]")) {
             session.setAutoCommit(false);
+        } else if (autocommit.matches("[1|OFF|FALSE]")) {
+            session.setAutoCommit(true);
         }
     }
 

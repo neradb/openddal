@@ -176,9 +176,9 @@ public class ConnectionHolder implements ConnectionProvider {
             if (conn.getAutoCommit() != session.getAutoCommit()) {
                 conn.setAutoCommit(session.getAutoCommit());
             }
-            if (session.getTransactionIsolation() != 0) {
-                if (conn.getTransactionIsolation() != session.getTransactionIsolation()) {
-                    conn.setTransactionIsolation(session.getTransactionIsolation());
+            if (session.getIsolation() != 0) {
+                if (conn.getTransactionIsolation() != session.getIsolation()) {
+                    conn.setTransactionIsolation(session.getIsolation());
                 }
             }
             if (conn.isReadOnly() != session.isReadOnly()) {
@@ -195,9 +195,9 @@ public class ConnectionHolder implements ConnectionProvider {
             Connection conn = target.getConnection(options);
             conn.setAutoCommit(true);
             conn.setReadOnly(true);
-            if (session.getTransactionIsolation() != 0) {
-                if (conn.getTransactionIsolation() != session.getTransactionIsolation()) {
-                    conn.setTransactionIsolation(session.getTransactionIsolation());
+            if (session.getIsolation() != 0) {
+                if (conn.getTransactionIsolation() != session.getIsolation()) {
+                    conn.setTransactionIsolation(session.getIsolation());
                 }
             }
             return conn;

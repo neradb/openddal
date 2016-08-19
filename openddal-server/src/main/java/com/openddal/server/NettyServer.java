@@ -15,8 +15,9 @@
  */
 package com.openddal.server;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -66,7 +67,8 @@ public abstract class NettyServer {
     private Engine engine;
     private Privilege privilege = PrivilegeDefault.getPrivilege();
     private ConcurrentMap<Long, ServerSession> sessions = New.concurrentHashMap();
-    private final Map<String, String> variables = Collections.synchronizedMap(New.<String, String> hashMap());
+    private final Map<String, String> variables = New.hashMap();
+    private long uptime;
 
     public NettyServer(ServerArgs args) {
         this.args = args;
@@ -105,6 +107,22 @@ public abstract class NettyServer {
      */
     public Collection<ServerSession> getSessions() {
         return sessions.values();
+    }
+    
+    public Map<String, String> getStatus() {
+        ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+        Map<String, String> status = New.hashMap();
+        status.put("Uptime", String.valueOf(uptime));
+        status.put("Uptime_since_flush_status", String.valueOf(System.currentTimeMillis()));
+        status.put("Compression", "OFF");
+        status.put("Connections", String.valueOf(sessions.size()));
+        status.put("Threads_running", String.valueOf(threadBean.getThreadCount()));
+        status.put("Threads_peak", String.valueOf(threadBean.getPeakThreadCount()));
+        status.put("Threads_created", String.valueOf(threadBean.getTotalStartedThreadCount()));
+        status.put("Threads_connected", String.valueOf(sessions.size()));
+        status.put("User_threads_executor", getUserExecutor().toString());
+        
+        return status;
     }
 
     /**
@@ -149,6 +167,7 @@ public abstract class NettyServer {
             }
             throw new RuntimeException(e);
         }
+        uptime = System.currentTimeMillis();
     }
 
     /**

@@ -10,6 +10,7 @@ public class ResultColumn {
 
     public static ColumnDefinition getColumn(ResultInterface result, int i) {
         ColumnDefinition columnPacket = new ColumnDefinition();
+        columnPacket.catalog = "def";
         columnPacket.org_name = result.getColumnName(i);
         columnPacket.name = result.getAlias(i);
         columnPacket.org_table = result.getTableName(i);
@@ -18,6 +19,7 @@ public class ResultColumn {
         columnPacket.flags = toFlag(result, i);
         columnPacket.columnLength = result.getDisplaySize(i);
         columnPacket.decimals = result.getColumnScale(i);
+
         int javaType = MysqlDefs.javaTypeDetect(result.getColumnType(i), (int) columnPacket.decimals);
         columnPacket.type = (byte) (MysqlDefs.javaTypeMysql(javaType) & 0xff);
         return columnPacket;

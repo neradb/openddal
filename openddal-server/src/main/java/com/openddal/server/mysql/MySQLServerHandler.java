@@ -52,7 +52,6 @@ import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
 import com.openddal.server.mysql.proto.Resultset;
 import com.openddal.server.mysql.proto.ResultsetRow;
-import com.openddal.server.util.CharsetUtil;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.ResultColumn;
 import com.openddal.server.util.StringUtil;
@@ -91,7 +90,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         handshake.serverVersion = MySQLServer.SERVER_VERSION;
         handshake.connectionId = session.getThreadId();
         handshake.challenge1 = StringUtil.getRandomString(8);
-        handshake.characterSet = CharsetUtil.getIndex(MySQLServer.DEFAULT_CHARSET);
+        handshake.characterSet = MySQLServer.DEFAULT_CHARSET_INDEX;
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
         handshake.challenge2 = StringUtil.getRandomString(12);
         handshake.authPluginDataLength = 21;
@@ -162,8 +161,8 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             session.setSchema(authReply.schema);
             session.setPassword(authReply.authResponse);
             session.bind(ctx.channel());
-            session.setAttachment("remoteAddress", ctx.channel().remoteAddress().toString());
-            session.setAttachment("localAddress", ctx.channel().localAddress().toString());
+            session.setAttachment("remoteAddress", ctx.channel().remoteAddress());
+            session.setAttachment("localAddress", ctx.channel().localAddress());
             success(ctx);
         } catch (Exception e) {
             String errMsg = authReply == null ? e.getMessage()

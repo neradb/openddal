@@ -110,7 +110,7 @@ public interface SessionInterface extends Closeable {
      *            Connection.TRANSACTION_SERIALIZABLE
      * @return
      */
-    int getTransactionIsolation();
+    int getIsolation();
 
     /**
      * Returns the current transaction isolation level.
