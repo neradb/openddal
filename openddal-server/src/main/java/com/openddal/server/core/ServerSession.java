@@ -171,7 +171,7 @@ public class ServerSession implements AutoCloseable {
     
     public QueryResult executeQuery(String query) throws ServerException {
         QueryProcessor processor = dispatcher.dispatch(query);
-        QueryResult process = processor.process(query);
-        return process;
+        QueryResult result = processor.process(query);
+        return result;
     }
 }

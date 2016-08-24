@@ -109,7 +109,7 @@ public class Database {
         int poolCoreSize = SysProperties.THREAD_POOL_SIZE_CORE;
         int poolMaxSize = SysProperties.THREAD_POOL_SIZE_MAX;
         poolMaxSize = poolMaxSize > poolCoreSize ? poolMaxSize : poolCoreSize;
-        ExtendableThreadPoolExecutor queryExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 5L,
+        ExtendableThreadPoolExecutor queryExecutor = new ExtendableThreadPoolExecutor(poolCoreSize, poolMaxSize, 2L,
                 TimeUnit.MINUTES, queue, Threads.newThreadFactory("ddal-query-executor"));
         return queryExecutor;
     }

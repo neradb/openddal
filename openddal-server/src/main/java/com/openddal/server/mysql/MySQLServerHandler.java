@@ -160,8 +160,8 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             session.setSchema(authReply.schema);
             session.setPassword(authReply.authResponse);
             session.bind(ctx.channel());
-            session.setAttachment("remoteAddress", ctx.channel().remoteAddress());
-            session.setAttachment("localAddress", ctx.channel().localAddress());
+            session.setAttachment("remoteAddress", ctx.channel().remoteAddress().toString());
+            session.setAttachment("localAddress", ctx.channel().localAddress().toString());
             success(ctx);
         } catch (Exception e) {
             String errMsg = authReply == null ? e.getMessage()

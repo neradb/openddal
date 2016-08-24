@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.druid.sql.SQLUtils;
 import com.alibaba.druid.sql.ast.SQLExpr;
 import com.alibaba.druid.sql.ast.expr.SQLMethodInvokeExpr;
+import com.alibaba.druid.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.druid.sql.ast.expr.SQLVariantRefExpr;
 import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
 import com.alibaba.druid.sql.dialect.mysql.parser.MySqlExprParser;
@@ -94,6 +95,8 @@ public final class SelectProcessor implements QueryProcessor {
                         selectList.add(selectItem);
                     } else if (expr instanceof SQLVariantRefExpr && initValue((SQLVariantRefExpr) expr)) {
                         selectList.add(selectItem);
+                    } else if (expr instanceof SQLPropertyExpr && initValue((SQLPropertyExpr) expr)) {
+                        selectList.add(selectItem);
                     } else {
                         return null;
                     }
@@ -108,6 +111,17 @@ public final class SelectProcessor implements QueryProcessor {
             LOGGER.warn("parse select type error.", e);
         }
         return null;
+    }
+
+    private boolean initValue(SQLPropertyExpr expr) {
+        NettyServer server = target.getSession().getServer();
+        Map<String, String> variables = server.getVariables();
+        if(expr.getOwner() instanceof SQLVariantRefExpr) {
+            String name = expr.getName().toLowerCase();
+            expr.putAttribute(EVAL_VALUE, variables.get(name));
+            return true;
+        }
+        return false;
     }
 
     private boolean initValue(SQLMethodInvokeExpr expr) {
@@ -136,11 +150,7 @@ public final class SelectProcessor implements QueryProcessor {
         NettyServer server = target.getSession().getServer();
         Map<String, String> variables = server.getVariables();
         String name = expr.getName().toLowerCase();
-        if(expr.isGlobal()) {
-            name = name.replaceAll("@@global.", "");
-        } else {
-            name = name.replaceAll("@@", "");
-        }
+        name = name.replaceAll("@@", "");
         if ("autocommit".equals(name)) {
             int value = session.getAutoCommit() ? 1 : 0;
             expr.putAttribute(EVAL_VALUE, String.valueOf(value));
