@@ -19,6 +19,7 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCharacterSetSt
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCollationStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowColumnsStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowDatabasesStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowEnginesStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowSlaveStatusStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatusStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
@@ -69,11 +70,27 @@ public final class ShowProcessor implements QueryProcessor {
                 return showStatus((MySqlShowStatusStatement) stmt);
             } else if (stmt instanceof MySqlShowSlaveStatusStatement) {
                 return showSlaveStatus((MySqlShowSlaveStatusStatement) stmt);
+            } else if (stmt instanceof MySqlShowEnginesStatement) {
+                return showEngines((MySqlShowEnginesStatement) stmt);
             } else if (stmt instanceof MySqlShowTableStatusStatement) {
                 throw ServerException.get(ErrorCode.ER_NOT_ALLOWED_COMMAND, "not allowed command:" + query);
             }
         }
         return target.process(query);
+    }
+
+    private QueryResult showEngines(MySqlShowEnginesStatement stmt) {
+        SimpleResultSet result = new SimpleResultSet();
+        result.addColumn("Engine", Types.VARCHAR, 0, 0);
+        result.addColumn("Support", Types.VARCHAR, 0, 0);
+        result.addColumn("Comment", Types.VARCHAR, 0, 0);
+        result.addColumn("Transactions", Types.VARCHAR, 0, 0);
+        result.addColumn("XA", Types.VARCHAR, 0, 0);
+        result.addColumn("Savepoints", Types.VARCHAR, 0, 0);
+        
+        result.addRow(new Object[]{"OpenDDAL", "YES", "Distributed sql engine", "YES", "NO", "YES"});
+        return new QueryResult(LocalResult.read(target.getSession().getDbSession(), result, 0));
+    
     }
 
     private QueryResult showVariables(MySqlShowVariantsStatement s) {
@@ -102,8 +119,7 @@ public final class ShowProcessor implements QueryProcessor {
                     result.addRow(new Object[] { key, value });
                 }
             }
-        }
-        if (where != null) {
+        } else if (where != null) {
             for (Map.Entry<String, String> item : variables.entrySet()) {
                 final String key = item.getKey();
                 final String value = item.getValue();
@@ -125,6 +141,10 @@ public final class ShowProcessor implements QueryProcessor {
                     result.addRow(new Object[] { key, value });
                 }
 
+            }
+        } else {
+            for (Map.Entry<String, String> item : variables.entrySet()) {
+                result.addRow(new Object[] { item.getKey(), item.getValue() });
             }
         }
         // we have to convert result.
@@ -178,7 +198,7 @@ public final class ShowProcessor implements QueryProcessor {
         // we have to convert result.
         return new QueryResult(LocalResult.read(target.getSession().getDbSession(), result, 0));
     }
-    
+
     private QueryResult showSlaveStatus(MySqlShowSlaveStatusStatement stmt) {
         SimpleResultSet result = new SimpleResultSet();
         result.addColumn("Slave_IO_State", Types.VARCHAR, Integer.MAX_VALUE, 0);

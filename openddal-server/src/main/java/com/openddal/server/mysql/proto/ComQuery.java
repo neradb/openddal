@@ -24,5 +24,10 @@ public class ComQuery extends Packet {
         
         return obj;
     }
+
+    @Override
+    public String toString() {
+        return "COM_QUERY[query=" + query + "]";
+    }
     
 }

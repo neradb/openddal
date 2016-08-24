@@ -24,4 +24,11 @@ public class ComProcesskill extends Packet {
         
         return obj;
     }
+
+    @Override
+    public String toString() {
+        return "COM_PROCESS_KILL[connectionId=" + connectionId + "]";
+    }
+    
+    
 }

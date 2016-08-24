@@ -39,6 +39,7 @@ import com.openddal.server.mysql.proto.ComProcesskill;
 import com.openddal.server.mysql.proto.ComQuery;
 import com.openddal.server.mysql.proto.ComQuit;
 import com.openddal.server.mysql.proto.ComShutdown;
+import com.openddal.server.mysql.proto.ComStatistics;
 import com.openddal.server.mysql.proto.ComStmtClose;
 import com.openddal.server.mysql.proto.ComStmtExecute;
 import com.openddal.server.mysql.proto.ComStmtPrepare;
@@ -52,6 +53,7 @@ import com.openddal.server.mysql.proto.OK;
 import com.openddal.server.mysql.proto.Packet;
 import com.openddal.server.mysql.proto.Resultset;
 import com.openddal.server.mysql.proto.ResultsetRow;
+import com.openddal.server.util.AccessLogger;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.ResultColumn;
 import com.openddal.server.util.StringUtil;
@@ -69,6 +71,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLServerHandler.class);
+    private static final AccessLogger ACCESSLOGGER = new AccessLogger();
 
     private long sequenceId;
     private ThreadPoolExecutor userExecutor;
@@ -107,12 +110,8 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (ServerSession.get(ctx.channel()) != this.session) {
-            authenticate(ctx, msg);
-        } else {
-            ByteBuf buf = (ByteBuf) msg;
-            userExecutor.execute(new HandleTask(ctx, buf));
-        }
+        ByteBuf buf = (ByteBuf) msg;
+        userExecutor.execute(new HandleTask(ctx, buf));
     }
 
     @Override
@@ -129,15 +128,15 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         ctx.close();
     }
 
-    private void authenticate(ChannelHandlerContext ctx, Object msg) {
+    private void authenticate(ChannelHandlerContext ctx, ByteBuf buf) {
         Privilege privilege = server.getPrivilege();
         HandshakeResponse authReply = null;
-        ByteBuf buf = (ByteBuf) msg;
         try {
             byte[] packet = new byte[buf.readableBytes()];
             buf.readBytes(packet);
             authReply = HandshakeResponse.loadFromPacket(packet);
             this.sequenceId = authReply.sequenceId;
+            ACCESSLOGGER.seqId(this.sequenceId).command(authReply.toString());
             if (!authReply.hasCapabilityFlag(Flags.CLIENT_PROTOCOL_41)) {
                 sendError(ctx, ErrorCode.ER_NOT_SUPPORTED_AUTH_MODE, "We do not support Protocols under 4.1");
                 return;
@@ -169,8 +168,6 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                     : "Access denied for user '" + authReply.username + "' to database '" + authReply.schema + "'";
             LOGGER.error("Authorize failed. " + errMsg, e);
             sendError(ctx, ErrorCode.ER_DBACCESS_DENIED_ERROR, errMsg);
-        } finally {
-            buf.release();
         }
     }
 
@@ -225,16 +222,24 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
             break;
         case Flags.COM_STMT_RESET:
             packet = ComStmtReset.loadFromPacket(data);
+            stmtReset(ctx, (ComStmtReset) packet);
             break;
         case Flags.COM_FIELD_LIST:
             packet = ComFieldlist.loadFromPacket(data);
+            fieldList(ctx, (ComFieldlist) packet);
+            break;
+        case Flags.COM_STATISTICS:
+            packet = ComStatistics.loadFromPacket(data);
+            statistics(ctx, (ComStatistics) packet);
             break;
         default:
-            throw ServerException.get(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command");
+            throw ServerException.get(ErrorCode.ER_UNKNOWN_COM_ERROR, "Unknown command " + type);
         }
     }
 
+
     private void shutdown(ChannelHandlerContext ctx, ComShutdown request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         ctx.channel().close();
         ctx.channel().parent().close();
         server.stop();
@@ -242,15 +247,18 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void ping(ChannelHandlerContext ctx, ComPing request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         success(ctx);
     }
 
     private void init(ChannelHandlerContext ctx, ComInitdb request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         session.setSchema(request.schema);
         success(ctx);
     }
 
     private void query(ChannelHandlerContext ctx, ComQuery request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         String query = request.query;
         if (StringUtils.isNullOrEmpty(query)) {
             sendError(ctx, ErrorCode.ER_NOT_ALLOWED_COMMAND, "Empty SQL");
@@ -265,31 +273,52 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void close(ChannelHandlerContext ctx, ComQuit request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         success(ctx);
     }
 
     private void stmtPrepare(ChannelHandlerContext ctx, ComStmtPrepare request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
     private void stmtPrepareLongData(ChannelHandlerContext ctx, ComStmtSendLongData request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
     private void stmtExecute(ChannelHandlerContext ctx, ComStmtExecute request) throws Exception {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
     private void stmtClose(ChannelHandlerContext ctx, ComStmtClose request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "Prepare command unsupported.");
     }
 
     private void processKill(ChannelHandlerContext ctx, ComProcesskill request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
         ServerSession s = server.getSession(request.connectionId);
         if (s != null) {
             s.close();
         }
         success(ctx);
+    }
+    
+    private void stmtReset(ChannelHandlerContext ctx, ComStmtReset request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
+        sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "ComStmtReset command unsupported.");
+    }
+    
+    private void statistics(ChannelHandlerContext ctx, ComStatistics request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
+        sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "ComStatistics command unsupported.");
+    }
+
+    private void fieldList(ChannelHandlerContext ctx, ComFieldlist request) {
+        ACCESSLOGGER.seqId(this.sequenceId).command(request.toString());
+        sendError(ctx, ErrorCode.ER_UNKNOWN_COM_ERROR, "ComFieldlist command unsupported.");
     }
 
     private long nextSequenceId() {
@@ -313,6 +342,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         err.errorMessage = msg;
         out.writeBytes(err.toPacket());
         ctx.writeAndFlush(out);
+        ACCESSLOGGER.markError(errno, msg);
     }
 
     private void sendError(ChannelHandlerContext ctx, Throwable t) {
@@ -327,6 +357,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         err.errorMessage = message;
         out.writeBytes(err.toPacket());
         ctx.writeAndFlush(out);
+        ACCESSLOGGER.markError((int)err.errorCode, err.errorMessage);
     }
 
     private void sendUpdateResult(ChannelHandlerContext ctx, QueryResult rs) {
@@ -360,6 +391,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
                     Value value = v[i];
                     rowPacket.data.add(value.getString());
                 }
+                resultset.addRow(rowPacket);
             }
             List<byte[]> packets = resultset.toPackets();
             for (byte[] bs : packets) {
@@ -393,13 +425,19 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         @Override
         public void run() {
             try {
-                despatchCommand(ctx, buf);
+                ACCESSLOGGER.begin(session);
+                if (ServerSession.get(ctx.channel()) != session) {
+                    authenticate(ctx, buf);
+                } else {
+                    despatchCommand(ctx, buf);
+                }
             } catch (Throwable e) {
                 Throwable t = ServerException.toSQLException(e);
                 LOGGER.error("an exception happen when process request", e);
                 sendError(ctx, t);
             } finally {
                 buf.release();
+                ACCESSLOGGER.log();
             }
         }
 

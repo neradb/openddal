@@ -24,4 +24,11 @@ public class ComInitdb extends Packet {
         
         return obj;
     }
+
+    @Override
+    public String toString() {
+        return "COM_INIT_DB[schema=" + schema + "]";
+    }
+    
+    
 }

@@ -38,10 +38,16 @@ public class MySQLServer extends NettyServer {
     public void init() {
         super.init();
         Map<String, String> variables = getVariables();
+        
+        variables.put("auto_increment_increment", "1");
+        variables.put("auto_increment_offset", "1");
+        variables.put("autocommit", "1");
+        
         variables.put("character_set_client", "utf8");
         variables.put("character_set_connection", "utf8");
         variables.put("character_set_results", "utf8");
         variables.put("character_set_server", "utf8");
+        variables.put("character_set_database", "utf8");
         variables.put("init_connect", "");
         variables.put("interactive_timeout", "172800");
         variables.put("lower_case_table_names", "1");
@@ -50,7 +56,7 @@ public class MySQLServer extends NettyServer {
         variables.put("net_write_timeout", "60");
         variables.put("query_cache_size", "0");
         variables.put("query_cache_type", "OFF");
-        variables.put("sql_mode", "STRICT_TRANS_TABLES");
+        variables.put("sql_mode", "STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION");
         variables.put("system_time_zone", "CST");
         variables.put("time_zone", "SYSTEM");
         variables.put("lower_case_table_names", "1");

@@ -136,6 +136,11 @@ public final class SelectProcessor implements QueryProcessor {
         NettyServer server = target.getSession().getServer();
         Map<String, String> variables = server.getVariables();
         String name = expr.getName().toLowerCase();
+        if(expr.isGlobal()) {
+            name = name.replaceAll("@@global.", "");
+        } else {
+            name = name.replaceAll("@@", "");
+        }
         if ("autocommit".equals(name)) {
             int value = session.getAutoCommit() ? 1 : 0;
             expr.putAttribute(EVAL_VALUE, String.valueOf(value));

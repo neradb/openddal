@@ -27,4 +27,11 @@ public class ComFieldlist extends Packet {
         
         return obj;
     }
+
+    @Override
+    public String toString() {
+        return "COM_FIELD_LIST[table=" + table + ", fields=" + fields + "]";
+    }
+    
+    
 }

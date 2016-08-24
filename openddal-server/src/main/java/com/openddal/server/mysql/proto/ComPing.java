@@ -20,4 +20,10 @@ public class ComPing extends Packet {
         
         return obj;
     }
+
+    @Override
+    public String toString() {
+        return "COM_PING";
+    }
+    
 }

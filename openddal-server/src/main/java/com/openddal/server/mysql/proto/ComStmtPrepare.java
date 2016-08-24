@@ -24,4 +24,9 @@ public class ComStmtPrepare extends Packet {
 
         return obj;
     }
+    
+    @Override
+    public String toString() {
+        return "COM_STMT_PREPARE";
+    }
 }

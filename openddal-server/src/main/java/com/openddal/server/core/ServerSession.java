@@ -118,7 +118,7 @@ public class ServerSession implements AutoCloseable {
 
     public void close() {
         dbSession.close();
-        attachments.clear();
+        server.removeSession(threadId);
         if (channel != null && channel.isOpen()) {
             channel.attr(CHANNEL_SESSION_KEY).remove();
             channel.close();

@@ -30,11 +30,12 @@ public final class UseProcessor implements QueryProcessor {
             if (stmt instanceof SQLUseStatement) {
                 SQLUseStatement s = (SQLUseStatement) stmt;
                 String database = SQLUtils.toMySqlString(s.getDatabase());
-                Schema schema = session.getDatabase().findSchema(database);
-                if(schema == null) {
-                    throw ServerException.get(ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + schema + "'");
+                database = database.replaceAll("['|`]", "");
+                Schema schema = session.getDatabase().findSchema(session.getDatabase().identifier(database));
+                if (schema == null) {
+                    throw ServerException.get(ErrorCode.ER_BAD_DB_ERROR, "Unknown database " + database);
                 }
-                result.setWarnings((short)1);
+                result.setWarnings((short) 1);
                 result.setMessage("The database is immutable, there is no need to use the 'use' command");
             } else {
                 throw ServerException.get(ErrorCode.ER_NOT_ALLOWED_COMMAND, "not allowed command:" + query);

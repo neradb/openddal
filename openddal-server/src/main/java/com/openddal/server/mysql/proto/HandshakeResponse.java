@@ -131,4 +131,11 @@ public class HandshakeResponse extends Packet {
 
         return obj;
     }
+
+    @Override
+    public String toString() {
+        return "Authenticate[user=" + username + "]";
+    }
+    
+    
 }

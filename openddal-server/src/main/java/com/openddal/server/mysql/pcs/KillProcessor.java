@@ -43,7 +43,6 @@ public final class KillProcessor implements QueryProcessor {
                     case CONNECTION:
                         session.cancel();
                         ss.close();
-                        server.removeSession(threadId);
                         break;
                     case QUERY:
                         session.cancel();

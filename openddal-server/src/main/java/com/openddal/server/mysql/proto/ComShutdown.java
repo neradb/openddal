@@ -25,4 +25,11 @@ public class ComShutdown extends Packet {
         
         return obj;
     }
+
+    @Override
+    public String toString() {
+        return "COM_SHUTDOWN[shutdownType=" + shutdownType + "]";
+    }
+    
+    
 }
