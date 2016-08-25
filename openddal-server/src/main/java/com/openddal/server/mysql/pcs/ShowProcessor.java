@@ -3,6 +3,7 @@ package com.openddal.server.mysql.pcs;
 import static com.alibaba.druid.sql.visitor.SQLEvalVisitor.EVAL_VALUE;
 
 import java.sql.Types;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -20,10 +21,12 @@ import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowCollationState
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowColumnsStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowDatabasesStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowEnginesStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowProcessListStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowSlaveStatusStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowStatusStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowTableStatusStatement;
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowVariantsStatement;
+import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlShowWarningsStatement;
 import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlEvalVisitorImpl;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitor;
 import com.alibaba.druid.sql.visitor.SQLEvalVisitorUtils;
@@ -34,6 +37,7 @@ import com.openddal.result.SimpleResultSet;
 import com.openddal.server.ServerException;
 import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
+import com.openddal.server.core.ServerSession;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.util.New;
 
@@ -72,11 +76,44 @@ public final class ShowProcessor implements QueryProcessor {
                 return showSlaveStatus((MySqlShowSlaveStatusStatement) stmt);
             } else if (stmt instanceof MySqlShowEnginesStatement) {
                 return showEngines((MySqlShowEnginesStatement) stmt);
+            } else if (stmt instanceof MySqlShowWarningsStatement) {
+                return showWarnings((MySqlShowWarningsStatement) stmt);
+            }else if (stmt instanceof MySqlShowProcessListStatement) {
+                return showProcessList((MySqlShowProcessListStatement) stmt);
             } else if (stmt instanceof MySqlShowTableStatusStatement) {
                 throw ServerException.get(ErrorCode.ER_NOT_ALLOWED_COMMAND, "not allowed command:" + query);
             }
         }
         return target.process(query);
+    }
+
+    private QueryResult showWarnings(MySqlShowWarningsStatement stmt) {
+        SimpleResultSet result = new SimpleResultSet();
+        result.addColumn("Level", Types.VARCHAR, 0, 0);
+        result.addColumn("Code", Types.VARCHAR, 0, 0);
+        result.addColumn("Message", Types.VARCHAR, 0, 0);
+        return new QueryResult(LocalResult.read(target.getSession().getDbSession(), result, 0));
+    }
+
+    private QueryResult showProcessList(MySqlShowProcessListStatement stmt) {
+        SimpleResultSet result = new SimpleResultSet();
+        result.addColumn("Id", Types.VARCHAR, 0, 0);
+        result.addColumn("User", Types.VARCHAR, 0, 0);
+        result.addColumn("Host", Types.VARCHAR, 0, 0);
+        result.addColumn("db", Types.VARCHAR, 0, 0);
+        result.addColumn("Command", Types.VARCHAR, 0, 0);
+        result.addColumn("Time", Types.VARCHAR, 0, 0);
+        result.addColumn("State", Types.VARCHAR, 0, 0);
+        result.addColumn("Info", Types.VARCHAR, 0, 0);
+        
+        Collection<ServerSession> sessions = target.getSession().getServer().getSessions();
+        long time = System.currentTimeMillis();
+        for (ServerSession s : sessions) {
+            result.addRow(new Object[] { s.getThreadId(), s.getUser(), s.getAttachment("remoteAddress"), s.getSchema(),
+                    "Query", (time - s.getUptime()), "", "" });
+        }
+        
+        return new QueryResult(LocalResult.read(target.getSession().getDbSession(), result, 0));
     }
 
     private QueryResult showEngines(MySqlShowEnginesStatement stmt) {
@@ -193,8 +230,10 @@ public final class ShowProcessor implements QueryProcessor {
 
     private QueryResult showAuthors(MySqlShowAuthorsStatement s) {
         SimpleResultSet result = new SimpleResultSet();
-        result.addColumn("Variable_name", Types.VARCHAR, Integer.MAX_VALUE, 0);
-        result.addColumn("Value", Types.VARCHAR, Integer.MAX_VALUE, 0);
+        result.addColumn("Name", Types.VARCHAR, Integer.MAX_VALUE, 0);
+        result.addColumn("Location", Types.VARCHAR, Integer.MAX_VALUE, 0);
+        result.addColumn("Comment", Types.VARCHAR, Integer.MAX_VALUE, 0);
+        result.addRow(new Object[]{"jorgie.li", "GuangZhou, China", "Architecture, coding and archive"});
         // we have to convert result.
         return new QueryResult(LocalResult.read(target.getSession().getDbSession(), result, 0));
     }
@@ -310,7 +349,9 @@ public final class ShowProcessor implements QueryProcessor {
             }
 
         }
-        result.addRow(charsets);
+        for (Object[] objects : charsets) {
+            result.addRow(objects);
+        }
         // we have to convert result.
         return new QueryResult(LocalResult.read(target.getSession().getDbSession(), result, 0));
     }
@@ -372,7 +413,9 @@ public final class ShowProcessor implements QueryProcessor {
             }
 
         }
-        result.addRow(charsets);
+        for (Object[] objects : charsets) {
+            result.addRow(objects);
+        }
         // we have to convert result.
         return new QueryResult(LocalResult.read(target.getSession().getDbSession(), result, 0));
 

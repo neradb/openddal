@@ -44,6 +44,7 @@ public class ServerSession implements AutoCloseable {
     private String password;
     private String schema;
     private final long threadId;
+    private final long uptime;
     private Session dbSession;
     private QueryDispatcher dispatcher;
 
@@ -52,6 +53,7 @@ public class ServerSession implements AutoCloseable {
         this.server = server;
         this.threadId = server.generateThreadId();
         this.dispatcher = server.newQueryDispatcher(this);
+        this.uptime = System.currentTimeMillis();
 
     }
 
@@ -164,6 +166,10 @@ public class ServerSession implements AutoCloseable {
         return dbSession.isClosed();
     }
 
+
+    public long getUptime() {
+        return uptime;
+    }
 
     public long getThreadId() {
         return threadId;
