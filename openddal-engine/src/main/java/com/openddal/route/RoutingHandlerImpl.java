@@ -160,7 +160,7 @@ public class RoutingHandlerImpl implements RoutingHandler {
             } catch (TableRoutingException e) {
                 throw e;
             } catch (Exception e) {
-                throw new TableRoutingException(table.getName() + " routing error.");
+                throw new TableRoutingException(table.getName() + " routing error.", e);
             }
         else
             throw new TableRoutingException(table.getName() + " does not support routing");
