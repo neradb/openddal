@@ -94,41 +94,41 @@
 
 
 	<dataNodes>
-		<datasource id="db1m" class="org.apache.commons.dbcp.BasicDataSource">
-			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
-			<property name="url"
+		<datasource id="db1m" class="com.zaxxer.hikari.HikariDataSource">
+			<property name="jdbcUrl"
 				value="jdbc:mysql://10.199.188.136:3306/ddal_db1?characterEncoding=utf8&amp;connectTimeout=1000&amp;rewriteBatchedStatements=true" />
 			<property name="username" value="root" />
 			<property name="password" value="!Passw0rd01" />
-			<property name="maxWait" value="0" />
-			<property name="poolPreparedStatements" value="true" />
+			<property name="connectionTimeout" value="30000" />
+			<property name="idleTimeout" value="600000" />
+			<property name="maximumPoolSize" value="32" />
 		</datasource>
-		<datasource id="db2m" class="org.apache.commons.dbcp.BasicDataSource">
-			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
-			<property name="url"
+		<datasource id="db2m" class="com.zaxxer.hikari.HikariDataSource">
+			<property name="jdbcUrl"
 				value="jdbc:mysql://10.199.188.136:3306/ddal_db2?characterEncoding=utf8&amp;connectTimeout=1000&amp;rewriteBatchedStatements=true" />
 			<property name="username" value="root" />
 			<property name="password" value="!Passw0rd01" />
-			<property name="maxWait" value="0" />
-			<property name="poolPreparedStatements" value="true" />
+			<property name="connectionTimeout" value="30000" />
+			<property name="idleTimeout" value="600000" />
+			<property name="maximumPoolSize" value="32" />
 		</datasource>
-		<datasource id="db3m" class="org.apache.commons.dbcp.BasicDataSource">
-			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
-			<property name="url"
+		<datasource id="db3m" class="com.zaxxer.hikari.HikariDataSource">
+			<property name="jdbcUrl"
 				value="jdbc:mysql://10.199.188.136:3306/ddal_db3?characterEncoding=utf8&amp;connectTimeout=1000&amp;rewriteBatchedStatements=true" />
 			<property name="username" value="root" />
 			<property name="password" value="!Passw0rd01" />
-			<property name="maxWait" value="0" />
-			<property name="poolPreparedStatements" value="true" />
+			<property name="connectionTimeout" value="30000" />
+			<property name="idleTimeout" value="600000" />
+			<property name="maximumPoolSize" value="32" />
 		</datasource>
-		<datasource id="db4m" class="org.apache.commons.dbcp.BasicDataSource">
-			<property name="driverClassName" value="com.mysql.jdbc.Driver" />
-			<property name="url"
+		<datasource id="db4m" class="com.zaxxer.hikari.HikariDataSource">
+			<property name="jdbcUrl"
 				value="jdbc:mysql://10.199.188.136:3306/ddal_db4?characterEncoding=utf8&amp;connectTimeout=1000&amp;rewriteBatchedStatements=true" />
 			<property name="username" value="root" />
 			<property name="password" value="!Passw0rd01" />
-			<property name="maxWait" value="0" />
-			<property name="poolPreparedStatements" value="true" />
+			<property name="connectionTimeout" value="30000" />
+			<property name="idleTimeout" value="600000" />
+			<property name="maximumPoolSize" value="32" />
 		</datasource>
 	</dataNodes>
 

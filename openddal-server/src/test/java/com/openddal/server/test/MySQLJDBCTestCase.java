@@ -4,22 +4,22 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-import org.apache.commons.dbcp.BasicDataSource;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.openddal.util.JdbcUtils;
 
 
 public class MySQLJDBCTestCase {
     
     private String MYSQL_DRIVER = "com.mysql.jdbc.Driver";
-    private BasicDataSource datasource;
+    private DruidDataSource datasource;
     
     @Before
     public void init() {
-        datasource = new BasicDataSource();
-        datasource.setMaxActive(10000);
+        datasource = new DruidDataSource();
+        datasource.setMaxActive(20);
         datasource.setValidationQuery("select 1");
         datasource.setDriverClassName(MYSQL_DRIVER);
         datasource.setUrl("jdbc:mysql://localhost:6100/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true");
