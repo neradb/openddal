@@ -28,7 +28,9 @@ import com.openddal.server.core.QueryResult;
 import com.openddal.server.mysql.MySQLServer;
 import com.openddal.server.util.StringUtil;
 import com.openddal.util.New;
-
+/**
+ * @author jorgie.li
+ */
 public final class SelectProcessor implements QueryProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SelectProcessor.class);

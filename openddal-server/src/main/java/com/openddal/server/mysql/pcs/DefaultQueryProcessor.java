@@ -7,7 +7,9 @@ import com.openddal.server.ServerException;
 import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
 import com.openddal.server.core.ServerSession;
-
+/**
+ * @author jorgie.li
+ */
 public class DefaultQueryProcessor implements QueryProcessor {
     
     private final ServerSession session;

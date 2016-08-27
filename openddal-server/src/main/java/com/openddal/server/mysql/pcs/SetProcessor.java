@@ -20,7 +20,9 @@ import com.openddal.server.core.QueryResult;
 import com.openddal.server.core.ServerSession;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.StringUtil;
-
+/**
+ * @author jorgie.li
+ */
 public final class SetProcessor implements QueryProcessor {
 
     private DefaultQueryProcessor target;
@@ -114,9 +116,9 @@ public final class SetProcessor implements QueryProcessor {
 
     private void setReadOnly(String readOnly) {
         Session session = target.getSession().getDbSession();
-        if (readOnly.matches("[0|NO|TRUE]")) {
+        if (readOnly.matches("[0|OFF|FALSE]")) {
             session.setReadOnly(false);
-        } else if (readOnly.matches("[1|OFF|FALSE]")) {
+        } else if (readOnly.matches("[1|NO|TRUE]")) {
             session.setReadOnly(true);
         }
 
@@ -124,9 +126,9 @@ public final class SetProcessor implements QueryProcessor {
 
     private void setAutocommit(String autocommit) {
         Session session = target.getSession().getDbSession();
-        if (autocommit.matches("[0|NO|TRUE]")) {
+        if (autocommit.matches("[0|OFF|FALSE]")) {
             session.setAutoCommit(false);
-        } else if (autocommit.matches("[1|OFF|FALSE]")) {
+        } else if (autocommit.matches("[1|NO|TRUE]")) {
             session.setAutoCommit(true);
         }
     }

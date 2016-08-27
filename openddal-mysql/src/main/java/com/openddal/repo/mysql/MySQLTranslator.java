@@ -685,7 +685,7 @@ public class MySQLTranslator implements SQLTranslator {
     @Override
     public SQLTranslated translate(Insert insert, ObjectNode node, Row ... rows) {
         ArrayList<Value> params = New.arrayList();
-        StatementBuilder sql = new StatementBuilder();
+        StatementBuilder sql = new StatementBuilder(256);
         String forTable = node.getCompositeObjectName();
         Column[] columns = insert.getColumns();
         sql.append("INSERT INTO ");

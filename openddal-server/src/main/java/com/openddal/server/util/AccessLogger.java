@@ -58,7 +58,7 @@ public final class AccessLogger {
         if (accessLogger.isInfoEnabled()) {
             try {
                 TraceData data = holder.get().end();
-                StringBuilder logMsg = new StringBuilder(256).append("conId:").append(data.s.getThreadId()).append(" ")
+                StringBuilder logMsg = new StringBuilder(512).append("conId:").append(data.s.getThreadId()).append(" ")
                         .append(" seqId:").append(data.seqId).append(" ").append(data.s.getAttachment("remoteAddress"))
                         .append(" ").append(data.s.getAttachment("localAddress")).append(" ").append("command:")
                         .append(data.command).append(" ").append(data.costTime()).append(" ms");

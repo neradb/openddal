@@ -16,7 +16,9 @@ import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.StringUtil;
-
+/**
+ * @author jorgie.li
+ */
 public final class TransactionProcessor implements QueryProcessor {
 
     private DefaultQueryProcessor target;

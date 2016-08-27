@@ -15,7 +15,9 @@ import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
 import com.openddal.server.core.ServerSession;
 import com.openddal.server.util.ErrorCode;
-
+/**
+ * @author jorgie.li
+ */
 public final class KillProcessor implements QueryProcessor {
 
     private DefaultQueryProcessor target;

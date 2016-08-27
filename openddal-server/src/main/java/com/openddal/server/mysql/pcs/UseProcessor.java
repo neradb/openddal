@@ -12,7 +12,9 @@ import com.openddal.server.ServerException;
 import com.openddal.server.core.QueryProcessor;
 import com.openddal.server.core.QueryResult;
 import com.openddal.server.util.ErrorCode;
-
+/**
+ * @author jorgie.li
+ */
 public final class UseProcessor implements QueryProcessor {
 
     private DefaultQueryProcessor target;
