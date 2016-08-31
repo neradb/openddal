@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import com.openddal.server.core.ServerSession;
 
+import io.netty.util.internal.InternalThreadLocalMap;
+
 public final class AccessLogger {
     
     private static final Logger accessLogger = LoggerFactory.getLogger("AccessLogger");
@@ -20,9 +22,16 @@ public final class AccessLogger {
     };
     
     
+    
     public AccessLogger begin(ServerSession s) {
         if (accessLogger.isInfoEnabled()) {
             TraceData data = holder.get();
+            data.start = System.currentTimeMillis();
+            data.command = null;
+            data.errorCode = 0;
+            data.seqId = 0;
+            data.end = 0;
+            data.errorMsg = null;
             data.s = s;
         }
         return this;
@@ -58,7 +67,8 @@ public final class AccessLogger {
         if (accessLogger.isInfoEnabled()) {
             try {
                 TraceData data = holder.get().end();
-                StringBuilder logMsg = new StringBuilder(512).append("conId:").append(data.s.getThreadId()).append(" ")
+                StringBuilder logMsg = InternalThreadLocalMap.get().stringBuilder();//down gc time
+                logMsg.append("conId:").append(data.s.getThreadId()).append(" ")
                         .append(" seqId:").append(data.seqId).append(" ").append(data.s.getAttachment("remoteAddress"))
                         .append(" ").append(data.s.getAttachment("localAddress")).append(" ").append("command:")
                         .append(data.command).append(" ").append(data.costTime()).append(" ms");
@@ -67,7 +77,8 @@ public final class AccessLogger {
                 }
                 accessLogger.info(logMsg.toString());
             } finally {
-                holder.remove();
+                // down gc time
+                // holder.remove(); 
             }
         }
     }
@@ -76,11 +87,11 @@ public final class AccessLogger {
 
     
     
-    public static class TraceData implements Serializable {
+    private static class TraceData implements Serializable {
 
         private static final long serialVersionUID = 1L;
 
-        private final long start;
+        private long start;
         private long end;
         private long seqId;
         private String command;
@@ -88,9 +99,6 @@ public final class AccessLogger {
         private String errorMsg;
         private ServerSession s;
 
-        public TraceData() {
-            start = System.currentTimeMillis();
-        }
 
         public TraceData end() {
             end = System.currentTimeMillis();

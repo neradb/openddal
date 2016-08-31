@@ -5,7 +5,6 @@
 	<settings>
 		<property name="sqlMode" value="MySQL" />
 		<property name="transactionMode" value="BESTEFFORTS_1PC" />
-		<property name="defaultQueryTimeout" value="3000000" />
 		<property name="validationQuery" value="select 1" />
 		<property name="validationQueryTimeout" value="1000" />
 	</settings>
