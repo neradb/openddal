@@ -34,7 +34,7 @@ import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.dbobject.schema.Schema;
 import com.openddal.engine.Constants;
 import com.openddal.engine.Session;
-import com.openddal.excutor.cursor.ViewCursor;
+import com.openddal.executor.cursor.ViewCursor;
 import com.openddal.message.DbException;
 import com.openddal.result.LocalResult;
 import com.openddal.util.IntArray;

@@ -26,7 +26,7 @@ import com.openddal.command.expression.ExpressionColumn;
 import com.openddal.dbobject.index.IndexCondition;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
-import com.openddal.excutor.cursor.SearchCursor;
+import com.openddal.executor.cursor.SearchCursor;
 import com.openddal.message.DbException;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;

@@ -23,7 +23,7 @@ import com.openddal.dbobject.table.TableFilter;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.engine.SysProperties;
-import com.openddal.excutor.cursor.DirectLookupCursor;
+import com.openddal.executor.cursor.DirectLookupCursor;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.LocalResult;

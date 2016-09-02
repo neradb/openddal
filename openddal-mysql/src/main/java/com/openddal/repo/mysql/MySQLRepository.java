@@ -1,7 +1,7 @@
 package com.openddal.repo.mysql;
 
 import com.openddal.engine.Database;
-import com.openddal.excutor.works.WorkerFactory;
+import com.openddal.executor.works.WorkerFactory;
 import com.openddal.repo.JdbcRepository;
 import com.openddal.repo.JdbcWorkerFactory;
 import com.openddal.repo.SQLTranslator;

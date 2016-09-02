@@ -19,7 +19,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import com.openddal.engine.Session;
-import com.openddal.excutor.works.UpdateWorker;
+import com.openddal.executor.works.UpdateWorker;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 

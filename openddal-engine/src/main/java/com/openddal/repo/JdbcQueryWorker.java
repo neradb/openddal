@@ -19,9 +19,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 import com.openddal.engine.Session;
-import com.openddal.excutor.cursor.Cursor;
-import com.openddal.excutor.cursor.ResultCursor;
-import com.openddal.excutor.works.QueryWorker;
+import com.openddal.executor.cursor.Cursor;
+import com.openddal.executor.cursor.ResultCursor;
+import com.openddal.executor.works.QueryWorker;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 

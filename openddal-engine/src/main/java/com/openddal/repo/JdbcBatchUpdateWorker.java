@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.openddal.engine.Session;
-import com.openddal.excutor.works.BatchUpdateWorker;
+import com.openddal.executor.works.BatchUpdateWorker;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 

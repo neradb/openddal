@@ -22,7 +22,7 @@ import com.openddal.dbobject.schema.Sequence;
 import com.openddal.dbobject.table.TableMate;
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
-import com.openddal.excutor.works.WorkerFactory;
+import com.openddal.executor.works.WorkerFactory;
 
 /**
  * @author jorgie.li
