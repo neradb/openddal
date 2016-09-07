@@ -27,6 +27,8 @@ import com.openddal.executor.ExecutionFramework;
 import com.openddal.executor.works.QueryWorker;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
+import com.openddal.result.LocalResult;
+import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
 import com.openddal.route.rule.ObjectNode;
@@ -45,6 +47,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryWorker> workers;
     private ArrayList<Expression> expressions;
+    private boolean resultOffset;
 
     public DirectLookupCursor(Select select) {
         this.prepared = select;
@@ -88,7 +91,9 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
                     throw DbException.get(ErrorCode.INVALID_VALUE_2, "offset", offset + ", the max support offset "
                             + database.getSettings().analyzeSample + " is defined by analyzeSample.");
                 }
-                offset = offset != null ? 0 : offset;
+                limit = limit == null ? null : limit + offset;
+                offset = 0;
+                resultOffset = true;
             }
             ObjectNode[] selectNodes = rr.getSelectNodes();
             if (session.getDatabase().getSettings().optimizeMerging) {
@@ -230,6 +235,18 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
             result.put(expressions.get(i), searchRow.getValue(i));
         }
         return result;
+    }
+    
+    public void resetResult(ResultTarget result) {
+        if(!isPrepared()) {
+            throw DbException.throwInternalError("executor not prepared.");
+        }
+        if (result instanceof LocalResult) {
+            LocalResult r = (LocalResult) result;
+            if (!resultOffset) {
+                r.setOffset(0);
+            }
+        }
     }
 
     public double getCost() {

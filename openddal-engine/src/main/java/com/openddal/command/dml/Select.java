@@ -151,7 +151,7 @@ public class Select extends Query {
             condition = new ConditionAndOr(ConditionAndOr.AND, cond, condition);
         }
     }
-    
+
     public Expression getCondition() {
         return condition;
     }
@@ -159,7 +159,7 @@ public class Select extends Query {
     public void setCondition(Expression condition) {
         this.condition = condition;
     }
-    
+
     public int[] getGroupIndex() {
         return groupIndex;
     }
@@ -305,10 +305,20 @@ public class Select extends Query {
     }
 
     private void queryQuick(int columnCount, ResultTarget result, long limitRows) {
+        // limitRows must be long, otherwise we get an int overflow
+        // if limitRows is at or near Integer.MAX_VALUE
+        // limitRows is never 0 here
+        if (limitRows > 0 && offsetExpr != null) {
+            int offset = offsetExpr.getValue(session).getInt();
+            if (offset > 0) {
+                limitRows += offset;
+            }
+        }
         int rowNumber = 0;
         setCurrentRowNumber(0);
         DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
         lookupCursor.query(session);
+        lookupCursor.resetResult(result);
         while (lookupCursor.next()) {
             setCurrentRowNumber(rowNumber + 1);
             Row searchRow = lookupCursor.get();
@@ -322,7 +332,7 @@ public class Select extends Query {
                 break;
             }
         }
-        
+
     }
 
     private void queryGroupQuick(int columnCount, ResultTarget result) {
@@ -418,6 +428,8 @@ public class Select extends Query {
                 limitRows = Math.min(l, limitRows);
             }
         }
+        // If the target is not null and the query without sort,distinct group
+        // by etc.. not creating LocalResult, using target and returning null
         int columnCount = expressions.size();
         LocalResult result = null;
         if (target == null || !session.getDatabase().getSettings().optimizeInsertFromSelect) {
@@ -689,12 +701,11 @@ public class Select extends Query {
     }
 
     private double preparePlan() {
-        TableFilter[] topArray = topFilters.toArray(
-                new TableFilter[topFilters.size()]);
+        TableFilter[] topArray = topFilters.toArray(new TableFilter[topFilters.size()]);
         for (TableFilter t : topArray) {
             t.setFullCondition(condition);
         }
-        
+
         Optimizer optimizer = new Optimizer(topArray, condition, session);
         optimizer.optimize();
         topTableFilter = optimizer.getTopFilter();
@@ -753,24 +764,22 @@ public class Select extends Query {
             }
         }
     }
-    
 
     @Override
     public String explainPlan() {
-        if(isDirectLookupQuery) {
+        if (isDirectLookupQuery) {
             DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
             return lookupCursor.explain(session);
         }
         return "cross node join";
     }
-    
+
     @Override
     public String getPlanSQL() {
         // can not use the field sqlStatement because the parameter
         // indexes may be incorrect: ? may be in fact ?2 for a subquery
         // but indexes may be set manually as well
-        Expression[] exprList = expressions.toArray(
-                new Expression[expressions.size()]);
+        Expression[] exprList = expressions.toArray(new Expression[expressions.size()]);
         StatementBuilder buff = new StatementBuilder("SELECT");
         if (distinct) {
             buff.append(" DISTINCT");
@@ -802,8 +811,7 @@ public class Select extends Query {
             }
         }
         if (condition != null) {
-            buff.append("\nWHERE ").append(
-                    StringUtils.unEnclose(condition.getSQL()));
+            buff.append("\nWHERE ").append(StringUtils.unEnclose(condition.getSQL()));
         }
         if (groupIndex != null) {
             buff.append("\nGROUP BY ");
@@ -828,16 +836,13 @@ public class Select extends Query {
             // in this case the query is not run directly, just getPlanSQL is
             // called
             Expression h = having;
-            buff.append("\nHAVING ").append(
-                    StringUtils.unEnclose(h.getSQL()));
+            buff.append("\nHAVING ").append(StringUtils.unEnclose(h.getSQL()));
         } else if (havingIndex >= 0) {
             Expression h = exprList[havingIndex];
-            buff.append("\nHAVING ").append(
-                    StringUtils.unEnclose(h.getSQL()));
+            buff.append("\nHAVING ").append(StringUtils.unEnclose(h.getSQL()));
         }
         if (sort != null) {
-            buff.append("\nORDER BY ").append(
-                    sort.getSQL(exprList, visibleColumnCount));
+            buff.append("\nORDER BY ").append(sort.getSQL(exprList, visibleColumnCount));
         }
         if (orderList != null) {
             buff.append("\nORDER BY ");
@@ -848,16 +853,13 @@ public class Select extends Query {
             }
         }
         if (limitExpr != null) {
-            buff.append("\nLIMIT ").append(
-                    StringUtils.unEnclose(limitExpr.getSQL()));
+            buff.append("\nLIMIT ").append(StringUtils.unEnclose(limitExpr.getSQL()));
             if (offsetExpr != null) {
-                buff.append(" OFFSET ").append(
-                        StringUtils.unEnclose(offsetExpr.getSQL()));
+                buff.append(" OFFSET ").append(StringUtils.unEnclose(offsetExpr.getSQL()));
             }
         }
         if (sampleSizeExpr != null) {
-            buff.append("\nSAMPLE_SIZE ").append(
-                    StringUtils.unEnclose(sampleSizeExpr.getSQL()));
+            buff.append("\nSAMPLE_SIZE ").append(StringUtils.unEnclose(sampleSizeExpr.getSQL()));
         }
         if (isForUpdate) {
             buff.append("\nFOR UPDATE");

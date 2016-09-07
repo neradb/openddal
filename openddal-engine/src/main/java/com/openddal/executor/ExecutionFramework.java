@@ -201,6 +201,12 @@ public abstract class ExecutionFramework implements Executor {
         }
         return explain.toString();
     }
+    
+    
+
+    protected boolean isPrepared() {
+        return isPrepared;
+    }
 
     protected Map<ObjectNode, List<Row>> batchForRoutingNode(TableMate table, List<Row> rows) {
         Map<ObjectNode, List<Row>> batches = New.hashMap();
