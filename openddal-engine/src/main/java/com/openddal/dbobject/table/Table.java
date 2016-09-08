@@ -32,9 +32,6 @@ import com.openddal.engine.Session;
 import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.result.Row;
-import com.openddal.result.SearchRow;
-import com.openddal.result.SimpleRow;
-import com.openddal.result.SimpleRowValue;
 import com.openddal.util.New;
 import com.openddal.value.Value;
 import com.openddal.value.ValueNull;
@@ -198,19 +195,6 @@ public abstract class Table extends SchemaObject {
 
     public Row getTemplateRow() {
         return new Row(new Value[columns.length], Row.MEMORY_CALCULATE);
-    }
-
-    /**
-     * Get a new simple row object.
-     *
-     * @param singleColumn if only one value need to be stored
-     * @return the simple row object
-     */
-    public SearchRow getTemplateSimpleRow(boolean singleColumn) {
-        if (singleColumn) {
-            return new SimpleRowValue(columns.length);
-        }
-        return new SimpleRow(new Value[columns.length]);
     }
 
     synchronized Row getNullRow() {

@@ -105,9 +105,9 @@ public final class SetProcessor implements QueryProcessor {
 
     private void setAccessModel(String accessModel) {
         Session session = target.getSession().getDbSession();
-        if ("READ WRITE".equals(accessModel)) {
+        if ("WRITE".equals(accessModel)) {
             session.setReadOnly(false);
-        } else if ("READ ONLY".equals(accessModel)) {
+        } else if ("ONLY".equals(accessModel)) {
             session.setReadOnly(true);
         } else {
             throw ServerException.get(ErrorCode.ER_SYNTAX_ERROR, accessModel);

@@ -22,9 +22,9 @@ public class MySQLJDBCTestCase {
         datasource.setMaxActive(20);
         datasource.setValidationQuery("select 1");
         datasource.setDriverClassName(MYSQL_DRIVER);
-        datasource.setUrl("jdbc:mysql://localhost:6100/ddal_db1?connectTimeout=1000&amp;rewriteBatchedStatements=true");
+        datasource.setUrl("jdbc:mysql://localhost:6100/?connectTimeout=1000&amp;rewriteBatchedStatements=true");
         datasource.setUsername("root");
-        datasource.setPassword("admin");
+        datasource.setPassword("root");
     }
     
     @Test

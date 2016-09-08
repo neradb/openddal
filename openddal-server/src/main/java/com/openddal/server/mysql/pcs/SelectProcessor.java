@@ -116,11 +116,9 @@ public final class SelectProcessor implements QueryProcessor {
     }
 
     private boolean initValue(SQLPropertyExpr expr) {
-        NettyServer server = target.getSession().getServer();
-        Map<String, String> variables = server.getVariables();
         if(expr.getOwner() instanceof SQLVariantRefExpr) {
             String name = expr.getName().toLowerCase();
-            expr.putAttribute(EVAL_VALUE, variables.get(name));
+            setValue(expr, name);
             return true;
         }
         return false;
@@ -148,11 +146,20 @@ public final class SelectProcessor implements QueryProcessor {
     }
 
     private boolean initValue(SQLVariantRefExpr expr) {
+        String name = expr.getName().toLowerCase();
+        name = name.replaceAll("@@", "");
+        setValue(expr, name);
+        return true;
+    }
+
+    /**
+     * @param expr
+     * @param name
+     */
+    private void setValue(SQLExpr expr, String name) {
         Session session = target.getSession().getDbSession();
         NettyServer server = target.getSession().getServer();
         Map<String, String> variables = server.getVariables();
-        String name = expr.getName().toLowerCase();
-        name = name.replaceAll("@@", "");
         if ("autocommit".equals(name)) {
             int value = session.getAutoCommit() ? 1 : 0;
             expr.putAttribute(EVAL_VALUE, String.valueOf(value));
@@ -184,7 +191,6 @@ public final class SelectProcessor implements QueryProcessor {
         } else {
             expr.putAttribute(EVAL_VALUE, variables.get(name));
         }
-        return true;
     }
 
 }
