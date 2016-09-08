@@ -48,7 +48,7 @@ public class SysProperties {
 
     public static final int MAX_FILE_RETRY = Math.max(1, Utils.getProperty("ddal.maxFileRetry", 16));
 
-    public static final int MAX_MEMORY_ROWS = getAutoScaledForMemoryProperty("ddal.maxMemoryRows", 40000);
+    public static final int MAX_MEMORY_ROWS = getAutoScaledForMemoryProperty("ddal.maxMemoryRows", 10000);
 
     public static final long MAX_TRACE_DATA_LENGTH = Utils.getProperty("ddal.maxTraceDataLength", 65535);
 

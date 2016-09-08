@@ -24,12 +24,19 @@ public class ResultCursor implements Cursor {
 
     @Override
     public Row get() {
+        if (current == null) {
+            current = createRow();
+            for (int i = 0; i < current.getColumnCount(); i++) {
+                Value v = DataType.readValue(rs, i + 1, cols[i].getType());
+                current.setValue(i, v);
+            }
+        }
         return current;
     }
 
     @Override
     public SearchRow getSearchRow() {
-        return current;
+        return get();
     }
 
     @Override
@@ -44,11 +51,7 @@ public class ResultCursor implements Cursor {
         } catch (SQLException e) {
             throw DbException.convert(e);
         }
-        current = createRow();
-        for (int i = 0; i < current.getColumnCount(); i++) {
-            Value v = DataType.readValue(rs, i + 1, cols[i].getType());
-            current.setValue(i, v);
-        }
+        current = null;
         return true;
     }
 

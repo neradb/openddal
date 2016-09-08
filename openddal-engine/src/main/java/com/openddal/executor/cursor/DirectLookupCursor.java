@@ -26,11 +26,11 @@ import com.openddal.engine.Constants;
 import com.openddal.executor.ExecutionFramework;
 import com.openddal.executor.works.QueryWorker;
 import com.openddal.message.DbException;
-import com.openddal.message.ErrorCode;
 import com.openddal.result.LocalResult;
 import com.openddal.result.ResultTarget;
 import com.openddal.result.Row;
 import com.openddal.result.SearchRow;
+import com.openddal.result.SortOrder;
 import com.openddal.route.rule.ObjectNode;
 import com.openddal.route.rule.RoutingResult;
 import com.openddal.util.New;
@@ -47,7 +47,7 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
     private Map<ObjectNode, Map<TableFilter, ObjectNode>> consistencyTableNodes;
     private List<QueryWorker> workers;
     private ArrayList<Expression> expressions;
-    private boolean resultOffset;
+    private boolean limitPushless;
 
     public DirectLookupCursor(Select select) {
         this.prepared = select;
@@ -87,13 +87,9 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
             setEvaluatable(prepared.getTopTableFilter(), false);
             RoutingResult rr = doRoute(prepared);
             if (rr.isMultipleNode() && offset != null) {
-                if (offset > database.getSettings().analyzeSample) {
-                    throw DbException.get(ErrorCode.INVALID_VALUE_2, "offset", offset + ", the max support offset "
-                            + database.getSettings().analyzeSample + " is defined by analyzeSample.");
-                }
                 limit = limit == null ? null : limit + offset;
                 offset = 0;
-                resultOffset = true;
+                limitPushless = true;
             }
             ObjectNode[] selectNodes = rr.getSelectNodes();
             if (session.getDatabase().getSettings().optimizeMerging) {
@@ -237,13 +233,27 @@ public class DirectLookupCursor extends ExecutionFramework implements Cursor {
         return result;
     }
     
+    
     public void resetResult(ResultTarget result) {
         if(!isPrepared()) {
             throw DbException.throwInternalError("executor not prepared.");
         }
         if (result instanceof LocalResult) {
             LocalResult r = (LocalResult) result;
-            if (!resultOffset) {
+            if (limitPushless) {
+                Expression offsetExpr = prepared.getOffset();
+                SortOrder sortOrder = prepared.getSortOrder();
+                int offset = offsetExpr.getValue(session).getInt();
+                if(sortOrder == null) {
+                    //drop offset rows if sortOrder is null
+                    while (offset-- > 0) {
+                        if (!next()) {
+                            break;
+                        }
+                    }
+                    r.setOffset(0);
+                }
+            } else {
                 r.setOffset(0);
             }
         }

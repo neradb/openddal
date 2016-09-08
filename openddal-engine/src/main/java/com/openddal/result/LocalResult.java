@@ -71,7 +71,7 @@ public class LocalResult implements ResultInterface, ResultTarget {
         } else {
             this.maxMemoryRows = session.getDatabase().getMaxMemoryRows();
         }
-        rows = New.arrayList();
+        rows = New.arrayList(20);
         this.visibleColumnCount = visibleColumnCount;
         rowId = -1;
         this.expressions = expressions;
