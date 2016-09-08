@@ -305,15 +305,6 @@ public class Select extends Query {
     }
 
     private void queryQuick(int columnCount, ResultTarget result, long limitRows) {
-        // limitRows must be long, otherwise we get an int overflow
-        // if limitRows is at or near Integer.MAX_VALUE
-        // limitRows is never 0 here
-        if (limitRows > 0 && offsetExpr != null) {
-            int offset = offsetExpr.getValue(session).getInt();
-            if (offset > 0) {
-                limitRows += offset;
-            }
-        }
         int rowNumber = 0;
         setCurrentRowNumber(0);
         DirectLookupCursor lookupCursor = new DirectLookupCursor(this);
@@ -448,10 +439,16 @@ public class Select extends Query {
         }
         if (isGroupQuery) {
             result = createLocalResult(result);
-        }
-        if (limitRows >= 0 || offsetExpr != null) {
+        }        
+        if (limitRows >= 0) {
             result = createLocalResult(result);
+            result.setLimit(limitRows);
         }
+        if (offsetExpr != null) {
+            result = createLocalResult(result);
+            result.setOffset(offsetExpr.getValue(session).getInt());
+        }
+        
         topTableFilter.startQuery(session);
         topTableFilter.reset();
         boolean exclusive = isForUpdate && !isForUpdateMvcc;
@@ -478,12 +475,6 @@ public class Select extends Query {
             } else {
                 queryFlat(columnCount, to, limitRows);
             }
-        }
-        if (offsetExpr != null) {
-            result.setOffset(offsetExpr.getValue(session).getInt());
-        }
-        if (limitRows >= 0) {
-            result.setLimit(limitRows);
         }
         if (result != null) {
             result.done();
