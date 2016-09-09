@@ -54,6 +54,7 @@ import com.openddal.server.mysql.proto.Packet;
 import com.openddal.server.mysql.proto.Resultset;
 import com.openddal.server.mysql.proto.ResultsetRow;
 import com.openddal.server.util.AccessLogger;
+import com.openddal.server.util.CharsetUtil;
 import com.openddal.server.util.ErrorCode;
 import com.openddal.server.util.ResultColumn;
 import com.openddal.server.util.StringUtil;
@@ -93,7 +94,7 @@ public class MySQLServerHandler extends ChannelInboundHandlerAdapter {
         handshake.serverVersion = MySQLServer.SERVER_VERSION;
         handshake.connectionId = session.getThreadId();
         handshake.challenge1 = StringUtil.getRandomString(8);
-        handshake.characterSet = MySQLServer.DEFAULT_CHARSET_INDEX;
+        handshake.characterSet = CharsetUtil.getIndex(MySQLServer.DEFAULT_CHARSET);
         handshake.statusFlags = Flags.SERVER_STATUS_AUTOCOMMIT;
         handshake.challenge2 = StringUtil.getRandomString(12);
         handshake.authPluginDataLength = 21;

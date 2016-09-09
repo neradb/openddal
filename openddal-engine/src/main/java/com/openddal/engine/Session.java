@@ -90,7 +90,7 @@ public class Session implements SessionInterface {
     private SmallLRUCache<String, Command> queryCache;
     private ArrayList<Value> temporaryLobs;
     private boolean readOnly;
-    private int transactionIsolation;
+    private int transactionIsolation = Connection.TRANSACTION_READ_COMMITTED;
     private final Transaction transaction;
     private final WorkerFactoryProxy workerHolder;
 

@@ -25,7 +25,6 @@ public class MySQLServer extends NettyServer {
 
     private static final Logger logger = LoggerFactory.getLogger(MySQLServer.class);
     public static final String DEFAULT_CHARSET = "utf8";
-    public static final int DEFAULT_CHARSET_INDEX = 4;
     public static final byte PROTOCOL_VERSION = 10;
     public static final String VERSION_COMMENT = "OpenDDAL MySQL Protocol Server";
     public static final String SERVER_VERSION = "5.6.31" + VERSION_COMMENT + "-" + Constants.getFullVersion();

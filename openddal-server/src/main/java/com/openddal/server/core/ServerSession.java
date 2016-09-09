@@ -21,6 +21,7 @@ import java.util.Properties;
 import com.openddal.engine.Session;
 import com.openddal.server.NettyServer;
 import com.openddal.server.ServerException;
+import com.openddal.server.util.CharsetUtil;
 import com.openddal.util.New;
 
 import io.netty.channel.Channel;
@@ -128,11 +129,26 @@ public class ServerSession implements AutoCloseable {
     }
 
     public boolean setCharsetIndex(int ci) {
-        return false;
+        String charset = CharsetUtil.getDbCharset(ci);
+        if (charset != null) {
+            this.charset = CharsetUtil.getCharset(ci);
+            this.charsetIndex = ci;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     public boolean setCharset(String charset) {
-        return false;
+        int ci = CharsetUtil.getDBIndex(charset);
+        if (ci > 0) {
+            this.charset = CharsetUtil.getCharset(ci);
+            this.charsetIndex = ci;
+            return true;
+        } else {
+            return false;
+        }
+    
     }
 
     public int getCharsetIndex() {
