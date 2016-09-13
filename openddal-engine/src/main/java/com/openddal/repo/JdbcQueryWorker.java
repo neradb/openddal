@@ -42,30 +42,24 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
 
     @Override
     public Cursor executeQuery() {
-        beforeExecute();
+        closeOld();
         try {
-            Options optional = Options.build().shardName(shardName).readOnly(true);
-            if (trace.isDebugEnabled()) {
-                trace.debug("{0} Fetching connection from DataSource.", shardName);
-            }
-            opendConnection = doGetConnection(optional);
-
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Preparing: {1};", shardName, sql);
             }
-            opendStatement = opendConnection.prepareStatement(sql);
-            applyQueryTimeout(opendStatement);
+            statement = connection.prepareStatement(sql);
+            applyQueryTimeout(statement);
             if (params != null) {
                 for (int i = 0, size = params.size(); i < size; i++) {
                     Value v = params.get(i);
-                    v.set(opendStatement, i + 1);
+                    v.set(statement, i + 1);
                     if (trace.isDebugEnabled()) {
                         trace.debug("{0} setParameter: {1} -> {2};", shardName, i + 1, v.getSQL());
                     }
                 }
             }
-            opendResultSet = opendStatement.executeQuery();
-            return new ResultCursor(session, opendResultSet);
+            resultSet = statement.executeQuery();
+            return new ResultCursor(session, resultSet);
         } catch (SQLException e) {
             close();
             StatementBuilder buff = new StatementBuilder();

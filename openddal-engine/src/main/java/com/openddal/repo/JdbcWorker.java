@@ -27,6 +27,7 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.repo.tx.JdbcTransaction;
+import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -40,10 +41,12 @@ public abstract class JdbcWorker {
     protected final String shardName;
     protected final String sql;
     protected final List<Value> params;
+    protected final ConnectionProvider connProvider;
+    protected final JdbcTransaction tx;
 
-    protected Connection opendConnection;
-    protected PreparedStatement opendStatement;
-    protected ResultSet opendResultSet;
+    protected Connection connection;
+    protected PreparedStatement statement;
+    protected ResultSet resultSet;
     protected boolean closed;
 
     public JdbcWorker(Session session, String shardName, String sql, List<Value> params) {
@@ -53,6 +56,14 @@ public abstract class JdbcWorker {
         this.sql = sql;
         this.params = params;
         this.trace = session.getDatabase().getTrace(Trace.EXECUTOR);
+        this.tx = (JdbcTransaction)session.getTransaction();
+        this.connProvider = tx.getConnectionProvider();
+        // Create the worker directly apply for connection, performed by the
+        // main thread here, because the worker. Close by the main thread
+        // calls. HikariCP If get/close connection is not the same thread ,the
+        // connection will leak.
+        Options options = Options.build().shardName(shardName).readOnly(true);
+        this.connection = connProvider.getConnection(options);
 
     }
 
@@ -66,19 +77,6 @@ public abstract class JdbcWorker {
     protected static DbException wrapException(String operation, String shardName, String sql, Exception ex) {
         SQLException e = DbException.toSQLException(ex);
         return DbException.get(ErrorCode.ERROR_ACCESSING_DATABASE_TABLE_2, e, operation, shardName, sql, e.toString());
-    }
-
-    protected Connection doGetConnection(Options options) {
-        JdbcTransaction tx = (JdbcTransaction)session.getTransaction();
-        ConnectionProvider connProvider = tx.getConnectionProvider();
-        return connProvider.getConnection(options);
-    }
-    
-    
-    protected void closeConnection(String shardName, Connection conn) {
-        JdbcTransaction tx = (JdbcTransaction)session.getTransaction();
-        ConnectionProvider connProvider = tx.getConnectionProvider();
-        connProvider.closeConnection(conn, Options.build().shardName(shardName));
     }
 
     /**
@@ -104,10 +102,10 @@ public abstract class JdbcWorker {
 
     public void cancel() {
         try {
-            if (opendStatement == null) {
+            if (statement == null) {
                 return;
             }
-            opendStatement.cancel();
+            statement.cancel();
         } catch (Exception e) {
 
         }
@@ -115,32 +113,33 @@ public abstract class JdbcWorker {
     
     public void close() {
         try {
-            if (opendResultSet != null) {
+            if (resultSet != null) {
                 try {
-                    opendResultSet.close();
-                    opendResultSet = null;
+                    resultSet.close();
+                    resultSet = null;
                 } catch (SQLException e) {
                     trace.error(e, "close ResultSet error.");
                 }
             }
-            if (opendStatement != null) {
+            if (statement != null) {
                 try {
-                    opendStatement.close();
+                    statement.close();
                 } catch (SQLException e) {
                     trace.error(e, "close statement error.");
                 }
             }
-            if (opendConnection != null) {
+            if (connection != null) {
                 try {
-                    closeConnection(this.shardName, opendConnection);
+                    connProvider.closeConnection(connection, Options.build().shardName(shardName));
                 } catch (Exception e) {
                     trace.error(e, "close connection error.");
                 }
-            } 
+            }
+            closed = true;
         } finally {
-            opendResultSet = null;
-            opendStatement = null;
-            opendConnection = null;
+            resultSet = null;
+            statement = null;
+            connection = null;
         }
     }
 
@@ -170,7 +169,8 @@ public abstract class JdbcWorker {
         }
     }
 
-    protected void beforeExecute() {
-        close();
+    protected void closeOld() {
+        JdbcUtils.closeSilently(resultSet);
+        JdbcUtils.closeSilently(statement);
     }
 }

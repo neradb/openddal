@@ -48,32 +48,27 @@ public class JdbcBatchUpdateWorker extends JdbcWorker implements BatchUpdateWork
             if (array == null || array.size() < 1) {
                 throw new IllegalArgumentException();
             }
-            Options optional = Options.build().shardName(shardName).readOnly(true);
-            if (trace.isDebugEnabled()) {
-                trace.debug("{0} Fetching connection from DataSource.", shardName);
-            }
-            opendConnection = doGetConnection(optional);
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Preparing: {};", shardName, sql);
             }
-            opendStatement = opendConnection.prepareStatement(sql);
-            applyQueryTimeout(opendStatement);
+            statement = connection.prepareStatement(sql);
+            applyQueryTimeout(statement);
             for (List<Value> params : array) {
                 if (params != null) {
                     for (int i = 0, size = params.size(); i < size; i++) {
                         Value v = params.get(i);
-                        v.set(opendStatement, i + 1);
+                        v.set(statement, i + 1);
                         if (trace.isDebugEnabled()) {
                             trace.debug("{0} setParameter: {1} -> {2};", shardName, i + 1, v.getSQL());
                         }
                     }
-                    opendStatement.addBatch();
+                    statement.addBatch();
                     if (trace.isDebugEnabled()) {
                         trace.debug("{0} addBatch.", shardName);
                     }
                 }
             }
-            int[] affected = opendStatement.executeBatch();
+            int[] affected = statement.executeBatch();
             Integer[] rows = new Integer[affected.length];
             for (int i = 0; i < rows.length; i++) {
                 rows[i] = affected[i];
