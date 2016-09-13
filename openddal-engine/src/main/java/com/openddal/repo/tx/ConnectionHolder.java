@@ -3,8 +3,8 @@ package com.openddal.repo.tx;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 
 import com.openddal.engine.Database;
 import com.openddal.engine.Session;
@@ -14,6 +14,7 @@ import com.openddal.message.Trace;
 import com.openddal.repo.ConnectionProvider;
 import com.openddal.repo.JdbcRepository;
 import com.openddal.repo.Options;
+import com.openddal.util.JdbcUtils;
 import com.openddal.util.New;
 import com.openddal.util.StringUtils;
 
@@ -23,7 +24,7 @@ public class ConnectionHolder implements ConnectionProvider {
     private final HolderStrategy holderStrategy;
     private final ConnectionProvider target;
     private final Trace trace;
-    private Map<String, Connection> connectionMap = New.hashMap();
+    private ConcurrentMap<String, Connection> connectionMap;
     private final Closer closer = new Closer();
 
     public ConnectionHolder(Session session) {
@@ -34,9 +35,10 @@ public class ConnectionHolder implements ConnectionProvider {
         this.target = repository.getConnectionProvider();
         String mode = database.getSettings().transactionMode;
         this.holderStrategy = transactionMode(mode);
+        connectionMap = New.concurrentHashMap();
     }
 
-    public synchronized <T> List<T> foreach(Callback<T> callback) throws DbException {
+    public <T> List<T> foreach(Callback<T> callback) throws DbException {
         List<T> results = New.arrayList();
         for (String name : connectionMap.keySet()) {
             try {
@@ -50,7 +52,7 @@ public class ConnectionHolder implements ConnectionProvider {
         return results;
     }
 
-    public synchronized <T> List<T> foreach(Set<String> shards, Callback<T> callback) throws DbException {
+    public <T> List<T> foreach(Set<String> shards, Callback<T> callback) throws DbException {
         List<T> results = New.arrayList();
         for (String name : connectionMap.keySet()) {
             if (shards.contains(name)) {
@@ -67,7 +69,7 @@ public class ConnectionHolder implements ConnectionProvider {
     }
 
     @Override
-    public synchronized Connection getConnection(Options options) {
+    public Connection getConnection(Options options) {
         Connection conn;
         if (session.getAutoCommit()) {
             conn = getRawConnection(options);
@@ -78,9 +80,10 @@ public class ConnectionHolder implements ConnectionProvider {
     }
 
     @Override
-    public synchronized void closeConnection(Connection connection, Options options) {
+    public void closeConnection(Connection connection, Options options) {
         if (session.getAutoCommit()) {
             target.closeConnection(connection, options);
+            
         } else {
             Connection contains = connectionMap.get(options.shardName);
             if (connection != contains) {
@@ -89,11 +92,11 @@ public class ConnectionHolder implements ConnectionProvider {
         }
     }
 
-    public synchronized boolean hasConnection() {
+    public boolean hasConnection() {
         return !connectionMap.isEmpty();
     }
 
-    public synchronized List<String> closeAndClear() {
+    public List<String> closeAndClear() {
         List<String> foreach = foreach(closer);
         connectionMap.clear();
         return foreach;
@@ -116,7 +119,11 @@ public class ConnectionHolder implements ConnectionProvider {
         case STRICTLY:
             if (connectionMap.isEmpty()) {
                 conn = getRawConnection(options);
-                connectionMap.put(shardName, conn);
+                Connection putIfAbsent = connectionMap.putIfAbsent(shardName, conn);
+                if (putIfAbsent != null) {
+                    JdbcUtils.closeSilently(conn);
+                    conn = putIfAbsent;
+                }
             } else {
                 conn = connectionMap.get(shardName);
                 if (conn == null) {
@@ -136,7 +143,11 @@ public class ConnectionHolder implements ConnectionProvider {
             } else {
                 if (connectionMap.isEmpty()) {
                     conn = getRawConnection(options);
-                    connectionMap.put(shardName, conn);
+                    Connection putIfAbsent = connectionMap.putIfAbsent(shardName, conn);
+                    if (putIfAbsent != null) {
+                        JdbcUtils.closeSilently(conn);
+                        conn = putIfAbsent;
+                    }
                 } else {
                     conn = connectionMap.get(shardName);
                     if (conn == null) {
@@ -154,7 +165,11 @@ public class ConnectionHolder implements ConnectionProvider {
             conn = connectionMap.get(shardName);
             if (conn == null) {
                 conn = getRawConnection(options);
-                connectionMap.put(shardName, conn);
+                Connection putIfAbsent = connectionMap.putIfAbsent(shardName, conn);
+                if (putIfAbsent != null) {
+                    JdbcUtils.closeSilently(conn);
+                    conn = putIfAbsent;
+                }
             }
             break;
 

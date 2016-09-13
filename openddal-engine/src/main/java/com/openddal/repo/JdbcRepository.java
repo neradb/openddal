@@ -56,7 +56,7 @@ import com.openddal.util.Threads;
 /**
  * @author jorgie.li
  */
-public abstract class JdbcRepository implements Repository {
+public abstract class JdbcRepository implements Repository, ConnectionProvider {
 
     private final List<DataSourceMarker> registered = New.arrayList();
     private final List<DataSourceMarker> abnormalList = New.copyOnWriteArrayList();
@@ -322,29 +322,31 @@ public abstract class JdbcRepository implements Repository {
     }
 
     public ConnectionProvider getConnectionProvider() {
-        return new ConnectionProvider() {
-            @Override
-            public Connection getConnection(Options options) {
-                DataSource ds = getDataSourceByShardName(options.shardName);
-                try {
-                    return ds.getConnection();
-                } catch (SQLException e) {
-                    throw DbException.convert(e);
-                }
-            }
-
-            @Override
-            public void closeConnection(Connection connection, Options options) {
-                if(connection != null) {
-                    try {
-                        connection.close();
-                    } catch (SQLException e) {
-                        throw DbException.convert(e);
-                    }
-                }
-            }
-        };
+        return this;
     }
+    
+
+    @Override
+    public Connection getConnection(Options options) {
+        DataSource ds = getDataSourceByShardName(options.shardName);
+        try {
+            return ds.getConnection();
+        } catch (SQLException e) {
+            throw DbException.convert(e);
+        }
+    }
+
+    @Override
+    public void closeConnection(Connection connection, Options options) {
+        if(connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                throw DbException.convert(e);
+            }
+        }
+    }
+
 
     @Override
     public Transaction newTransaction(Session session) {

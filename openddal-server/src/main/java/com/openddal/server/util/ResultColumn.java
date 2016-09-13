@@ -2,6 +2,7 @@ package com.openddal.server.util;
 
 import com.openddal.result.ResultInterface;
 import com.openddal.server.mysql.proto.ColumnDefinition;
+import com.openddal.value.DataType;
 
 /**
  * A result set column of a remote result.
@@ -20,7 +21,8 @@ public class ResultColumn {
         columnPacket.columnLength = result.getDisplaySize(i);
         columnPacket.decimals = result.getColumnScale(i);
 
-        int javaType = MysqlDefs.javaTypeDetect(result.getColumnType(i), (int) columnPacket.decimals);
+        int sqlType = DataType.convertTypeToSQLType(result.getColumnType(i));
+        int javaType = MysqlDefs.javaTypeDetect(sqlType, (int) columnPacket.decimals);
         columnPacket.type = (byte) (MysqlDefs.javaTypeMysql(javaType) & 0xff);
         return columnPacket;
 
