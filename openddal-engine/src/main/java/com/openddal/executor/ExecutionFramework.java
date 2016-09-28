@@ -35,7 +35,6 @@ import com.openddal.engine.Database;
 import com.openddal.engine.Session;
 import com.openddal.executor.cursor.Cursor;
 import com.openddal.executor.cursor.MergedCursor;
-import com.openddal.executor.works.BatchUpdateWorker;
 import com.openddal.executor.works.QueryWorker;
 import com.openddal.executor.works.UpdateWorker;
 import com.openddal.executor.works.Worker;
@@ -119,33 +118,6 @@ public abstract class ExecutionFramework implements Executor {
             int affectRows = 0;
             for (Future<Integer> future : invokeAll) {
                 affectRows += future.get();
-            }
-            return affectRows;
-        } catch (InterruptedException e) {
-            throw DbException.convert(e);
-        } catch (ExecutionException e) {
-            throw DbException.convert(e.getCause());
-        } finally {
-            session.checkCanceled();
-        }
-    }
-
-    protected int invokeBatchUpdateWorker(List<BatchUpdateWorker> worker) {
-        session.checkCanceled();
-        try {
-            int queryTimeout = session.getQueryTimeout();// MILLISECONDS
-            List<Future<Integer[]>> invokeAll;
-            if (queryTimeout > 0) {
-                invokeAll = queryExecutor.invokeAll(worker, queryTimeout, TimeUnit.MILLISECONDS);
-            } else {
-                invokeAll = queryExecutor.invokeAll(worker);
-            }
-            int affectRows = 0;
-            for (Future<Integer[]> future : invokeAll) {
-                Integer[] integers = future.get();
-                for (Integer integer : integers) {
-                    affectRows += integer;
-                }
             }
             return affectRows;
         } catch (InterruptedException e) {

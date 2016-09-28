@@ -16,8 +16,6 @@
 package com.openddal.repo;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -27,7 +25,6 @@ import com.openddal.message.DbException;
 import com.openddal.message.ErrorCode;
 import com.openddal.message.Trace;
 import com.openddal.repo.tx.JdbcTransaction;
-import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -44,10 +41,6 @@ public abstract class JdbcWorker {
     protected final ConnectionProvider connProvider;
     protected final JdbcTransaction tx;
 
-    protected Connection connection;
-    protected PreparedStatement statement;
-    protected ResultSet resultSet;
-    protected boolean closed;
 
     public JdbcWorker(Session session, String shardName, String sql, List<Value> params) {
         super();
@@ -58,13 +51,24 @@ public abstract class JdbcWorker {
         this.trace = session.getDatabase().getTrace(Trace.EXECUTOR);
         this.tx = (JdbcTransaction)session.getTransaction();
         this.connProvider = tx.getConnectionProvider();
-        // Create the worker directly apply for connection, performed by the
-        // main thread here, because the worker. Close by the main thread
-        // calls. HikariCP If get/close connection is not the same thread ,the
-        // connection will leak.
-        Options options = Options.build().shardName(shardName).readOnly(true);
-        this.connection = connProvider.getConnection(options);
+        
 
+    }
+    
+    // Create the worker directly apply for connection, performed by the
+    // main thread here, because the worker. Close by the main thread
+    // calls. HikariCP If get/close connection is not the same thread ,the
+    // connection will leak.
+    protected Connection borrowConnection() {
+        Options options = Options.build().shardName(shardName);
+        return connProvider.getConnection(options);
+    }
+    
+    protected void returnConnection(Connection conn) {
+        if(conn != null) {
+            Options options = Options.build().shardName(shardName);
+            connProvider.closeConnection(conn, options);
+        }
     }
 
     /**
@@ -100,49 +104,6 @@ public abstract class JdbcWorker {
         return params;
     }
 
-    public void cancel() {
-        try {
-            if (statement == null) {
-                return;
-            }
-            statement.cancel();
-        } catch (Exception e) {
-
-        }
-    }
-    
-    public void close() {
-        try {
-            if (resultSet != null) {
-                try {
-                    resultSet.close();
-                    resultSet = null;
-                } catch (SQLException e) {
-                    trace.error(e, "close ResultSet error.");
-                }
-            }
-            if (statement != null) {
-                try {
-                    statement.close();
-                } catch (SQLException e) {
-                    trace.error(e, "close statement error.");
-                }
-            }
-            if (connection != null) {
-                try {
-                    connProvider.closeConnection(connection, Options.build().shardName(shardName));
-                } catch (Exception e) {
-                    trace.error(e, "close connection error.");
-                }
-            }
-            closed = true;
-        } finally {
-            resultSet = null;
-            statement = null;
-            connection = null;
-        }
-    }
-
     public String explain() {
         StatementBuilder buff = new StatementBuilder();
         buff.append("execute on ").append(shardName);
@@ -169,8 +130,4 @@ public abstract class JdbcWorker {
         }
     }
 
-    protected void closeOld() {
-        JdbcUtils.closeSilently(resultSet);
-        JdbcUtils.closeSilently(statement);
-    }
 }

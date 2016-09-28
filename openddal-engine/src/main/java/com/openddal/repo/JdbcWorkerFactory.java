@@ -1,7 +1,5 @@
 package com.openddal.repo;
 
-import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 
 import com.openddal.command.ddl.AlterTableAddConstraint;
@@ -23,15 +21,11 @@ import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.engine.Session;
-import com.openddal.executor.works.BatchUpdateWorker;
 import com.openddal.executor.works.QueryWorker;
 import com.openddal.executor.works.UpdateWorker;
 import com.openddal.executor.works.WorkerFactory;
 import com.openddal.result.Row;
 import com.openddal.route.rule.ObjectNode;
-import com.openddal.util.New;
-import com.openddal.value.Value;
 
 public class JdbcWorkerFactory implements WorkerFactory {
 
@@ -169,83 +163,6 @@ public class JdbcWorkerFactory implements WorkerFactory {
         JdbcUpdateWorker handler = new JdbcUpdateWorker(prepared.getSession(), indexNode.getShardName(), translated.sql,
                 translated.params);
         return handler;
-    }
-
-    @Override
-    public List<BatchUpdateWorker> mergeToBatchUpdateWorker(Session session, List<UpdateWorker> workers) {
-        Map<BatchKey, List<List<Value>>> batches = New.hashMap();
-        for (UpdateWorker updateWorker : workers) {
-            JdbcUpdateWorker jdbcWorker = (JdbcUpdateWorker)updateWorker;
-            BatchKey batchKey = new BatchKey(jdbcWorker.getShardName(), jdbcWorker.getSql());
-            List<List<Value>> batchArgs = batches.get(batchKey);
-            if (batchArgs == null) {
-                batchArgs = New.arrayList(10);
-                batches.put(batchKey, batchArgs);
-            }
-            batchArgs.add(jdbcWorker.getParams());
-        }
-        List<BatchUpdateWorker> batchWorkers = New.arrayList(batches.size());
-        for (Map.Entry<BatchKey, List<List<Value>>> entry : batches.entrySet()) {
-            String shardName = entry.getKey().shardName;
-            String sql = entry.getKey().sql;
-            List<List<Value>> array = entry.getValue();
-            JdbcBatchUpdateWorker batchWorker = new JdbcBatchUpdateWorker(session, shardName, sql, array); 
-            batchWorkers.add(batchWorker);
-        }
-        return batchWorkers;
-    }
-    
-    private static class BatchKey implements Serializable {
-        private static final long serialVersionUID = 1L;
-
-        private final String shardName;
-        private final String sql;
-
-        /**
-         * @param shardName
-         * @param sql
-         */
-        private BatchKey(String shardName, String sql) {
-            super();
-            this.shardName = shardName;
-            this.sql = sql;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((shardName == null) ? 0 : shardName.hashCode());
-            result = prime * result + ((sql == null) ? 0 : sql.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            BatchKey other = (BatchKey) obj;
-            if (shardName == null) {
-                if (other.shardName != null)
-                    return false;
-            } else if (!shardName.equals(other.shardName))
-                return false;
-            if (sql == null) {
-                if (other.sql != null)
-                    return false;
-            } else if (!sql.equals(other.sql))
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "BatchKey [shardName=" + shardName + ", sql=" + sql + "]";
-        }
     }
 
 

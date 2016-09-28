@@ -15,6 +15,9 @@
  */
 package com.openddal.repo;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -22,6 +25,7 @@ import com.openddal.engine.Session;
 import com.openddal.executor.cursor.Cursor;
 import com.openddal.executor.cursor.ResultCursor;
 import com.openddal.executor.works.QueryWorker;
+import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -31,6 +35,10 @@ import com.openddal.value.Value;
  */
 public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
 
+    private Connection conn;
+    private PreparedStatement stmt;
+    private ResultSet set;
+    
     public JdbcQueryWorker(Session session, String shardName, String sql, List<Value> params) {
         super(session, shardName, sql, params);
     }
@@ -42,24 +50,24 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
 
     @Override
     public Cursor executeQuery() {
-        closeOld();
         try {
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Preparing: {1};", shardName, sql);
             }
-            statement = connection.prepareStatement(sql);
-            applyQueryTimeout(statement);
+            conn = borrowConnection();
+            stmt = conn.prepareStatement(sql);
+            applyQueryTimeout(stmt);
             if (params != null) {
                 for (int i = 0, size = params.size(); i < size; i++) {
                     Value v = params.get(i);
-                    v.set(statement, i + 1);
+                    v.set(stmt, i + 1);
                     if (trace.isDebugEnabled()) {
                         trace.debug("{0} setParameter: {1} -> {2};", shardName, i + 1, v.getSQL());
                     }
                 }
             }
-            resultSet = statement.executeQuery();
-            return new ResultCursor(session, resultSet);
+            set = stmt.executeQuery();
+            return new ResultCursor(session, set);
         } catch (SQLException e) {
             close();
             StatementBuilder buff = new StatementBuilder();
@@ -74,8 +82,29 @@ public class JdbcQueryWorker extends JdbcWorker implements QueryWorker {
                 buff.append('}');
             }
             throw wrapException("executeQuery", shardName, buff.toString(), e);
+        } finally {
+            //see Session.endStatement
         }
 
+    }
+
+    public void cancel() {
+        try {
+            if (stmt == null) {
+                stmt.cancel();
+            }
+        } catch (Exception e) {
+            trace.error(e, "cancel worker error.");
+        }
+    }
+
+    public void close() {
+        JdbcUtils.closeSilently(set);
+        JdbcUtils.closeSilently(stmt);
+        returnConnection(conn);
+        set = null;
+        stmt = null;
+        conn = null;
     }
 
 

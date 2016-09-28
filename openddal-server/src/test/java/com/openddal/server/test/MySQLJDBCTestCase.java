@@ -2,6 +2,7 @@ package com.openddal.server.test;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 
 import org.junit.Before;
@@ -41,25 +42,34 @@ public class MySQLJDBCTestCase {
     }
     @Test
     public void testQuery() throws Exception {
-        Connection conn = null;
-        Statement stat = null;
-        ResultSet set = null;
-        try {
-            conn = datasource.getConnection();
-            stat = conn.createStatement();
-            conn.setReadOnly(true);
-            set = stat.executeQuery("select connection_id()");
-            while (set.next()) {
-                System.out.println(set.getInt(1));
+        
+        for (int i = 0; i < 10; i++) {
+            Connection conn = null;
+            Statement stat = null;
+            ResultSet set = null;
+            try {
+                conn = datasource.getConnection();
+                stat = conn.createStatement();
+                conn.setReadOnly(true);
+                set = stat.executeQuery("select id,name,customer_info from customers where id in(15831830309769256, 15831820448960520);");
+                ResultSetMetaData metaData = set.getMetaData();
+                int columnCount = metaData.getColumnCount();
+                for (int j = 0; j < columnCount; j++) {
+                    System.out.println(metaData.getColumnTypeName(j+1));
+                }
+                while (set.next()) {
+                    System.out.println(set.getLong(1));
+                }
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                JdbcUtils.closeSilently(set);
+                JdbcUtils.closeSilently(stat);
+                JdbcUtils.closeSilently(conn);
             }
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            JdbcUtils.closeSilently(set);
-            JdbcUtils.closeSilently(stat);
-            JdbcUtils.closeSilently(conn);
         }
+
     }
 
 }

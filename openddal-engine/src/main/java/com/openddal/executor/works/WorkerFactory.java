@@ -15,7 +15,6 @@
  */
 package com.openddal.executor.works;
 
-import java.util.List;
 import java.util.Map;
 
 import com.openddal.command.ddl.AlterTableAddConstraint;
@@ -37,7 +36,6 @@ import com.openddal.command.dml.Update;
 import com.openddal.command.expression.Expression;
 import com.openddal.dbobject.table.Column;
 import com.openddal.dbobject.table.TableFilter;
-import com.openddal.engine.Session;
 import com.openddal.result.Row;
 import com.openddal.route.rule.ObjectNode;
 
@@ -85,6 +83,4 @@ public interface WorkerFactory {
 
     UpdateWorker createUpdateWorker(DropIndex dropIndex, ObjectNode indexNode, ObjectNode tableNode);
     
-    List<BatchUpdateWorker> mergeToBatchUpdateWorker(Session session, List<UpdateWorker> workers);
-
 }

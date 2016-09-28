@@ -15,11 +15,14 @@
  */
 package com.openddal.repo;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 
 import com.openddal.engine.Session;
 import com.openddal.executor.works.UpdateWorker;
+import com.openddal.util.JdbcUtils;
 import com.openddal.util.StatementBuilder;
 import com.openddal.value.Value;
 
@@ -28,6 +31,9 @@ import com.openddal.value.Value;
  *
  */
 public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
+
+    private Connection conn = null;
+    private PreparedStatement stmt = null;
 
     public JdbcUpdateWorker(Session session, String shardName, String sql, List<Value> params) {
         super(session, shardName, sql, params);
@@ -40,23 +46,23 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
 
     @Override
     public int executeUpdate() {
-        closeOld();
         try {
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} Preparing: {1};", shardName, sql);
             }
-            statement = connection.prepareStatement(sql);
-            applyQueryTimeout(statement);
+            conn = borrowConnection();
+            stmt = conn.prepareStatement(sql);
+            applyQueryTimeout(stmt);
             if (params != null) {
                 for (int i = 0, size = params.size(); i < size; i++) {
                     Value v = params.get(i);
-                    v.set(statement, i + 1);
+                    v.set(stmt, i + 1);
                     if (trace.isDebugEnabled()) {
                         trace.debug("{0} setParameter: {1} -> {2};", shardName, i + 1, v.getSQL());
                     }
                 }
             }
-            int rows = statement.executeUpdate();
+            int rows = stmt.executeUpdate();
             if (trace.isDebugEnabled()) {
                 trace.debug("{0} executeUpdate: {1} affected.", shardName, rows);
             }
@@ -74,6 +80,25 @@ public class JdbcUpdateWorker extends JdbcWorker implements UpdateWorker {
                 buff.append('}');
             }
             throw wrapException("executeUpdate", shardName, buff.toString(), e);
+        } finally {
+            close();
         }
+    }
+
+    public void cancel() {
+        try {
+            if (stmt == null) {
+                stmt.cancel();
+            }
+        } catch (Exception e) {
+            trace.error(e, "cancel worker error.");
+        }
+    }
+
+    public void close() {
+        JdbcUtils.closeSilently(stmt);
+        returnConnection(conn);
+        stmt = null;
+        conn = null;
     }
 }

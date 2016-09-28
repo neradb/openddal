@@ -1,6 +1,5 @@
 package com.openddal.executor.works;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -165,16 +164,6 @@ public class WorkerFactoryProxy implements WorkerFactory {
         UpdateWorker handler = target.createUpdateWorker(dropIndex, indexNode, tableNode);
         handler = holdeWorker(handler);
         return handler;
-    }
-
-    @Override
-    public List<BatchUpdateWorker> mergeToBatchUpdateWorker(Session session, List<UpdateWorker> workers) {
-        List<BatchUpdateWorker> batchWorkers = target.mergeToBatchUpdateWorker(session, workers);
-        List<BatchUpdateWorker> batchWorkerProxys = New.arrayList(batchWorkers.size());
-        for (BatchUpdateWorker batchWorker : batchWorkers) {
-            batchWorkerProxys.add(holdeWorker(batchWorker));
-        }
-        return batchWorkerProxys;
     }
 
     public synchronized void closeWorkers() {
