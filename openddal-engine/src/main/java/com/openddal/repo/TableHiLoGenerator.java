@@ -72,8 +72,8 @@ public class TableHiLoGenerator extends Sequence {
     private DataSource dataSource;
     private HiloOptimizer optimizer;
 
-    public TableHiLoGenerator(Schema schema, SequenceRule config) {
-        super(schema, config.getName(), 1, 1);
+    public TableHiLoGenerator(Schema schema, String name, SequenceRule config) {
+        super(schema, name, 1, 1);
         configure(config.getProperties());
     }
 

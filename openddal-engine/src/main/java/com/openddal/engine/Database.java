@@ -147,8 +147,7 @@ public class Database {
         Session sysSession = createSession(systemUser);
         try {
             for (TableRule tableRule : configuration.tableRules) {
-                String identifier = identifier(tableRule.getName());
-                TableMate tableMate = new TableMate(mainSchema, identifier, tableRule);
+                TableMate tableMate = repository.loadMataData(mainSchema, tableRule);
                 tableMate.loadMataData(sysSession);
                 if (configuration.forceLoadTableMate) {
                     tableMate.check();
@@ -169,7 +168,6 @@ public class Database {
              */
 
             for (SequenceRule config : configuration.sequnces) {
-                config.setName(identifier(config.getName()));
                 Sequence sequence = repository.loadMataData(mainSchema, config);
                 this.addSchemaObject(sequence);
             }

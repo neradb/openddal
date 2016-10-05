@@ -15,8 +15,8 @@ public class SnowflakeGenerator extends Sequence {
     private long currentValue;
     private IdWorker idWorker;
 
-    public SnowflakeGenerator(Schema schema, SequenceRule config) {
-        super(schema, config.getName(), 1, 1);
+    public SnowflakeGenerator(Schema schema, String name, SequenceRule config) {
+        super(schema, name, 1, 1);
         configure(config.getProperties());
     }
 

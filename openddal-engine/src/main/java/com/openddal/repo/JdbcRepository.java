@@ -305,17 +305,19 @@ public abstract class JdbcRepository implements Repository, ConnectionProvider {
 
     @Override
     public TableMate loadMataData(Schema schema, TableRule tableRule) {
-        // TODO Auto-generated method stub
-        return null;
+        String identifier = database.identifier(tableRule.getName());
+        TableMate tableMate = new TableMate(schema, identifier, tableRule);
+        return tableMate;
     }
 
     @Override
     public Sequence loadMataData(Schema schema, SequenceRule sequenceRule) {
         String strategy = sequenceRule.getStrategy();
+        String name = database.identifier(sequenceRule.getName());
         if ("hilo".equals(strategy)) {
-            return new TableHiLoGenerator(schema, sequenceRule);
+            return new TableHiLoGenerator(schema, name, sequenceRule);
         } else if ("snowflake".equals(strategy)) {
-            return new SnowflakeGenerator(schema, sequenceRule);
+            return new SnowflakeGenerator(schema, name, sequenceRule);
         } else {
             throw DbException.get(ErrorCode.FEATURE_NOT_SUPPORTED_1, strategy + " sequence");
         }
